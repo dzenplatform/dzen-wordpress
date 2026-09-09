@@ -1,0 +1,11 @@
+.dzen-chat { max-width: 1160px; }
+.dzen-filters { display: flex; align-items: end; gap: 12px; flex-wrap: wrap; margin: 24px 0; }
+.dzen-filters label { display: grid; gap: 6px; }
+.dzen-inline { display: inline-block; margin: 4px 8px 4px 0; }
+.dzen-message, .dzen-source { background: #fff; border: 1px solid #c3c4c7; border-radius: 4px; padding: 20px; margin: 18px 0; }
+.dzen-message h3, .dzen-source h3 { margin-top: 0; }
+.dzen-text { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.7; max-width: 90ch; }
+.dzen-reference { margin-top: 16px; padding-top: 12px; border-top: 1px solid #dcdcde; display: flex; flex-wrap: wrap; gap: 12px; }
+.dzen-chat table { margin-top: 20px; }
+.dzen-chat td { vertical-align: top; }
+.dzen-chat a:focus-visible { outline: 2px solid #2271b1; outline-offset: 2px; }

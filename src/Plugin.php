@@ -1,0 +1,128 @@
+<?php
+namespace DzenChat;
+
+defined('ABSPATH') || exit;
+
+final class Plugin
+{
+    public function register(): void
+    {
+        $credentials = new Credentials();
+        $api = new Api($credentials);
+        $sync = new Sync($credentials, $api);
+        (new Connection($credentials, $api))->register();
+        (new Admin($credentials, $api, $sync))->register();
+        $sync->register();
+        add_filter('cron_schedules', [self::class, 'schedules']);
+        add_action('dzen_chat_clean_claim', static function ($key) {
+            if (is_string($key) && preg_match('/^dzen_chat_auth_claim_[a-f0-9]{64}$/D', $key)) {
+                delete_option($key);
+            }
+        });
+        add_action('wp_enqueue_scripts', [$this, 'widget']);
+        add_action('add_meta_boxes', [$this, 'metaBoxes']);
+        add_action('save_post', [$this, 'saveMeta'], 10, 2);
+    }
+
+    public static function schedules(array $schedules): array
+    {
+        $schedules['dzen_chat_minute'] = ['interval' => 60, 'display' => 'Dzen Chat: 1 minute'];
+        return $schedules;
+    }
+
+    public static function activate(bool $networkWide = false): void
+    {
+        if ($networkWide) {
+            wp_die(esc_html__('Подключайте Dzen Chat отдельно для каждого сайта. Сетевая активация пока не поддерживается.', 'dzen-chat'));
+        }
+        Sync::install();
+        add_filter('cron_schedules', [self::class, 'schedules']);
+        if (!wp_next_scheduled('dzen_chat_worker')) {
+            wp_schedule_event(time() + 60, 'dzen_chat_minute', 'dzen_chat_worker');
+        }
+    }
+
+    public static function deactivate(): void
+    {
+        wp_clear_scheduled_hook('dzen_chat_worker');
+        delete_option('dzen_chat_worker_lock');
+        delete_transient('dzen_chat_status');
+    }
+
+    public function widget(): void
+    {
+        $credentials = new Credentials();
+        if (!$credentials->exists() || !get_option('dzen_chat_verified')) {
+            return;
+        }
+        try {
+            $credentials->get(); // A copied database must not send as the original site.
+        } catch (\RuntimeException | \JsonException $error) {
+            return;
+        }
+        $status = get_transient('dzen_chat_status');
+        if (!$status || ($status['allowed_operations']['widget_answers'] ?? false) !== true
+            || ($status['integration']['status'] ?? '') !== 'active') {
+            return;
+        }
+        $post = get_queried_object_id();
+        if (is_singular() && get_post_meta($post, '_dzen_chat_widget_disabled', true)) {
+            return;
+        }
+        $id = is_singular() ? get_post_meta($post, '_dzen_chat_widget', true) : '';
+        $id = $id ?: get_option('dzen_chat_widget', '');
+        $widgets = get_option('dzen_chat_widgets', []);
+        $widget = $widgets[$id] ?? null;
+        if (!$widget || empty($widget['is_enabled']) || !preg_match('/^[A-Za-z0-9_-]+$/D', $widget['code'])) {
+            return;
+        }
+        wp_enqueue_script('dzen-chat-widget', Api::origin() . '/widget/' . rawurlencode($widget['code']), [], null,
+            ['strategy' => 'defer', 'in_footer' => true]);
+    }
+
+    public function metaBoxes(): void
+    {
+        if (current_user_can('manage_options')) {
+            add_meta_box('dzen-chat-page', 'Dzen Chat', [$this, 'metaBox'], ['page', 'post'], 'side');
+        }
+    }
+
+    public function metaBox(\WP_Post $post): void
+    {
+        wp_nonce_field('dzen_chat_post_' . $post->ID, 'dzen_chat_post_nonce');
+        foreach (['_dzen_chat_widget_disabled' => __('Не показывать виджет', 'dzen-chat'), '_dzen_chat_exclude' => __('Исключить из индекса Dzen Chat', 'dzen-chat')] as $key => $label) {
+            echo '<p><label><input type="checkbox" name="' . esc_attr($key) . '" value="1"' . checked((bool) get_post_meta($post->ID, $key, true), true, false) . '> ' . esc_html($label) . '</label></p>';
+        }
+        $mode = get_post_meta($post->ID, '_dzen_chat_triggers', true) ?: 'inherit';
+        echo '<p><label>' . esc_html__('Триггеры страницы', 'dzen-chat') . '<br><select name="_dzen_chat_triggers">';
+        foreach (['inherit' => __('Наследовать', 'dzen-chat'), 'enabled' => __('Включить', 'dzen-chat'), 'disabled' => __('Выключить', 'dzen-chat')] as $value => $label) {
+            echo '<option value="' . esc_attr($value) . '"' . selected($mode, $value, false) . '>' . esc_html($label) . '</option>';
+        }
+        echo '</select></label></p><p><label>' . esc_html__('Виджет', 'dzen-chat') . '<br><select name="_dzen_chat_widget"><option value="">' . esc_html__('Как на всём сайте', 'dzen-chat') . '</option>';
+        foreach (get_option('dzen_chat_widgets', []) as $id => $widget) {
+            echo '<option value="' . esc_attr($id) . '"' . selected(get_post_meta($post->ID, '_dzen_chat_widget', true), $id, false) . '>' . esc_html($widget['name']) . '</option>';
+        }
+        echo '</select></label></p><p class="description">' . esc_html__('Изменения индекса и триггеров применяются после обработки сервисом.', 'dzen-chat') . '</p>';
+    }
+
+    public function saveMeta(int $id, \WP_Post $post): void
+    {
+        if (!in_array($post->post_type, ['page', 'post'], true) || wp_is_post_revision($id)
+            || wp_is_post_autosave($id) || !current_user_can('manage_options') || !current_user_can('edit_post', $id)
+            || !isset($_POST['dzen_chat_post_nonce']) || !is_string($_POST['dzen_chat_post_nonce'])
+            || !wp_verify_nonce(wp_unslash($_POST['dzen_chat_post_nonce']), 'dzen_chat_post_' . $id)) {
+            return;
+        }
+        foreach (['_dzen_chat_widget_disabled', '_dzen_chat_exclude'] as $key) {
+            update_post_meta($id, $key, isset($_POST[$key]) && $_POST[$key] === '1' ? '1' : '');
+        }
+        $policy = isset($_POST['_dzen_chat_triggers']) && is_string($_POST['_dzen_chat_triggers']) ? wp_unslash($_POST['_dzen_chat_triggers']) : '';
+        if (in_array($policy, ['inherit', 'enabled', 'disabled'], true)) {
+            update_post_meta($id, '_dzen_chat_triggers', $policy);
+        }
+        $widget = isset($_POST['_dzen_chat_widget']) && is_string($_POST['_dzen_chat_widget']) ? wp_unslash($_POST['_dzen_chat_widget']) : '';
+        if ($widget === '' || isset(get_option('dzen_chat_widgets', [])[$widget])) {
+            update_post_meta($id, '_dzen_chat_widget', $widget);
+        }
+    }
+}
