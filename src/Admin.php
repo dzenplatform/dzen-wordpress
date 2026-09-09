@@ -390,6 +390,17 @@ final class Admin
     private function widgets(): void
     {
         echo '<h2>' . esc_html__('Виджеты', 'dzen-chat') . '</h2>';
+        $status = $this->api->status();
+        if (is_wp_error($status)) {
+            $this->error($status);
+            echo '<p>' . esc_html__('Показ виджета приостановлен до подтверждения подключения.', 'dzen-chat') . '</p>';
+        } elseif (($status['allowed_operations']['widget_answers'] ?? false) !== true
+            || ($status['integration']['status'] ?? '') !== 'active') {
+            echo '<div class="notice notice-warning"><p>' . esc_html__('Показ виджета приостановлен: проверьте состояние проекта и оплату в Dzen Chat.', 'dzen-chat') . '</p></div>';
+        }
+        if (!get_option('dzen_chat_widget')) {
+            echo '<p>' . esc_html__('Виджет для сайта не выбран. Включите нужный виджет и нажмите «Разместить на сайте».', 'dzen-chat') . '</p>';
+        }
         $result = $this->api->request('GET', '/widgets', ['limit' => 50]);
         if (!$this->listing($result)) {
             return;
@@ -400,9 +411,9 @@ final class Admin
                 $cached[(string) $widget['id']] = ['id' => (string) $widget['id'], 'code' => $widget['code'],
                     'name' => sanitize_text_field($widget['name'] ?? ''), 'is_enabled' => ($widget['is_enabled'] ?? false) === true];
             }
-            echo '<section class="dzen-message"><h3>' . esc_html($widget['name'] ?? $widget['id']) . '</h3><p>' . esc_html(($widget['is_enabled'] ?? false) ? __('Включён', 'dzen-chat') : __('Выключен', 'dzen-chat')) . '</p>';
+            echo '<section class="dzen-message"><h3>' . esc_html($widget['name'] ?? $widget['id']) . '</h3><p>' . esc_html(($widget['is_enabled'] ?? false) ? __('Включён в Dzen Chat', 'dzen-chat') : __('Выключен в Dzen Chat — не показывается на сайте', 'dzen-chat')) . '</p>';
             $this->form('dzen_chat_action', 'dzen_chat_action', ['operation' => 'widget_toggle', 'id' => $widget['id'],
-                'enabled' => !empty($widget['is_enabled']) ? '0' : '1', 'version' => $widget['version'] ?? 0], !empty($widget['is_enabled']) ? __('Выключить', 'dzen-chat') : __('Включить', 'dzen-chat'));
+                'enabled' => !empty($widget['is_enabled']) ? '0' : '1', 'version' => $widget['version'] ?? 0], !empty($widget['is_enabled']) ? __('Выключить в Dzen Chat', 'dzen-chat') : __('Включить в Dzen Chat', 'dzen-chat'));
             $this->form('dzen_chat_action', 'dzen_chat_action', ['operation' => 'widget_select', 'id' => $widget['id']],
                 get_option('dzen_chat_widget') === (string) $widget['id'] ? __('Выбран для сайта', 'dzen-chat') : __('Разместить на сайте', 'dzen-chat'));
             echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
@@ -411,6 +422,7 @@ final class Admin
             echo '<p><label>' . esc_html__('Название', 'dzen-chat') . ' <input name="name" required maxlength="128" value="' . esc_attr($widget['name'] ?? '') . '"></label></p><p><label>' . esc_html__('Приветствие', 'dzen-chat') . '<br><textarea name="welcome" rows="3" class="large-text" maxlength="2000">' . esc_textarea(implode("\n", $widget['welcome_messages'] ?? [])) . '</textarea></label></p><button class="button">' . esc_html__('Сохранить настройки', 'dzen-chat') . '</button></form></section>';
         }
         update_option('dzen_chat_widgets', $cached, false);
+        echo '<p><a class="button" href="' . esc_url(home_url('/')) . '" target="_blank" rel="noopener noreferrer">' . esc_html__('Открыть сайт и проверить виджет', 'dzen-chat') . '</a></p>';
         $this->form('dzen_chat_action', 'dzen_chat_action', ['operation' => 'widget_select', 'id' => ''], __('Не вставлять виджет на сайте', 'dzen-chat'));
         echo '<h3>' . esc_html__('Создать виджет', 'dzen-chat') . '</h3><form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
         wp_nonce_field('dzen_chat_action');
@@ -488,10 +500,22 @@ final class Admin
                 update_option('dzen_chat_widget', $id, false);
                 break;
             case 'widget_toggle':
+                $enabled = self::input('enabled', $_POST) === '1';
                 $result = $this->api->request('PATCH', '/widgets/' . Api::segment($id), [], [
-                    'is_enabled' => self::input('enabled', $_POST) === '1',
+                    'is_enabled' => $enabled,
                     'expected_version' => (int) self::input('version', $_POST),
                 ], wp_generate_uuid4());
+                if (!is_wp_error($result)) {
+                    if (($result['id'] ?? '') !== $id || ($result['is_enabled'] ?? null) !== $enabled) {
+                        $result = new \WP_Error('dzen_widget_state', __('Сервис не подтвердил состояние виджета. Обновите список.', 'dzen-chat'));
+                    } else {
+                        $widgets = get_option('dzen_chat_widgets', []);
+                        if (isset($widgets[$id])) {
+                            $widgets[$id]['is_enabled'] = $enabled;
+                            update_option('dzen_chat_widgets', $widgets, false);
+                        }
+                    }
+                }
                 break;
             case 'widget_edit':
             case 'widget_create':

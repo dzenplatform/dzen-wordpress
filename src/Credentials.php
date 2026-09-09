@@ -83,6 +83,7 @@ final class Credentials
         }
         delete_option('dzen_chat_verified');
         delete_transient('dzen_chat_status');
+        delete_transient('dzen_chat_status_retry');
     }
 
     public function get(): array
@@ -104,6 +105,7 @@ final class Credentials
         delete_option(self::OPTION);
         delete_option('dzen_chat_verified');
         delete_transient('dzen_chat_status');
+        delete_transient('dzen_chat_status_retry');
         delete_option('dzen_chat_widgets');
         delete_option('dzen_chat_widget');
     }

@@ -20,6 +20,7 @@ final class Plugin
             }
         });
         add_action('wp_enqueue_scripts', [$this, 'widget']);
+        add_action('wp_footer', [$this, 'widgetContainer'], 5);
         add_action('add_meta_boxes', [$this, 'metaBoxes']);
         add_action('save_post', [$this, 'saveMeta'], 10, 2);
     }
@@ -47,6 +48,7 @@ final class Plugin
         wp_clear_scheduled_hook('dzen_chat_worker');
         delete_option('dzen_chat_worker_lock');
         delete_transient('dzen_chat_status');
+        delete_transient('dzen_chat_status_retry');
     }
 
     public function widget(): void
@@ -60,11 +62,6 @@ final class Plugin
         } catch (\RuntimeException | \JsonException $error) {
             return;
         }
-        $status = get_transient('dzen_chat_status');
-        if (!$status || ($status['allowed_operations']['widget_answers'] ?? false) !== true
-            || ($status['integration']['status'] ?? '') !== 'active') {
-            return;
-        }
         $post = get_queried_object_id();
         if (is_singular() && get_post_meta($post, '_dzen_chat_widget_disabled', true)) {
             return;
@@ -76,8 +73,21 @@ final class Plugin
         if (!$widget || empty($widget['is_enabled']) || !preg_match('/^[A-Za-z0-9_-]+$/D', $widget['code'])) {
             return;
         }
+        $status = (new Api($credentials))->cachedStatus();
+        if (is_wp_error($status) || ($status['allowed_operations']['widget_answers'] ?? false) !== true
+            || ($status['integration']['status'] ?? '') !== 'active') {
+            return;
+        }
         wp_enqueue_script('dzen-chat-widget', Api::origin() . '/widget/' . rawurlencode($widget['code']), [], null,
             ['strategy' => 'defer', 'in_footer' => true]);
+    }
+
+    public function widgetContainer(): void
+    {
+        if (!is_admin() && wp_script_is('dzen-chat-widget', 'enqueued')) {
+            // The Dzen loader mounts its launcher and iframe inside this element.
+            echo '<div id="chat-chat"></div>';
+        }
     }
 
     public function metaBoxes(): void

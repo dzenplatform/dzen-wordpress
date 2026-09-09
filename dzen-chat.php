@@ -2,7 +2,7 @@
 /**
  * Plugin Name: Dzen Chat
  * Description: Connect your website to Dzen Chat and manage widgets, indexed content and conversation history.
- * Version: 0.1.0
+ * Version: 0.1.1
  * Requires at least: 6.8
  * Requires PHP: 8.2
  * Author: Dzen Platform
@@ -12,7 +12,7 @@
 
 defined('ABSPATH') || exit;
 
-define('DZEN_CHAT_VERSION', '0.1.0');
+define('DZEN_CHAT_VERSION', '0.1.1');
 define('DZEN_CHAT_FILE', __FILE__);
 foreach (['Credentials', 'Api', 'Connection', 'Sync', 'Admin', 'Plugin'] as $dzen_class) {
     require_once __DIR__ . '/src/' . $dzen_class . '.php';

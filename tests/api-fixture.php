@@ -5,6 +5,53 @@ if (wp_get_environment_type() !== 'local') {
     return;
 }
 
+function dzen_fixture_widgets(): array
+{
+    return get_option('dzen_fixture_widgets', ['widget-one' => ['id' => 'widget-one',
+        'code' => 'fixture-widget', 'name' => 'Помощник сайта', 'version' => 1,
+        'is_enabled' => true, 'welcome_messages' => ['Чем помочь?']]]);
+}
+
+// Only this local MU plugin substitutes the public embed transport.
+add_filter('script_loader_src', static function ($src, $handle) {
+    if ($handle !== 'dzen-chat-widget') {
+        return $src;
+    }
+    foreach (dzen_fixture_widgets() as $widget) {
+        if ($src === 'https://chat.dzen.dev/widget/' . rawurlencode($widget['code'])) {
+            return add_query_arg('dzen_fixture_widget', $widget['code'], home_url('/'));
+        }
+    }
+    return $src;
+}, 10, 2);
+
+add_action('init', static function () {
+    if (!isset($_GET['dzen_fixture_widget']) || !is_string($_GET['dzen_fixture_widget'])) {
+        return;
+    }
+    nocache_headers();
+    header('Content-Type: application/javascript; charset=UTF-8');
+    header('X-Content-Type-Options: nosniff');
+    $code = wp_unslash($_GET['dzen_fixture_widget']);
+    foreach (dzen_fixture_widgets() as $widget) {
+        if ($widget['code'] === $code && $widget['is_enabled'] && get_option('dzen_fixture_scenario', 'normal') === 'normal') {
+            $config = wp_json_encode(['name' => $widget['name'], 'welcome' => $widget['welcome_messages']],
+                JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT);
+            echo str_replace('/* DZEN_FIXTURE_CONFIG */', $config,
+                file_get_contents(WP_PLUGIN_DIR . '/dzen-chat/tests/widget-preview.js'));
+            exit;
+        }
+    }
+    echo '/* Local fixture widget is unavailable. */';
+    exit;
+});
+
+add_action('admin_notices', static function () {
+    if (isset($_GET['page']) && is_string($_GET['page']) && str_starts_with($_GET['page'], 'dzen-chat')) {
+        echo '<div class="notice notice-warning"><p>Локальный тестовый стенд: API и виджет демонстрационные. Реальный Dzen Chat не подключён; запросы не отправляются в сервис.</p></div>';
+    }
+});
+
 add_filter('pre_http_request', static function ($pre, $args, $url) {
     if (!str_starts_with($url, 'https://chat.dzen.dev/api/v1/')) {
         return $pre;
@@ -52,10 +99,35 @@ add_filter('pre_http_request', static function ($pre, $args, $url) {
             'allowed_operations' => ['widget_answers' => $scenario !== 'blocked', 'documents_upsert' => $scenario !== 'blocked', 'documents_delete' => true]]);
     }
     if ($path === '/api/v1/widgets') {
-        return $reply($method === 'GET' ? ['items' => [['id' => 'widget-one', 'code' => 'fixture-widget', 'name' => 'Помощник сайта', 'version' => 1, 'is_enabled' => true, 'welcome_messages' => ['Чем помочь?']]], 'next_cursor' => null] : ['id' => 'widget-new']);
+        $widgets = dzen_fixture_widgets();
+        if ($method === 'GET') {
+            return $reply(['items' => array_values($widgets), 'next_cursor' => null]);
+        }
+        $id = 'widget-' . wp_generate_uuid4();
+        $widgets[$id] = ['id' => $id, 'code' => 'fixture-' . wp_generate_uuid4(),
+            'name' => $body['name'], 'version' => 1, 'is_enabled' => false, 'welcome_messages' => []];
+        update_option('dzen_fixture_widgets', $widgets, false);
+        return $reply($widgets[$id], 201);
     }
     if (str_starts_with($path, '/api/v1/widgets/')) {
-        return $reply(['id' => 'widget-one'] + $body);
+        $widgets = dzen_fixture_widgets();
+        $id = rawurldecode(substr($path, strlen('/api/v1/widgets/')));
+        if (!isset($widgets[$id])) {
+            return $reply(['error' => ['code' => 'not_found']], 404);
+        }
+        if ($method === 'PATCH') {
+            if (($body['expected_version'] ?? null) !== $widgets[$id]['version']) {
+                return $reply(['error' => ['code' => 'widget_conflict']], 409);
+            }
+            foreach (['is_enabled', 'name', 'welcome_messages'] as $field) {
+                if (array_key_exists($field, $body)) {
+                    $widgets[$id][$field] = $body[$field];
+                }
+            }
+            ++$widgets[$id]['version'];
+            update_option('dzen_fixture_widgets', $widgets, false);
+        }
+        return $reply($widgets[$id]);
     }
     if ($path === '/api/v1/sources') {
         return $reply(['items' => [['id' => 'source-one', 'title' => 'Сайт WordPress', 'status' => 'ready', 'document_count' => 12, 'last_indexed_at' => '2026-09-09T12:00:00Z'],

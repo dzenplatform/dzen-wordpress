@@ -28,7 +28,7 @@ final class Api
 
     /** All paths are constructed by the plugin, never taken from an API response. */
     public function request(string $method, string $path, array $query = [], ?array $data = null,
-        string $idempotency = '', bool $exchange = false): array|\WP_Error
+        string $idempotency = '', bool $exchange = false, int $timeout = 15): array|\WP_Error
     {
         if (str_starts_with($path, '/chats') && $method !== 'GET'
             && !($method === 'PATCH' && preg_match('~^/chats/[^/]+/visibility$~D', $path))) {
@@ -59,7 +59,7 @@ final class Api
             }
             $response = wp_safe_remote_request(self::origin() . $target, [
                 'method' => $method, 'headers' => $headers, 'body' => $body,
-                'timeout' => 15, 'redirection' => 0, 'sslverify' => true,
+                'timeout' => $timeout, 'redirection' => 0, 'sslverify' => true,
                 'limit_response_size' => 2097153, 'cookies' => [],
             ]);
         } catch (\RuntimeException | \JsonException $error) {
@@ -91,9 +91,24 @@ final class Api
         return $payload;
     }
 
-    public function status(): array|\WP_Error
+    /** Refresh a missing cache even on sites without a working cron runner. */
+    public function cachedStatus(): array|\WP_Error
     {
-        $result = $this->request('GET', '/integration');
+        $status = get_transient('dzen_chat_status');
+        if (is_array($status)) {
+            return $status;
+        }
+        if (get_transient('dzen_chat_status_retry')) {
+            return new \WP_Error('dzen_status_pending', __('Статус Dzen Chat временно недоступен. Проверка будет повторена.', 'dzen-chat'));
+        }
+        // Bound visitor latency and avoid one failed request for every page view.
+        set_transient('dzen_chat_status_retry', true, 60);
+        return $this->status(3);
+    }
+
+    public function status(int $timeout = 15): array|\WP_Error
+    {
+        $result = $this->request('GET', '/integration', timeout: $timeout);
         if (is_wp_error($result)) {
             delete_transient('dzen_chat_status');
             return $result;
@@ -118,6 +133,7 @@ final class Api
             'scopes' => array_values(array_filter($result['scopes'], 'is_string')), 'checked_at' => time(),
         ];
         set_transient('dzen_chat_status', $safe, 300);
+        delete_transient('dzen_chat_status_retry');
         update_option('dzen_chat_verified', true, false);
         return $safe;
     }

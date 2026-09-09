@@ -3,7 +3,7 @@ Contributors: dzenplatform
 Requires at least: 6.8
 Tested up to: 6.8.2
 Requires PHP: 8.2
-Stable tag: 0.1.0
+Stable tag: 0.1.1
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -48,6 +48,10 @@ plugin before uninstalling, or revoke its API client in Dzen Chat afterward.
 No. Products require a separate integration.
 
 == Changelog ==
+
+= 0.1.1 =
+Add the required widget mount container and refresh expired project status on
+public requests. Clarify widget placement and expose unavailable project status.
 
 = 0.1.0 =
 WordPress client for the proposed Dzen Chat Integration API v1.
