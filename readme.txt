@@ -3,7 +3,7 @@ Contributors: dzenplatform
 Requires at least: 6.8
 Tested up to: 6.8.2
 Requires PHP: 8.2
-Stable tag: 0.2.0
+Stable tag: 0.2.1
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -46,6 +46,12 @@ service. Removing keys in WordPress does not revoke the remote API client.
 No. Products require a separate integration.
 
 == Changelog ==
+
+= 0.2.1 =
+Add versioned GitHub release ZIPs with checksums and automated contract checks.
+Identify the external update source to avoid collisions with WordPress.org plugins.
+This release still provides authorization only; management APIs and automatic
+updates inside WordPress are not yet connected.
 
 = 0.2.0 =
 Use the implemented /auth/exchange/ endpoint and its actual credentials response.
