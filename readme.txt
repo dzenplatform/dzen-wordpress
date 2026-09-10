@@ -3,51 +3,53 @@ Contributors: dzenplatform
 Requires at least: 6.8
 Tested up to: 6.8.2
 Requires PHP: 8.2
-Stable tag: 0.1.1
+Stable tag: 0.2.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Connect WordPress to Dzen Chat. Manage widgets, page triggers, document sync and conversation history.
+Authorize your WordPress site in Dzen Chat using a one-time code and PKCE.
 
 == Description ==
 
 Dzen Chat is an external service at https://chat.dzen.dev. Connecting the plugin
-authorizes your WordPress site to use a selected project. Published pages and
-posts send their public URL and lifecycle events for indexing. Products, private
-content and drafts are excluded. Visitors interact with the Dzen Chat widget.
+opens its consent page to choose or create a project. WordPress exchanges the
+one-time code server-to-server and stores encrypted credentials and the site
+source identifier. Credentials are never exposed in page HTML or JavaScript.
 
-Chat history and billing records stay on the Dzen Chat server. Administrators can
-search conversations, view cited sources inside WordPress or at their original
-URL, and hide or restore conversations. Hiding never deletes messages.
+Widget management, indexing, conversation history and source status screens are
+planned for subsequent Dzen Chat API releases. This authorization-only release
+does not start content synchronization or validate project billing status.
 
 The plugin stores encrypted integration credentials in WordPress. It does not
-store conversation text or source excerpts. A supported Dzen Chat Integration API
-v1 is required; this release implements the contract in docs/contracts. Server
-availability must be verified separately before production use.
+store conversation text or source excerpts. The service must support /auth/add
+and /auth/exchange/. Registration has been tested with the local Dzen Chat server.
 
 == Installation ==
 
 1. Upload the ZIP through Plugins > Add New > Upload Plugin and activate it.
 2. Open Dzen Chat and connect your site. HTTPS and PHP sodium are required.
 3. Choose or create a project at chat.dzen.dev and return to WordPress.
-4. Select the widget to display. Remove any manually installed duplicate script.
-5. Check the content queue and project status. On low-traffic websites, configure
-   the hosting scheduler to invoke WordPress cron.
+4. WordPress confirms authorization after exchanging the returned code.
+5. Use Dzen Chat to manage the project while additional WordPress APIs are pending.
 
 == Frequently Asked Questions ==
 
 = Does hiding remove billing data? =
-No. It changes the project-wide visibility of a chat. Restore it from Hidden.
+No. Planned conversation APIs will change visibility without deleting billing data.
 
 = What happens when I deactivate or uninstall? =
 Deactivation stops widget insertion and scheduled jobs. Uninstall removes local
 plugin settings, credentials and queue only. Revoke the integration through the
-plugin before uninstalling, or revoke its API client in Dzen Chat afterward.
+service. Removing keys in WordPress does not revoke the remote API client.
 
 = Are products synchronized? =
 No. Products require a separate integration.
 
 == Changelog ==
+
+= 0.2.0 =
+Use the implemented /auth/exchange/ endpoint and its actual credentials response.
+Keep registration independent of the future management API and indexing queue.
 
 = 0.1.1 =
 Add the required widget mount container and refresh expired project status on

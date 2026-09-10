@@ -106,6 +106,8 @@ final class Admin
         echo '<div class="wrap dzen-chat"><h1>Dzen Chat</h1>';
         $notices = [
             'connected' => __('Сайт подключён. Начальная сверка поставлена в очередь.', 'dzen-chat'),
+            'registered' => __('Авторизация завершена. Ключи подключения сохранены в WordPress.', 'dzen-chat'),
+            'credentials_removed' => __('Ключи удалены из WordPress. Для отзыва API-клиента откройте Dzen Chat.', 'dzen-chat'),
             'disconnected' => __('Интеграция отключена.', 'dzen-chat'),
             'cancelled' => __('Подключение отменено.', 'dzen-chat'),
             'authorization_failed' => __('Подключение не завершено. Начните его заново из этой страницы.', 'dzen-chat'),
@@ -126,6 +128,18 @@ final class Admin
             return;
         }
         $page = self::input('page', $_GET);
+        try {
+            if ($this->credentials->registrationOnly()) {
+                $this->registration();
+                echo '</div>';
+                return;
+            }
+        } catch (\RuntimeException | \JsonException $error) {
+            $this->error(new \WP_Error('connection', __('Адрес сайта, сервис или ключи безопасности изменились. Подключите сайт заново.', 'dzen-chat')));
+            $this->form('dzen_chat_connect', 'dzen_chat_connect', [], __('Подключить заново', 'dzen-chat'));
+            echo '</div>';
+            return;
+        }
         match ($page) {
             'dzen-chat-history' => $this->history(),
             'dzen-chat-widgets' => $this->widgets(),
@@ -134,6 +148,17 @@ final class Admin
             default => $this->overview(),
         };
         echo '</div>';
+    }
+
+    private function registration(): void
+    {
+        echo '<h2>' . esc_html__('Сайт авторизован в Dzen Chat', 'dzen-chat') . '</h2>';
+        echo '<p>' . esc_html__('Сайт:', 'dzen-chat') . ' ' . esc_html(Credentials::siteUrl()) . '</p>';
+        echo '<p>' . esc_html__('Управление виджетами, индексом, диалогами и источниками будет подключено по мере реализации соответствующих API в Dzen Chat.', 'dzen-chat') . '</p>';
+        echo '<p><a class="button" href="' . esc_url(Api::origin() . '/') . '" target="_blank" rel="noopener noreferrer">' . esc_html__('Открыть Dzen Chat', 'dzen-chat') . '</a></p>';
+        $this->form('dzen_chat_connect', 'dzen_chat_connect', [], __('Подключить заново', 'dzen-chat'));
+        $this->form('dzen_chat_disconnect', 'dzen_chat_disconnect', [], __('Удалить ключи из WordPress', 'dzen-chat'));
+        echo '<p class="description">' . esc_html__('Удаление ключей действует только в WordPress. Отозвать доступ клиента можно в Dzen Chat.', 'dzen-chat') . '</p>';
     }
 
     private function overview(): void

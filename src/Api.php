@@ -26,15 +26,39 @@ final class Api
             $client, $timestamp, $nonce, $key, hash('sha256', $body)]), $secret);
     }
 
+    /** The implemented registration endpoint is independent of the future /api/v1 API. */
+    public function exchange(string $code, string $verifier, string $redirectUri): array|\WP_Error
+    {
+        $response = wp_safe_remote_post(self::origin() . '/auth/exchange/', [
+            'headers' => ['Accept' => 'application/json', 'Content-Type' => 'application/json'],
+            'body' => wp_json_encode(['code' => $code, 'code_verifier' => $verifier, 'redirect_uri' => $redirectUri],
+                JSON_UNESCAPED_SLASHES),
+            'timeout' => 15, 'redirection' => 0, 'sslverify' => true,
+            'limit_response_size' => 16385, 'cookies' => [],
+        ]);
+        if (is_wp_error($response)) {
+            return new \WP_Error('dzen_exchange_network', __('Не удалось обменять код. Начните подключение заново.', 'dzen-chat'));
+        }
+        $raw = wp_remote_retrieve_body($response);
+        $payload = json_decode($raw, true);
+        if (wp_remote_retrieve_response_code($response) !== 200 || strlen($raw) > 16384 || !is_array($payload)) {
+            return new \WP_Error('dzen_exchange_failed', __('Dzen Chat не подтвердил обмен кода. Начните подключение заново.', 'dzen-chat'));
+        }
+        return $payload;
+    }
+
     /** All paths are constructed by the plugin, never taken from an API response. */
     public function request(string $method, string $path, array $query = [], ?array $data = null,
-        string $idempotency = '', bool $exchange = false, int $timeout = 15): array|\WP_Error
+        string $idempotency = '', int $timeout = 15): array|\WP_Error
     {
         if (str_starts_with($path, '/chats') && $method !== 'GET'
             && !($method === 'PATCH' && preg_match('~^/chats/[^/]+/visibility$~D', $path))) {
             return new \WP_Error('dzen_history_immutable', __('Историю чатов нельзя удалять или изменять. Доступно только скрытие и восстановление.', 'dzen-chat'));
         }
         try {
+            if ($this->credentials->registrationOnly()) {
+                return new \WP_Error('dzen_api_pending', __('Сайт авторизован. Управление виджетами, индексом и диалогами будет подключено после реализации соответствующих API в Dzen Chat.', 'dzen-chat'));
+            }
             if (!preg_match('~^/[a-zA-Z0-9/_%.-]+$~D', $path) || str_contains($path, '..')
                 || !in_array($method, ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'], true)) {
                 throw new \RuntimeException('invalid_api_request');
@@ -43,19 +67,17 @@ final class Api
             $target = '/api/v1' . $path . ($query ? '?' . http_build_query($query, '', '&', PHP_QUERY_RFC3986) : '');
             $body = $data === null ? '' : wp_json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
             $headers = ['Accept' => 'application/json', 'Content-Type' => 'application/json'];
-            if (!$exchange) {
-                $credentials = $this->credentials->get();
-                $timestamp = (string) time();
-                $nonce = bin2hex(random_bytes(24));
-                $headers += [
-                    'X-Dzen-Auth-Version' => '1', 'X-Dzen-Client-Id' => $credentials['client_id'],
-                    'X-Dzen-Timestamp' => $timestamp, 'X-Dzen-Nonce' => $nonce,
-                    'X-Dzen-Signature' => self::signature($credentials['client_secret'], $method, $target,
-                        $credentials['client_id'], $timestamp, $nonce, $idempotency, $body),
-                ];
-                if ($idempotency !== '') {
-                    $headers['Idempotency-Key'] = $idempotency;
-                }
+            $credentials = $this->credentials->get();
+            $timestamp = (string) time();
+            $nonce = bin2hex(random_bytes(24));
+            $headers += [
+                'X-Dzen-Auth-Version' => '1', 'X-Dzen-Client-Id' => $credentials['client_id'],
+                'X-Dzen-Timestamp' => $timestamp, 'X-Dzen-Nonce' => $nonce,
+                'X-Dzen-Signature' => self::signature($credentials['client_secret'], $method, $target,
+                    $credentials['client_id'], $timestamp, $nonce, $idempotency, $body),
+            ];
+            if ($idempotency !== '') {
+                $headers['Idempotency-Key'] = $idempotency;
             }
             $response = wp_safe_remote_request(self::origin() . $target, [
                 'method' => $method, 'headers' => $headers, 'body' => $body,

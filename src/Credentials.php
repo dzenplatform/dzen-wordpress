@@ -61,29 +61,40 @@ final class Credentials
         return $data;
     }
 
-    public function save(array $data): void
+    /** Save the actual exchange response, binding it to the initiating WP site and service. */
+    public function saveRegistration(array $data, string $siteUrl, string $apiOrigin): void
     {
-        foreach (['client_id', 'client_secret', 'integration_id', 'site_url'] as $key) {
-            if (!isset($data[$key]) || !is_string($data[$key]) || $data[$key] === '') {
+        foreach (['client_id', 'client_secret', 'site_source_id'] as $field) {
+            if (!isset($data[$field]) || !is_string($data[$field])
+                || !preg_match('/^[A-Za-z0-9_-]+$/D', $data[$field]) || strlen($data[$field]) > 512) {
                 throw new \RuntimeException('invalid_exchange_response');
             }
         }
-        if ($data['site_url'] !== self::siteUrl() || strlen($data['client_secret']) < 24
-            || !isset($data['project']['id'])) {
+        if (strlen($data['client_id']) < 16 || strlen($data['client_secret']) < 24
+            || $siteUrl !== self::siteUrl() || $apiOrigin !== Api::origin()) {
             throw new \RuntimeException('invalid_exchange_response');
         }
         $value = $this->encrypt([
-            'client_id' => $data['client_id'], 'client_secret' => $data['client_secret'],
-            'integration_id' => $data['integration_id'], 'project_id' => (string) $data['project']['id'],
-            'site_url' => $data['site_url'],
+            'auth_type' => 'external_registration', 'client_id' => $data['client_id'],
+            'client_secret' => $data['client_secret'], 'site_source_id' => $data['site_source_id'],
+            'site_url' => $siteUrl, 'api_origin' => $apiOrigin, 'connected_at' => time(),
         ]);
         update_option(self::OPTION, $value, false);
         if (get_option(self::OPTION) !== $value) {
             throw new \RuntimeException('credentials_not_saved');
         }
+        // Registration does not grant capabilities from the proposed management API.
         delete_option('dzen_chat_verified');
         delete_transient('dzen_chat_status');
         delete_transient('dzen_chat_status_retry');
+        delete_option('dzen_chat_reconcile_cursor');
+        delete_option('dzen_chat_widgets');
+        delete_option('dzen_chat_widget');
+    }
+
+    public function registrationOnly(): bool
+    {
+        return $this->exists() && ($this->get()['auth_type'] ?? '') === 'external_registration';
     }
 
     public function get(): array
@@ -91,6 +102,9 @@ final class Credentials
         $data = $this->decrypt((string) get_option(self::OPTION, ''));
         if (($data['site_url'] ?? '') !== self::siteUrl()) {
             throw new \RuntimeException('site_changed');
+        }
+        if (isset($data['api_origin']) && $data['api_origin'] !== Api::origin()) {
+            throw new \RuntimeException('service_changed');
         }
         return $data;
     }

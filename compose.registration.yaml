@@ -1,0 +1,20 @@
+# Real local Dzen registration. Replaces the synthetic MU API from compose.yaml.
+services:
+  wordpress:
+    environment: &registration_environment
+      WORDPRESS_CONFIG_EXTRA: |
+        define('WP_ENVIRONMENT_TYPE', 'local');
+        define('DISABLE_WP_CRON', true);
+        define('WP_HOME', 'https://local.dzenchat.com:8869');
+        define('WP_SITEURL', 'https://local.dzenchat.com:8869');
+        define('DZEN_CHAT_API_URL', 'https://local.dzenchat.com');
+        if (($$_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '') === 'https') { $$_SERVER['HTTPS'] = 'on'; }
+    extra_hosts: &registration_hosts
+      - 'local.dzenchat.com:host-gateway'
+    volumes: &registration_volumes
+      - ./tests/registration-local.php:/var/www/html/wp-content/mu-plugins/dzen-chat-test-api.php:ro
+      - ./output/caddy-registration/dzen-local-ca.crt:/var/www/dzen-local-ca.crt:ro
+  cli:
+    environment: *registration_environment
+    extra_hosts: *registration_hosts
+    volumes: *registration_volumes

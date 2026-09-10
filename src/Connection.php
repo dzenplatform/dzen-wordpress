@@ -36,22 +36,28 @@ final class Connection
     public function start(): void
     {
         self::authorize('dzen_chat_connect');
+        nocache_headers();
+        header('Referrer-Policy: no-referrer');
         try {
             $this->credentials->key();
             $site = wp_parse_url(Credentials::siteUrl());
             $callback = wp_parse_url(self::callbackUrl());
+            $sitePath = $site['path'] ?? '/';
+            $callbackPath = $callback['path'] ?? '/';
             if (($site['scheme'] ?? '') !== 'https' || $site['host'] !== $callback['host']
-                || ($site['port'] ?? 443) !== ($callback['port'] ?? 443)) {
+                || ($site['port'] ?? 443) !== ($callback['port'] ?? 443)
+                || isset($site['query']) || isset($site['fragment'])
+                || !str_starts_with($callbackPath, $sitePath)) {
                 throw new \RuntimeException('https_site_required');
             }
             $state = bin2hex(random_bytes(32));
             $verifier = rtrim(strtr(base64_encode(random_bytes(48)), '+/', '-_'), '=');
             $challenge = rtrim(strtr(base64_encode(hash('sha256', $verifier, true)), '+/', '-_'), '=');
             $attempt = ['state_hash' => hash('sha256', $state), 'verifier' => $verifier,
-                'session' => hash('sha256', wp_get_session_token()), 'expires' => time() + 300,
-                'site_url' => Credentials::siteUrl(), 'redirect_uri' => self::callbackUrl()];
-            set_transient('dzen_chat_auth_' . get_current_user_id(), $this->credentials->encrypt($attempt), 300);
-            $url = add_query_arg(['host' => $site['host'], 'type' => 'wordpress',
+                'session' => hash('sha256', wp_get_session_token()), 'expires' => time() + 1500,
+                'site_url' => Credentials::siteUrl(), 'redirect_uri' => self::callbackUrl(), 'api_origin' => Api::origin()];
+            set_transient('dzen_chat_auth_' . get_current_user_id(), $this->credentials->encrypt($attempt), 1500);
+            $url = add_query_arg(['type' => 'wordpress',
                 'site_url' => Credentials::siteUrl(), 'redirect_uri' => self::callbackUrl(),
                 'state' => $state, 'code_challenge' => $challenge, 'code_challenge_method' => 'S256'], Api::origin() . '/auth/add');
             wp_redirect($url, 303, 'Dzen Chat');
@@ -74,7 +80,8 @@ final class Connection
             $state = isset($_GET['state']) && is_string($_GET['state']) ? wp_unslash($_GET['state']) : '';
             if (!hash_equals($attempt['state_hash'], hash('sha256', $state)) || $attempt['expires'] < time()
                 || !hash_equals($attempt['session'], hash('sha256', wp_get_session_token()))
-                || $attempt['site_url'] !== Credentials::siteUrl() || $attempt['redirect_uri'] !== self::callbackUrl()) {
+                || $attempt['site_url'] !== Credentials::siteUrl() || $attempt['redirect_uri'] !== self::callbackUrl()
+                || ($attempt['api_origin'] ?? '') !== Api::origin()) {
                 throw new \RuntimeException('invalid_state');
             }
             // Claim the callback once even when two requests read the same transient.
@@ -89,23 +96,15 @@ final class Connection
                 exit;
             }
             $code = isset($_GET['code']) && is_string($_GET['code']) ? wp_unslash($_GET['code']) : '';
-            if (!preg_match('/^[A-Za-z0-9_-]{16,512}$/D', $code)) {
+            if (!preg_match('/^[A-Za-z0-9_-]{43}$/D', $code)) {
                 throw new \RuntimeException('invalid_code');
             }
-            $result = $this->api->request('POST', '/integrations/exchange', [], [
-                'code' => $code, 'code_verifier' => $attempt['verifier'], 'redirect_uri' => $attempt['redirect_uri'],
-            ], '', true);
+            $result = $this->api->exchange($code, $attempt['verifier'], $attempt['redirect_uri']);
             if (is_wp_error($result)) {
                 throw new \RuntimeException('exchange_failed');
             }
-            $this->credentials->save($result);
-            $verified = $this->api->status();
-            if (is_wp_error($verified)) {
-                wp_safe_redirect(Admin::url('dzen-chat', ['notice' => 'unverified']), 303);
-                exit;
-            }
-            update_option('dzen_chat_reconcile_cursor', 0, false);
-            wp_safe_redirect(Admin::url('dzen-chat', ['notice' => 'connected']), 303);
+            $this->credentials->saveRegistration($result, $attempt['site_url'], $attempt['api_origin']);
+            wp_safe_redirect(Admin::url('dzen-chat', ['notice' => 'registered']), 303);
             exit;
         } catch (\RuntimeException | \JsonException $error) {
             // Redirect to remove the one-time code from the visible URL and referrer.
@@ -117,6 +116,11 @@ final class Connection
     public function disconnect(): void
     {
         self::authorize('dzen_chat_disconnect');
+        if ($this->credentials->registrationOnly()) {
+            $this->credentials->forget();
+            wp_safe_redirect(Admin::url('dzen-chat', ['notice' => 'credentials_removed']), 303);
+            exit;
+        }
         $result = $this->api->request('DELETE', '/integration', [], null, wp_generate_uuid4());
         if (is_wp_error($result)) {
             wp_die(esc_html($result->get_error_message()), '', ['response' => 502, 'back_link' => true]);

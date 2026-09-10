@@ -1,0 +1,12 @@
+{
+	admin off
+	persist_config off
+	auto_https off
+	storage file_system ./output/caddy-registration
+}
+
+https://local.dzenchat.com:8869 {
+	bind 127.0.0.1
+	tls /opt/homebrew/var/lib/caddy/certificates/local/local.dzenchat.com/local.dzenchat.com.crt /opt/homebrew/var/lib/caddy/certificates/local/local.dzenchat.com/local.dzenchat.com.key
+	reverse_proxy 127.0.0.1:8868
+}

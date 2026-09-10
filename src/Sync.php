@@ -90,6 +90,9 @@ final class Sync
         $fingerprint = hash('sha256', wp_json_encode([$url, $public ? [$post->post_modified_gmt,
             $post->post_title, $post->post_content, $post->post_excerpt] : '', $policy]));
         try {
+            if ($this->credentials->registrationOnly()) {
+                return;
+            }
             $integration = $this->credentials->get()['integration_id'];
         } catch (\RuntimeException | \JsonException $error) {
             update_option('dzen_chat_queue_error', true, false);

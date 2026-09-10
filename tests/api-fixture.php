@@ -65,14 +65,6 @@ add_filter('pre_http_request', static function ($pre, $args, $url) {
     $body = json_decode($args['body'] ?: '{}', true);
     $method = $args['method'];
     $headers = $args['headers'];
-    if ($path === '/api/v1/integrations/exchange') {
-        if (($body['code'] ?? '') !== 'fixture-one-time-code-123456789') {
-            return $reply(['error' => ['code' => 'invalid_grant']], 400);
-        }
-        return $reply(['client_id' => 'chatid-fixture', 'client_secret' => 'fixture-secret-for-tests-only-123456789',
-            'integration_id' => 'integration-fixture', 'site_url' => trailingslashit(home_url()),
-            'project' => ['id' => 'project-fixture', 'title' => 'WordPress fixture']]);
-    }
     $canonical = implode("\n", ['DZEN-HMAC-V1', $method, $path . ($queryString ? '?' . $queryString : ''),
         $headers['X-Dzen-Client-Id'] ?? '', $headers['X-Dzen-Timestamp'] ?? '', $headers['X-Dzen-Nonce'] ?? '',
         $headers['Idempotency-Key'] ?? '', hash('sha256', $args['body'])]);
