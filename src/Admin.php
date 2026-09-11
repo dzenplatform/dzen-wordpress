@@ -457,8 +457,6 @@ final class Admin
         }
         $selected = (string) get_option('dzen_chat_widget', '');
         echo '<p>' . esc_html__('Choose the widget to display across this site. Edit its appearance, messages and other settings in Dzen Chat.', 'dzen-chat') . '</p>';
-        echo '<div class="dzen-widget-toolbar"><button type="button" id="dzen-add-widget" class="button button-primary" aria-controls="dzen-create-widget" aria-expanded="false">' . esc_html__('Add widget', 'dzen-chat') . '</button> ';
-        echo '<a class="button" href="' . esc_url(self::url('dzen-chat-widgets')) . '">' . esc_html__('Refresh list', 'dzen-chat') . '</a></div>';
         echo '<section id="dzen-create-widget" class="dzen-message" aria-labelledby="dzen-create-widget-title" hidden><h3 id="dzen-create-widget-title">' . esc_html__('Create widget', 'dzen-chat') . '</h3><form method="post" class="dzen-widget-create" action="' . esc_url(admin_url('admin-post.php')) . '">';
         wp_nonce_field('dzen_chat_action');
         echo '<input type="hidden" name="action" value="dzen_chat_action"><input type="hidden" name="operation" value="widget_create"><label>' . esc_html__('Name', 'dzen-chat') . ' <input name="name" required maxlength="128" aria-describedby="dzen-create-widget-description"></label> <button type="submit" class="button button-primary">' . esc_html__('Create', 'dzen-chat') . '</button> ';
@@ -471,8 +469,10 @@ final class Admin
         wp_nonce_field('dzen_chat_action');
         echo '<input type="hidden" name="action" value="dzen_chat_action"><input type="hidden" name="operation" value="widget_select">';
         echo '<table class="widefat dzen-widgets"><caption class="screen-reader-text">' . esc_html__('Available project widgets', 'dzen-chat') . '</caption><thead><tr>';
-        echo '<th scope="col" class="dzen-widget-choice">' . esc_html__('On site', 'dzen-chat') . '</th><th scope="col">' . esc_html__('Widget', 'dzen-chat') . '</th><th scope="col" class="dzen-widget-status">' . esc_html__('Status', 'dzen-chat') . '</th>';
-        echo '<th scope="col" class="dzen-widget-settings"><span class="screen-reader-text">' . esc_html__('Edit in Dzen Chat ↗', 'dzen-chat') . '</span></th></tr></thead><tbody>';
+        echo '<th scope="col" class="dzen-widget-choice">' . esc_html__('On site', 'dzen-chat') . '</th><th scope="col"><div class="dzen-widget-heading"><span>' . esc_html__('Widget', 'dzen-chat') . '</span>';
+        echo '<button type="button" id="dzen-add-widget" class="button" aria-controls="dzen-create-widget" aria-expanded="false">' . esc_html__('Add widget', 'dzen-chat') . '</button></div></th><th scope="col" class="dzen-widget-status">' . esc_html__('Status', 'dzen-chat') . '</th>';
+        echo '<th scope="col" class="dzen-widget-settings"><span class="screen-reader-text">' . esc_html__('Edit in Dzen Chat ↗', 'dzen-chat') . '</span>';
+        echo '<a class="button" href="' . esc_url(self::url('dzen-chat-widgets')) . '" title="' . esc_attr__('Refresh list', 'dzen-chat') . '" aria-label="' . esc_attr__('Refresh list', 'dzen-chat') . '"><span class="dashicons dashicons-update" aria-hidden="true"></span></a></th></tr></thead><tbody>';
         if (!$widgets) {
             echo '<tr><td colspan="4">' . esc_html__('No widgets yet. Use Add widget to create your first one.', 'dzen-chat') . '</td></tr>';
         }

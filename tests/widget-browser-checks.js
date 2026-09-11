@@ -36,7 +36,7 @@ async (page) => {
         const editor = new URL(await settings.getAttribute('href'));
         check(editor.origin === 'https://chat.dzen.dev' && editor.pathname.endsWith('/widgets/' + id)
             && await settings.getAttribute('target') === '_blank', 'editor link identifies this widget in Dzen Chat');
-        const add = page.getByRole('button', { name: 'Add widget', exact: true });
+        const add = table.getByRole('button', { name: 'Add widget', exact: true });
         const creation = page.locator('#dzen-create-widget');
         check(await add.isVisible() && !await creation.isVisible(),
             'widget creation starts collapsed beside the list');

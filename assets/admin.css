@@ -53,6 +53,7 @@
 .dzen-widgets .dzen-widget-selected { background: #f0f6fc; }
 .dzen-widgets .dzen-widget-current { color: #135e96; font-weight: 600; margin: 6px 0; }
 .dzen-widgets .dzen-widget-settings { width: 44px; text-align: center; }
+.dzen-widget-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; }
 .dzen-widget-create { display: flex; align-items: end; gap: 12px; flex-wrap: wrap; }
 .dzen-widget-create label { display: grid; gap: 6px; }
 .dzen-widget-create input { max-width: 100%; }
