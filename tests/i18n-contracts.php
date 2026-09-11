@@ -77,6 +77,8 @@ try {
         $html = $capture(static fn () => (new DzenChat\Plugin())->metaBox(get_post($post)));
         $check(str_contains($html, $index ? 'Не показывать виджет' : 'Hide widget'), 'page settings use ' . $locale);
         $check(str_contains($html, $index ? 'Статус индексации' : 'Indexing status'), 'editor indexing panel uses ' . $locale);
+        $check(str_contains($html, $index ? 'Триггеры страницы' : 'Page triggers')
+            && str_contains($html, $index ? 'Открыть страницу в Dzen Chat' : 'Open page in Dzen Chat'), 'editor trigger panel uses ' . $locale);
         $pageStatus = (new DzenChat\PageIndex($credentials, $api))->status(get_post($post));
         $check($pageStatus['label'] === ($index ? 'Нет публичного доступа' : 'Not public'), 'editor draft status uses ' . $locale);
         $error = DzenChat\Admin::filters(['date_from' => 'invalid']);

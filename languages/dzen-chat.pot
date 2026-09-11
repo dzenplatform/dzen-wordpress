@@ -2,14 +2,14 @@
 # This file is distributed under the GPL-2.0-or-later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Dzen Chat 0.9.0\n"
+"Project-Id-Version: Dzen Chat 0.10.0\n"
 "Report-Msgid-Bugs-To: https://github.com/dzenplatform/dzen-wordpress/issues\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-09-11T04:08:04+00:00\n"
+"POT-Creation-Date: 2026-09-11T04:21:44+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: dzen-chat\n"
@@ -67,13 +67,13 @@ msgid "The start date must be on or before the end date."
 msgstr ""
 
 #: src/Admin.php:80
-#: src/PageIndex.php:83
+#: src/PageIndex.php:88
 msgid "Waiting to be crawled"
 msgstr ""
 
 #: src/Admin.php:81
 #: src/Admin.php:245
-#: src/PageIndex.php:83
+#: src/PageIndex.php:88
 msgid "Processing"
 msgstr ""
 
@@ -501,7 +501,7 @@ msgid "Before enabling the widget, remove any manually added Dzen Chat script to
 msgstr ""
 
 #: src/Admin.php:410
-#: src/PageIndex.php:58
+#: src/PageIndex.php:61
 #: src/Plugin.php:115
 msgid "Reconnect the site in the Dzen Chat section."
 msgstr ""
@@ -581,6 +581,7 @@ msgstr ""
 
 #: src/Api.php:119
 #: src/Api.php:146
+#: src/Api.php:197
 msgid "Invalid public page URL."
 msgstr ""
 
@@ -604,7 +605,11 @@ msgstr ""
 msgid "The service returned invalid conversation details. Refresh the page."
 msgstr ""
 
-#: src/Api.php:198
+#: src/Api.php:200
+msgid "The service returned invalid page triggers. Refresh the status."
+msgstr ""
+
+#: src/Api.php:224
 msgid "The service returned invalid conversation messages. Refresh the page."
 msgstr ""
 
@@ -633,72 +638,113 @@ msgstr ""
 msgid "Status applies to the saved page. Unsaved changes are not indexed."
 msgstr ""
 
-#: src/PageIndex.php:36
+#: src/PageIndex.php:30
+#: src/PageIndex.php:31
+msgid "Loading page triggers…"
+msgstr ""
+
+#: src/PageIndex.php:30
+msgid "Could not load page triggers. Refresh the status."
+msgstr ""
+
+#: src/PageIndex.php:30
+msgid "Page triggers"
+msgstr ""
+
+#: src/PageIndex.php:32
+msgid "Open page in Dzen Chat ↗"
+msgstr ""
+
+#: src/PageIndex.php:39
 msgid "You cannot view this page status."
 msgstr ""
 
-#: src/PageIndex.php:40
+#: src/PageIndex.php:43
 msgid "The status request expired. Reload the editor."
 msgstr ""
 
-#: src/PageIndex.php:44
+#: src/PageIndex.php:47
 msgid "This content type is not supported."
 msgstr ""
 
-#: src/PageIndex.php:64
+#: src/PageIndex.php:67
 msgid "Saved changes are waiting to be sent to Dzen Chat."
 msgstr ""
 
-#: src/PageIndex.php:65
+#: src/PageIndex.php:68
 msgid "The last saved change was submitted. This does not confirm indexing is complete."
 msgstr ""
 
-#: src/PageIndex.php:66
+#: src/PageIndex.php:69
 msgid "Sending saved changes is waiting for service access."
 msgstr ""
 
-#: src/PageIndex.php:67
+#: src/PageIndex.php:70
 msgid "The last saved change could not be sent. Check the Dzen Chat overview."
 msgstr ""
 
-#: src/PageIndex.php:69
+#: src/PageIndex.php:72
 msgid "Not public"
 msgstr ""
 
-#: src/PageIndex.php:72
+#: src/PageIndex.php:73
+msgid "Page triggers are available for public pages and posts."
+msgstr ""
+
+#: src/PageIndex.php:76
 msgid "Only published pages and posts are sent for indexing."
 msgstr ""
 
-#: src/PageIndex.php:73
+#: src/PageIndex.php:77
 msgid "Password-protected content is not sent for indexing."
 msgstr ""
 
-#: src/PageIndex.php:74
+#: src/PageIndex.php:78
 msgid "This page is excluded from automatic indexing."
 msgstr ""
 
-#: src/PageIndex.php:75
+#: src/PageIndex.php:79
 msgid "Previously public URLs are rechecked; removal from the index is not immediate."
 msgstr ""
 
-#: src/PageIndex.php:80
+#: src/PageIndex.php:84
 msgid "Not found in the index"
 msgstr ""
 
-#: src/PageIndex.php:81
+#: src/PageIndex.php:85
 msgid "Dzen Chat has no page at this URL in the connected source yet."
 msgstr ""
 
-#: src/PageIndex.php:84
+#: src/PageIndex.php:86
+msgid "Page triggers are not available until Dzen Chat discovers this page."
+msgstr ""
+
+#: src/PageIndex.php:89
 msgid "Ready in Dzen Chat"
 msgstr ""
 
-#: src/PageIndex.php:84
+#: src/PageIndex.php:89
 msgid "Indexing error"
 msgstr ""
 
-#: src/PageIndex.php:85
+#: src/PageIndex.php:90
 msgid "Excluded from indexing"
+msgstr ""
+
+#: src/PageIndex.php:98
+msgid "Saved triggers for this page:"
+msgstr ""
+
+#: src/PageIndex.php:99
+msgid "Triggers are disabled for this source in Dzen Chat."
+msgstr ""
+
+#: src/PageIndex.php:100
+msgid "This page does not match the source trigger rules."
+msgstr ""
+
+#: src/PageIndex.php:101
+msgid "No page-specific triggers have been generated yet. The widget may use its default templates."
 msgstr ""
 
 #: src/Plugin.php:38

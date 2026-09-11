@@ -10,3 +10,9 @@
 #dzen-chat-page .dzen-page-index-sync { font-size: 12px; color: #50575e; }
 #dzen-chat-page .dzen-page-index-result p:empty { display: none; }
 #dzen-chat-page select { max-width: 100%; }
+#dzen-chat-page .dzen-page-triggers { margin-top: 16px; padding-top: 2px; border-top: 1px solid #dcdcde; }
+#dzen-chat-page .dzen-page-triggers-list { margin: 10px 0; padding: 0; display: grid; gap: 8px; }
+#dzen-chat-page .dzen-page-triggers-list li { margin: 0; padding: 8px 10px; border-left: 3px solid #2271b1; background: #f0f6fc; overflow-wrap: anywhere; }
+#dzen-chat-page .dzen-page-triggers[data-state="unavailable"] .dzen-page-triggers-label { color: #b32d2e; }
+#dzen-chat-page .dzen-page-triggers-link { display: inline-block; margin: 4px 0 8px; }
+#dzen-chat-page .dzen-page-triggers-link[hidden] { display: none; }

@@ -1,4 +1,4 @@
-# Dzen Chat public API: WordPress 0.9 contract
+# Dzen Chat public API: WordPress 0.10 contract
 
 Verified on September 11, 2026 against the running local service,
 Swagger at `https://local.dzenchat.com/api-docs/` and `chat/api/` handlers.
@@ -49,6 +49,7 @@ unvalidated response does not confirm a change.
 | POST /api/update | JSON url only; HTTP 202 means crawling was queued |
 | GET /api/pages?url={url}&source_id={id}&limit=1 | Exact URL lookup within an assigned source; filters apply before limit |
 | GET /api/pages/{id} | id, url, title, source_id, status, status_error, index_status, has_triggers, updated_at |
+| GET /api/pages/{id}/triggers | id, source_id, url, status, triggers, details_url; saved page triggers within an assigned source |
 | GET /api/sources | Sources assigned to the client; no query parameters |
 | GET /api/sources/{id} | id, title, url, is_paused, enable_triggers, blocked_reason, last_reindexed_at |
 | GET /api/sources/{id}/status | Source metadata, counts, total and details_url; all pages, no list limit |
@@ -98,6 +99,37 @@ visitor selection, and distinguishes generation failures from absent suggestions
 Opening history never generates new suggestions or modifies the conversation.
 The API exposes neither `full_context`, internal system messages, nor raw provider
 error details. Generation diagnostics are available in the Dzen Chat web admin.
+
+## Saved page triggers in the editor
+
+After locating the saved public URL within the registered source, the editor
+requests `GET /api/pages/{id}/triggers`. The endpoint checks the active Bearer
+client, page project and source assignment. Missing, foreign and unassigned pages
+return the same HTTP 404. An invalid or revoked client receives HTTP 401.
+
+The response includes `id`, `source_id`, `url`, `status`, `triggers` (items with
+`key` and `text`) and `details_url` pointing to the same page in the web admin.
+Its status follows the existing source policy and trigger normalization:
+
+- `available`: saved page-specific triggers are available.
+- `source_disabled`: the source has disabled triggers.
+- `not_matched`: the page URL does not match the source trigger rules.
+- `not_generated`: no page-specific triggers are available yet; the public widget
+  may use its configured default templates.
+
+This administrative GET reads existing data only. It does not discover pages,
+schedule crawling, generate triggers or return response caches or a signed widget
+page token. It does not return the widget's default templates as generated page
+triggers. The plugin validates the page ID, source, URL, unique trigger keys and
+the credential-free, same-origin page link.
+
+The trigger list shares the editor indexing refresh and updates after a successful
+save. A failure of the trigger request keeps the confirmed indexing state and
+shows a separate trigger error. Draft, protected, excluded and undiscovered pages
+have explicit empty states. WordPress renders trigger text as DOM text and does
+not execute a trigger or save its text locally. Widget placement remains a separate
+setting below the panel; hiding a widget does not prevent inspecting saved page
+triggers. This version adds viewing only; trigger policy changes stay in Dzen Chat.
 
 ## Source indexing status
 

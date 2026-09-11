@@ -23,9 +23,14 @@ $get = static fn () => $index->status(get_post($post));
 $check($get()['state'] === 'not_public' && !$requests, 'draft does not send private content to the API');
 wp_update_post(['ID' => $post, 'post_status' => 'publish']);
 $data = $get();
-parse_str(wp_parse_url(end($requests), PHP_URL_QUERY), $query);
+parse_str(wp_parse_url($requests[0], PHP_URL_QUERY), $query);
 $check($data['state'] === 'ready' && $query === ['limit' => '1', 'source_id' => 'source-one', 'url' => $url], 'published page uses exact URL and connected source lookup');
 $check(str_contains($data['sync'], 'waiting to be sent'), 'ready server page and pending local changes remain distinct');
+$check($data['triggers']['state'] === 'available' && count($data['triggers']['items']) === 2
+    && $data['triggers']['items'][0]['text'] === 'Как работает доставка?', 'saved page triggers accompany indexing status');
+$check(end($requests) === 'https://chat.dzen.dev/api/pages/page-one/triggers'
+    && $data['triggers']['details_url'] === 'https://chat.dzen.dev/projects/project-one/pages/page-one',
+    'triggers use the exact indexed page and validated details link');
 global $wpdb;
 [, $events] = DzenChat\Sync::tables();
 foreach (['accepted' => 'does not confirm indexing', 'error' => 'could not be sent', 'blocked' => 'waiting for service access'] as $state => $text) {
@@ -71,6 +76,49 @@ $check(str_contains($get()['description'], 'excluded from automatic') && !$reque
 delete_post_meta($post, '_dzen_chat_exclude');
 update_post_meta($post, '_dzen_chat_widget_disabled', '1');
 $check($get()['state'] === 'ready', 'widget visibility does not change page indexing');
+$check($get()['triggers']['state'] === 'available', 'saved page triggers remain inspectable when the widget is hidden');
+
+$triggerData = $api->pageTriggers('page-one', 'source-one', $url);
+$triggerOverride = null;
+$triggerStatus = 200;
+$modifyTriggers = static function ($pre, $args, $requestUrl) use (&$triggerOverride, &$triggerStatus) {
+    if ($triggerOverride !== null && str_ends_with($requestUrl, '/pages/page-one/triggers')) {
+        $pre['body'] = wp_json_encode($triggerOverride);
+        $pre['response']['code'] = $triggerStatus;
+    }
+    return $pre;
+};
+add_filter('pre_http_request', $modifyTriggers, 11, 3);
+foreach (['source_disabled' => 'disabled for this source', 'not_matched' => 'does not match', 'not_generated' => 'default templates'] as $state => $label) {
+    $triggerOverride = array_replace($triggerData, ['status' => $state, 'triggers' => []]);
+    $data = $get();
+    $check($data['state'] === 'ready' && $data['triggers']['state'] === $state
+        && str_contains($data['triggers']['label'], $label) && !$data['triggers']['items'], 'distinct page trigger state: ' . $state);
+}
+foreach ([
+    ['id' => 'other-page'], ['source_id' => 'other-source'], ['url' => home_url('/other/')],
+    ['status' => 'unknown'], ['status' => 'source_disabled'], ['triggers' => []],
+    ['triggers' => 'invalid'], ['triggers' => [['key' => 'bad', 'text' => ['invalid']]]],
+    ['triggers' => [['key' => 'duplicate', 'text' => 'One'], ['key' => 'duplicate', 'text' => 'Two']]],
+    ['details_url' => 'https://evil.test/projects/p/pages/page-one'],
+    ['details_url' => 'https://user:secret@chat.dzen.dev/projects/p/pages/page-one'],
+    ['details_url' => 'https://chat.dzen.dev/projects/p/pages/other-page'],
+    ['details_url' => 'https://chat.dzen.dev/projects/p/pages/page-one?token=secret'],
+] as $changes) {
+    $triggerOverride = array_replace($triggerData, $changes);
+    $data = $get();
+    $check($data['state'] === 'ready' && $data['triggers']['state'] === 'unavailable'
+        && !$data['triggers']['items'] && !$data['triggers']['details_url'], 'invalid triggers do not erase confirmed indexing status: ' . wp_json_encode(array_keys($changes)));
+}
+$triggerOverride = ['error' => 'Unavailable'];
+foreach ([401, 403, 404, 500] as $status) {
+    $triggerStatus = $status;
+    $data = $get();
+    $check($data['state'] === 'ready' && $data['triggers']['state'] === 'unavailable', 'trigger API error is separate from page indexing: ' . $status);
+}
+$triggerOverride = null;
+$triggerStatus = 200;
+remove_filter('pre_http_request', $modifyTriggers, 11);
 
 $exitHandler = static fn () => static function () { throw new RuntimeException('page_index_ajax_exit'); };
 add_filter('wp_die_ajax_handler', $exitHandler);
@@ -83,6 +131,9 @@ $ajax = static function (array $input) use ($index) {
 };
 $nonce = wp_create_nonce('dzen_chat_page_status_' . $post);
 $check($ajax(['post_id' => (string) $post, '_ajax_nonce' => $nonce])['success'] === true, 'authorized AJAX response returns current page status');
+$response = $ajax(['post_id' => (string) $post, '_ajax_nonce' => $nonce, 'page_id' => 'other-page', 'source_id' => 'other-source']);
+$check($response['data']['triggers']['state'] === 'available'
+    && str_contains($response['data']['triggers']['details_url'], '/pages/page-one'), 'AJAX trigger lookup ignores client page and source overrides');
 foreach ([[], ['post_id' => (string) $post, '_ajax_nonce' => 'bad'], ['post_id' => [$post]],
     ['post_id' => (string) $post, '_ajax_nonce' => ['invalid']]] as $input) {
     $requests = [];
@@ -97,6 +148,8 @@ ob_start();
 $html = ob_get_clean();
 $check(str_contains($html, 'dzen-page-index') && str_contains($html, 'Hide widget')
     && !str_contains($html, 'fixture-secret') && !str_contains($html, 'Bearer '), 'index panel preserves widget settings without exposing API credentials');
+$check(str_contains($html, 'Page triggers') && str_contains($html, 'dzen-page-triggers-list')
+    && str_contains($html, 'dzen-page-triggers-link'), 'editor contains a dedicated trigger list and details link');
 remove_filter('wp_die_ajax_handler', $exitHandler);
 remove_filter('pre_http_request', $observe, 9);
 remove_filter('pre_http_request', $modify, 11);

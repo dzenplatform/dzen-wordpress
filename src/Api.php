@@ -191,6 +191,32 @@ final class Api
         return $chat;
     }
 
+    public function pageTriggers(string $id, string $sourceId, string $url): array|\WP_Error
+    {
+        $expected = self::canonicalUrl($url);
+        if ($expected === null) return new \WP_Error('dzen_url', __('Invalid public page URL.', 'dzen-chat'));
+        $data = $this->request('GET', '/pages/' . self::segment($id) . '/triggers', timeout: 5);
+        if (is_wp_error($data)) return $data;
+        $invalid = new \WP_Error('dzen_protocol', __('The service returned invalid page triggers. Refresh the status.', 'dzen-chat'));
+        if (($data['id'] ?? null) !== $id || ($data['source_id'] ?? null) !== $sourceId
+            || self::canonicalUrl($data['url'] ?? null) !== $expected
+            || !in_array($data['status'] ?? '', ['available', 'source_disabled', 'not_matched', 'not_generated'], true)
+            || !is_array($data['triggers'] ?? null) || !array_is_list($data['triggers'])
+            || ($data['status'] === 'available') !== (count($data['triggers']) > 0)
+            || !is_string($data['details_url'] ?? null)
+            || !preg_match('~^' . preg_quote(self::origin(), '~') . '/projects/[A-Za-z0-9_-]+/pages/'
+                . preg_quote($id, '~') . '$~D', $data['details_url'])) return $invalid;
+        $items = [];
+        foreach ($data['triggers'] as $trigger) {
+            if (!is_array($trigger) || !is_string($trigger['key'] ?? null) || $trigger['key'] === ''
+                || isset($items[$trigger['key']]) || !is_string($trigger['text'] ?? null)
+                || trim($trigger['text']) === '') return $invalid;
+            $items[$trigger['key']] = ['key' => $trigger['key'], 'text' => $trigger['text']];
+        }
+        $data['triggers'] = array_values($items);
+        return $data;
+    }
+
     public function conversationMessages(string $id): array|\WP_Error
     {
         $messages = $this->items('/chats/' . self::segment($id) . '/messages', ['limit' => 100]);

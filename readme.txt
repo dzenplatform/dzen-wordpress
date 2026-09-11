@@ -3,7 +3,7 @@ Contributors: dzenplatform
 Requires at least: 6.8
 Tested up to: 6.8.2
 Requires PHP: 8.2
-Stable tag: 0.9.0
+Stable tag: 0.10.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -49,6 +49,8 @@ The page/post editor shows indexing status above widget settings. Refresh it
 manually or save the page to update it. Saved changes awaiting submission are
 shown separately from the server's last processed page. Drafts, private content
 and password-protected pages are not submitted as public content.
+The same panel displays saved page triggers and explains when source settings or
+URL rules prevent their use. Open the indexed page in Dzen Chat for details.
 
 The interface is English by default and includes a Russian (ru_RU) translation.
 It follows the administrator's Users > Profile > Language preference. Site
@@ -93,6 +95,13 @@ service. Removing keys in WordPress does not revoke the remote API client.
 No. Products require a separate integration.
 
 == Changelog ==
+
+= 0.10.0 =
+Show saved page triggers in the page/post editor. Explain disabled sources,
+unmatched rules and triggers that have not been generated. Add a link to page
+details in Dzen Chat and refresh triggers with indexing status. Keep confirmed
+indexing status visible if trigger loading fails. Include English and Russian
+interface strings.
 
 = 0.9.0 =
 Display saved follow-up suggestions and visitor selections in conversation history.

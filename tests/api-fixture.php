@@ -151,6 +151,11 @@ add_filter('pre_http_request', static function ($pre, $args, $url) {
         return $reply(['items' => [$page]]);
     }
     if ($path === '/api/pages/page-one') return $reply($page);
+    if ($path === '/api/pages/page-one/triggers') return $reply([
+        'id' => $page['id'], 'source_id' => $page['source_id'], 'url' => $page['url'], 'status' => 'available',
+        'details_url' => 'https://chat.dzen.dev/projects/project-one/pages/page-one',
+        'triggers' => [['key' => 'delivery', 'text' => 'Как работает доставка?'], ['key' => 'address', 'text' => 'Можно изменить адрес доставки?']],
+    ]);
     if ($path === '/api/files') return $reply(['items' => [$file]]);
     if ($path === '/api/files/file-one') return $reply($file);
     if ($path === '/api/chats') {

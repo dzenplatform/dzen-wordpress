@@ -4,6 +4,10 @@
         const label = root.querySelector('.dzen-page-index-label');
         const description = root.querySelector('.dzen-page-index-description');
         const sync = root.querySelector('.dzen-page-index-sync');
+        const triggers = root.querySelector('.dzen-page-triggers');
+        const triggerLabel = triggers.querySelector('.dzen-page-triggers-label');
+        const triggerList = triggers.querySelector('.dzen-page-triggers-list');
+        const triggerLink = triggers.querySelector('.dzen-page-triggers-link');
         let running = false;
         let refreshAgain = false;
         const refresh = async () => {
@@ -14,8 +18,13 @@
             label.textContent = root.dataset.loading;
             description.textContent = '';
             sync.textContent = '';
+            triggers.dataset.state = 'loading';
+            triggerLabel.textContent = triggers.dataset.loading;
+            triggerList.replaceChildren();
+            triggerLink.hidden = true;
+            triggerLink.removeAttribute('href');
             const controller = new AbortController();
-            const timeout = setTimeout(() => controller.abort(), 20000);
+            const timeout = setTimeout(() => controller.abort(), 25000);
             let serviceError = '';
             try {
                 const response = await fetch(root.dataset.endpoint, {
@@ -31,10 +40,25 @@
                 label.textContent = payload.data.label;
                 description.textContent = payload.data.description;
                 sync.textContent = payload.data.sync;
+                const data = payload.data.triggers;
+                triggers.dataset.state = data.state;
+                triggerLabel.textContent = data.label;
+                data.items.forEach((trigger) => {
+                    const item = document.createElement('li');
+                    item.textContent = trigger.text;
+                    triggerList.append(item);
+                });
+                if (data.details_url) {
+                    triggerLink.href = data.details_url;
+                    triggerLink.hidden = false;
+                }
             } catch {
                 root.dataset.state = 'unavailable';
                 label.textContent = root.dataset.error;
                 description.textContent = serviceError;
+                triggers.dataset.state = 'unavailable';
+                triggerLabel.textContent = triggers.dataset.error;
+                triggerList.replaceChildren();
             } finally {
                 clearTimeout(timeout);
                 button.disabled = false;
