@@ -32,13 +32,27 @@ async (page) => {
         const first = table.locator('input[type=radio]:not(:disabled)').first();
         const id = await first.inputValue();
         const row = table.getByRole('row').filter({ has: page.locator('#dzen-widget-' + id) });
-        const settings = row.getByRole('link', { name: 'Edit in Dzen Chat ↗', exact: true });
+        const settings = row.getByRole('link', { name: /^Edit in Dzen Chat ↗:/ });
         const editor = new URL(await settings.getAttribute('href'));
         check(editor.origin === 'https://chat.dzen.dev' && editor.pathname.endsWith('/widgets/' + id)
             && await settings.getAttribute('target') === '_blank', 'editor link identifies this widget in Dzen Chat');
-        check(await page.getByRole('link', { name: 'Add widget', exact: true }).isVisible()
-            && await page.getByRole('heading', { name: 'Create widget', exact: true }).isVisible(),
-            'widget creation is discoverable from the list');
+        const add = page.getByRole('button', { name: 'Add widget', exact: true });
+        const creation = page.locator('#dzen-create-widget');
+        check(await add.isVisible() && !await creation.isVisible(),
+            'widget creation starts collapsed beside the list');
+        await add.click();
+        check(await creation.isVisible() && await add.getAttribute('aria-expanded') === 'true'
+            && await creation.getByRole('textbox', { name: 'Name', exact: true }).evaluate(input => input === document.activeElement),
+            'Add widget opens the form and focuses the name');
+        await creation.getByRole('button', { name: 'Cancel', exact: true }).click();
+        check(!await creation.isVisible() && await add.evaluate(button => button === document.activeElement),
+            'Cancel returns focus to the list action');
+        await add.click();
+        await page.keyboard.press('Escape');
+        check(!await creation.isVisible() && await add.getAttribute('aria-expanded') === 'false',
+            'Escape closes widget creation');
+        check(await page.locator('.dzen-widget-selection input[type=radio]:checked').inputValue() === originalChoice,
+            'opening and cancelling creation preserves the site widget');
         await select(id);
         await page.reload();
         check(await page.locator('#dzen-widget-' + id).isChecked(), 'saved selection survives a page reload');

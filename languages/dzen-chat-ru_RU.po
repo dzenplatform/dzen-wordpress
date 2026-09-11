@@ -543,8 +543,8 @@ msgid "Status"
 msgstr "Статус"
 
 #: src/Admin.php:449
-msgid "No widgets yet. Add your first widget below."
-msgstr "Виджетов пока нет. Добавьте первый виджет ниже."
+msgid "No widgets yet. Use Add widget to create your first one."
+msgstr "Виджетов пока нет. Нажмите «Добавить виджет», чтобы создать первый."
 
 #: src/Admin.php:457
 msgid "Selected for this site"
@@ -626,6 +626,9 @@ msgstr "Название"
 #: src/Admin.php:484
 msgid "Create"
 msgstr "Создать"
+
+msgid "Cancel"
+msgstr "Отмена"
 
 #: src/Admin.php:485
 msgid ""
