@@ -54,7 +54,7 @@ final class Admin
     public static function filters(array $input): array|\WP_Error
     {
         $result = [];
-        foreach (['q' => 200, 'widget_code' => 128, 'source_id' => 128, 'status' => 64,
+        foreach (['q' => 200, 'source_id' => 128, 'status' => 64,
             'date_from' => 10, 'date_to' => 10] as $key => $max) {
             $value = self::input($key, $input);
             if (strlen($value) > $max) return new \WP_Error('filter', __('The filter is too long.', 'dzen-chat'));
@@ -70,7 +70,9 @@ final class Admin
         if (isset($result['date_from'], $result['date_to']) && $result['date_from'] > $result['date_to']) {
             return new \WP_Error('filter', __('The start date must be on or before the end date.', 'dzen-chat'));
         }
-        if (self::input('hide_empty', $input) === '1') $result['hide_empty'] = '1';
+        foreach (['hide_empty', 'guardrail'] as $key) {
+            if (self::input($key, $input) === '1') $result[$key] = '1';
+        }
         return $result;
     }
 
@@ -374,10 +376,12 @@ final class Admin
         $filters = self::filters($_GET);
         if (is_wp_error($filters)) { $this->error($filters); return; }
         $query = ['limit' => 100];
-        if (isset($filters['hide_empty'])) $query['hide_empty'] = '1';
+        foreach (['hide_empty', 'guardrail'] as $key) {
+            if (isset($filters[$key])) $query[$key] = '1';
+        }
         $items = $this->api->items('/chats', $query);
         if (is_wp_error($items)) { $this->error($items); return; }
-        echo '<p>' . esc_html__('Showing up to 100 recent conversations. ID, date and widget filters apply to this list.', 'dzen-chat') . '</p>';
+        echo '<p>' . esc_html__('Showing up to 100 recent conversations. ID and date filters apply to this list.', 'dzen-chat') . '</p>';
         // Translators: %s is the WordPress site timezone, such as Europe/Sofia or +03:00.
         echo '<p class="description">' . esc_html(sprintf(__('Dates and times use the WordPress site timezone (%s).', 'dzen-chat'), wp_timezone_string())) . '</p>';
         echo '<form method="get" class="dzen-filters"><input type="hidden" name="page" value="dzen-chat-history">';
@@ -385,12 +389,7 @@ final class Admin
         foreach (['date_from' => __('From date', 'dzen-chat'), 'date_to' => __('To date', 'dzen-chat')] as $key => $label) {
             echo '<label>' . esc_html($label) . '<input type="date" name="' . esc_attr($key) . '" value="' . esc_attr($filters[$key] ?? '') . '"></label>';
         }
-        echo '<label>' . esc_html__('Widget', 'dzen-chat') . '<select name="widget_code"><option value="">' . esc_html__('All widgets', 'dzen-chat') . '</option>';
-        $widgets = $this->api->items('/widgets');
-        if (!is_wp_error($widgets)) foreach ($widgets as $widget) {
-            echo '<option value="' . esc_attr(self::text($widget, 'code')) . '"' . selected($filters['widget_code'] ?? '', self::text($widget, 'code'), false) . '>' . esc_html(self::text($widget, 'name')) . '</option>';
-        }
-        echo '</select></label>';
+        echo '<label class="dzen-filter-checkbox"><input type="checkbox" name="guardrail" value="1"' . checked(isset($filters['guardrail']), true, false) . '> ' . esc_html__('Guardrail violations only', 'dzen-chat') . '</label>';
         echo '<label class="dzen-filter-checkbox"><input type="checkbox" name="hide_empty" value="1"' . checked(isset($filters['hide_empty']), true, false) . '> ' . esc_html__('Hide empty conversations', 'dzen-chat') . '</label>';
         echo '<button class="button">' . esc_html__('Apply', 'dzen-chat') . '</button></form>';
         $items = array_filter($items, static function ($item) use ($filters) {
@@ -398,7 +397,6 @@ final class Admin
             if ($date === null && (isset($filters['date_from']) || isset($filters['date_to']))) return false;
             if (isset($filters['date_from']) && $date < $filters['date_from']) return false;
             if (isset($filters['date_to']) && $date > $filters['date_to']) return false;
-            if (isset($filters['widget_code']) && ($item['widget_code'] ?? '') !== $filters['widget_code']) return false;
             return !isset($filters['q']) || stripos(self::text($item, 'id') . ' ' . self::text($item, 'visitor'), $filters['q']) !== false;
         });
         if (!$items) echo '<p>' . esc_html__('No results in the loaded set.', 'dzen-chat') . '</p>';

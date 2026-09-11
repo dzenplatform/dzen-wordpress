@@ -116,6 +116,11 @@ try {
             && str_contains($feedbackHtml, $index ? 'Решил мою проблему' : 'Solved my problem')
             && str_contains($feedbackHtml, $index ? 'Открыть диалог в WordPress' : 'Open conversation in WordPress'),
             'feedback rating, reasons and navigation use ' . $locale);
+        $_GET = ['page' => 'dzen-chat-history', 'guardrail' => '1'];
+        $historyHtml = $capture([$admin, 'page']);
+        $check(str_contains($historyHtml, $index ? 'С нарушениями гардрейлов' : 'Guardrail violations only')
+            && str_contains($historyHtml, 'name="guardrail" value="1" checked='),
+            'guardrail filter uses ' . $locale);
         if ($switched) $switcher->restore_previous_locale();
     }
     $check($switcher->switch_to_locale('de_DE') && __('Widgets', 'dzen-chat') === 'Widgets',

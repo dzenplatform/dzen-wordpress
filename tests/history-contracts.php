@@ -42,17 +42,37 @@ try {
     $html = $renderList();
     $check(str_contains($html, 'chat=empty-chat') && str_contains($html, 'chat=chat-one')
         && !str_contains($requests[0]['url'], 'hide_empty'), 'empty conversations remain visible until the filter is selected');
+    $check(!str_contains($html, 'name="widget_code"') && !str_contains($html, 'All widgets')
+        && count($requests) === 1, 'history no longer renders or requests a widget filter');
     $overrideList = [$chat];
     $requests = [];
-    $html = $renderList(['hide_empty' => '1', 'q' => $chat['visitor'], 'widget_code' => $chat['widget_code'],
+    $html = $renderList(['hide_empty' => '1', 'q' => $chat['visitor'],
         'date_from' => '2026-09-11', 'date_to' => '2026-09-11']);
     $check($requests[0]['url'] === 'https://chat.dzen.dev/api/chats?hide_empty=1&limit=100'
         && str_contains($html, 'chat=chat-one') && !str_contains($html, 'chat=empty-chat'),
-        'server-side empty filter combines with ID, date and widget filters');
+        'server-side empty filter combines with ID and date filters');
     $check(str_contains($html, 'name="hide_empty" value="1" checked=') && str_contains($html, 'Hide empty conversations'),
         'empty filter stays checked after Apply');
-    $check(count($requests) === 2 && !array_filter($requests, static fn ($request) => str_contains($request['url'], '/messages')),
+    $check(count($requests) === 1 && !array_filter($requests, static fn ($request) => str_contains($request['url'], '/messages')),
         'filtering does not fetch every conversation history');
+    $requests = [];
+    $html = $renderList(['guardrail' => '1', 'hide_empty' => '1', 'q' => $chat['visitor'],
+        'date_from' => '2026-09-11', 'date_to' => '2026-09-11']);
+    $check($requests === [['url' => 'https://chat.dzen.dev/api/chats?guardrail=1&hide_empty=1&limit=100', 'method' => 'GET']]
+        && str_contains($html, 'chat=chat-one'), 'guardrail and empty filters are combined in a single server request');
+    $check(str_contains($html, 'name="guardrail" value="1" checked=') && str_contains($html, 'Guardrail violations only')
+        && str_contains($html, 'name="hide_empty" value="1" checked='), 'both checkboxes stay selected after Apply');
+    $requests = [];
+    $html = $renderList(['guardrail' => '1']);
+    $check($requests[0]['url'] === 'https://chat.dzen.dev/api/chats?guardrail=1&limit=100',
+        'guardrail filter also works independently');
+    foreach (['0', 'invalid', ['1']] as $value) {
+        $requests = [];
+        $renderList(['guardrail' => $value]);
+        $check(!str_contains($requests[0]['url'], 'guardrail'), 'only an explicitly checked guardrail filter reaches the API');
+    }
+    $check(str_contains($renderList(['widget_code' => 'removed-widget-filter']), 'chat=chat-one'),
+        'old widget query parameters cannot silently filter the history');
     $overrideList = [$chat, $empty];
     $requests = [];
     $check(str_contains($renderList(['hide_empty' => '0']), 'chat=empty-chat')
@@ -60,6 +80,8 @@ try {
     $overrideList = [];
     $check(str_contains($renderList(['hide_empty' => '1']), 'No results in the loaded set.'),
         'a list with no non-empty conversations shows the empty result state');
+    $check(str_contains($renderList(['guardrail' => '1']), 'No results in the loaded set.'),
+        'no guardrail matches show an empty result');
     $overrideList = null;
     $html = $render();
     $check(str_contains($html, 'class="dzen-conversation-heading"')

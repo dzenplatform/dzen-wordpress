@@ -188,8 +188,8 @@ add_filter('pre_http_request', static function ($pre, $args, $url) {
         ]])]]);
     }
     if ($path === '/api/chats') {
-        if (array_diff(array_keys($query), ['limit', 'hide_empty'])) throw new RuntimeException('Chat query does not support these fields');
-        return $reply(['items' => [$chat]]);
+        if (array_diff(array_keys($query), ['limit', 'hide_empty', 'guardrail'])) throw new RuntimeException('Chat query does not support these fields');
+        return $reply(['items' => ($query['guardrail'] ?? '') === '1' ? [] : [$chat]]);
     }
     if ($path === '/api/chats/chat-one') return $reply($chat);
     if ($path === '/api/chats/chat-one/messages') return $reply(['items' => [
