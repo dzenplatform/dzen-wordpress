@@ -9,14 +9,14 @@ msgstr ""
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"POT-Creation-Date: 2026-09-11T05:59:06+00:00\n"
+"POT-Creation-Date: 2026-09-11T10:38:53+00:00\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "X-Generator: WP-CLI 2.12.0\n"
 "X-Domain: dzen-chat\n"
 
 #. Plugin Name of the plugin
 #: dzen-chat.php
-#: src/Admin.php:396
+#: src/Admin.php:414
 msgid "Dzen Chat"
 msgstr ""
 
@@ -30,581 +30,586 @@ msgstr ""
 msgid "Dzen Platform"
 msgstr ""
 
-#: src/Admin.php:32
+#: src/Admin.php:33
 msgid "Overview"
 msgstr ""
 
-#: src/Admin.php:32
-#: src/Admin.php:428
+#: src/Admin.php:33
+#: src/Admin.php:446
 msgid "Widgets"
 msgstr ""
 
-#: src/Admin.php:33
-#: src/Admin.php:267
+#: src/Admin.php:34
+#: src/Admin.php:281
 msgid "Index"
 msgstr ""
 
-#: src/Admin.php:33
-#: src/Admin.php:346
+#: src/Admin.php:34
+#: src/Admin.php:364
 msgid "Conversations"
 msgstr ""
 
-#: src/Admin.php:54
+#: src/Admin.php:55
 msgid "The filter is too long."
 msgstr ""
 
-#: src/Admin.php:59
+#: src/Admin.php:60
 msgid "Enter a date in YYYY-MM-DD format."
 msgstr ""
 
-#: src/Admin.php:65
+#: src/Admin.php:66
 msgid "The start date must be on or before the end date."
 msgstr ""
 
-#: src/Admin.php:102
+#: src/Admin.php:103
 #: src/Connection.php:26
 msgid "You do not have permission to perform this action."
 msgstr ""
 
-#: src/Admin.php:106
+#: src/Admin.php:107
 msgid "Authorization complete. Public pages will be submitted for reindexing."
 msgstr ""
 
-#: src/Admin.php:107
+#: src/Admin.php:108
 msgid "Credentials removed from WordPress. Open Dzen Chat to revoke the API client."
 msgstr ""
 
-#: src/Admin.php:108
+#: src/Admin.php:109
 msgid "Connection cancelled."
 msgstr ""
 
-#: src/Admin.php:109
+#: src/Admin.php:110
 msgid "Connection was not completed. Start again."
 msgstr ""
 
-#: src/Admin.php:110
+#: src/Admin.php:111
 msgid "Change saved."
 msgstr ""
 
-#: src/Admin.php:111
+#: src/Admin.php:112
 msgid "Widget created. Select it below to display it on this site."
 msgstr ""
 
-#: src/Admin.php:112
+#: src/Admin.php:113
 msgid "Request accepted. Check processing progress in the Index section."
 msgstr ""
 
-#: src/Admin.php:113
+#: src/Admin.php:114
 msgid "Document uploaded. Check its indexing status below."
 msgstr ""
 
-#: src/Admin.php:114
+#: src/Admin.php:115
 msgid "Public content reconciliation has been queued."
 msgstr ""
 
-#: src/Admin.php:119
+#: src/Admin.php:120
 msgid "Connect this site to an existing or new Dzen Chat project."
 msgstr ""
 
-#: src/Admin.php:120
+#: src/Admin.php:121
 msgid "Connect Dzen Chat"
 msgstr ""
 
-#: src/Admin.php:131
+#: src/Admin.php:132
 msgid "The site URL, service URL or security keys have changed. Reconnect the site."
 msgstr ""
 
-#: src/Admin.php:132
-#: src/Admin.php:158
+#: src/Admin.php:133
+#: src/Admin.php:159
 msgid "Reconnect"
 msgstr ""
 
-#: src/Admin.php:140
+#: src/Admin.php:141
 msgid "This site is connected to Dzen Chat"
 msgstr ""
 
-#: src/Admin.php:145
+#: src/Admin.php:146
 msgid "Service access confirmed."
 msgstr ""
 
-#: src/Admin.php:149
+#: src/Admin.php:150
 msgid "Site source:"
 msgstr ""
 
-#: src/Admin.php:152
+#: src/Admin.php:153
 msgid "The site source is no longer available to this connection."
 msgstr ""
 
-#: src/Admin.php:155
+#: src/Admin.php:156
 msgid "Manage widgets"
 msgstr ""
 
-#: src/Admin.php:156
-#: src/Admin.php:462
+#: src/Admin.php:157
+#: src/Admin.php:480
 msgid "Open Dzen Chat ↗"
 msgstr ""
 
-#: src/Admin.php:159
+#: src/Admin.php:160
 msgid "Remove credentials from WordPress"
 msgstr ""
 
-#: src/Admin.php:160
+#: src/Admin.php:161
 msgid "Public page and post updates"
 msgstr ""
 
-#: src/Admin.php:165
+#: src/Admin.php:166
 msgid "Waiting to be sent"
 msgstr ""
 
-#: src/Admin.php:165
+#: src/Admin.php:166
 msgid "Submitted to the service"
 msgstr ""
 
-#: src/Admin.php:166
+#: src/Admin.php:167
 msgid "Cancelled by indexing exclusion"
 msgstr ""
 
-#: src/Admin.php:167
+#: src/Admin.php:168
 #: src/PageIndex.php:104
 #: src/PageIndex.php:130
 msgid "Excluded from indexing"
 msgstr ""
 
-#: src/Admin.php:168
+#: src/Admin.php:169
 msgid "Waiting for access"
 msgstr ""
 
-#: src/Admin.php:168
+#: src/Admin.php:169
 msgid "Submission failed"
 msgstr ""
 
-#: src/Admin.php:171
+#: src/Admin.php:172
 msgid "An accepted request does not mean indexing is complete. Check processing results in the Index section."
 msgstr ""
 
-#: src/Admin.php:172
+#: src/Admin.php:173
 msgid "Could not save the event. Check the connection and WordPress database, then run reconciliation."
 msgstr ""
 
-#: src/Admin.php:173
+#: src/Admin.php:174
 msgid "Reconcile content and retry failed requests"
 msgstr ""
 
-#: src/Admin.php:174
+#: src/Admin.php:175
 msgid "The WordPress scheduler runs these jobs. Products, drafts and password-protected posts are not submitted as public content."
 msgstr ""
 
-#: src/Admin.php:175
+#: src/Admin.php:176
 msgid "Billing status, hiding conversations, answer sources and page trigger controls are not yet available in this integration."
 msgstr ""
 
-#: src/Admin.php:181
+#: src/Admin.php:182
 msgid "The service returned an invalid source state."
 msgstr ""
 
-#: src/Admin.php:185
+#: src/Admin.php:186
 msgid "Processing restricted:"
 msgstr ""
 
-#: src/Admin.php:187
-#: src/Admin.php:224
+#: src/Admin.php:188
+#: src/Admin.php:238
 msgid "Updates paused"
 msgstr ""
 
-#: src/Admin.php:187
+#: src/Admin.php:188
 msgid "Updates allowed"
 msgstr ""
 
-#: src/Admin.php:189
+#: src/Admin.php:190
 msgid "Source triggers:"
 msgstr ""
 
-#: src/Admin.php:189
+#: src/Admin.php:190
 msgid "enabled"
 msgstr ""
 
-#: src/Admin.php:189
+#: src/Admin.php:190
 msgid "disabled"
 msgstr ""
 
-#: src/Admin.php:190
-#: src/Admin.php:223
+#: src/Admin.php:191
+#: src/Admin.php:237
 msgid "Last reindexed:"
 msgstr ""
 
-#: src/Admin.php:195
+#: src/Admin.php:196
 msgid "Errors"
 msgstr ""
 
-#: src/Admin.php:195
+#: src/Admin.php:196
 msgid "Pending"
 msgstr ""
 
-#: src/Admin.php:196
+#: src/Admin.php:197
 #: src/PageIndex.php:128
 msgid "Processing"
 msgstr ""
 
-#: src/Admin.php:196
+#: src/Admin.php:197
 msgid "Ready"
 msgstr ""
 
-#: src/Admin.php:197
+#: src/Admin.php:198
 msgid "Excluded"
 msgstr ""
 
+#: src/Admin.php:220
+#: src/Admin.php:299
+#: src/PageIndex.php:29
+msgid "Refresh status"
+msgstr ""
+
+#: src/Admin.php:233
+msgid "Source settings in Dzen Chat ↗"
+msgstr ""
+
 #. Translators: %s is the total number of pages in this source.
-#: src/Admin.php:222
+#: src/Admin.php:236
 #, php-format
 msgid "%s page in this source."
 msgid_plural "%s pages in this source."
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/Admin.php:225
+#: src/Admin.php:239
 msgid "Indexing is restricted. Open Dzen Chat for details."
 msgstr ""
 
-#: src/Admin.php:227
+#: src/Admin.php:241
 msgid "No pages have been discovered yet."
 msgstr ""
 
-#: src/Admin.php:228
+#: src/Admin.php:242
 msgid "All discovered pages are excluded from indexing."
 msgstr ""
 
-#: src/Admin.php:229
+#: src/Admin.php:243
 msgid "Excluded pages are counted separately from the progress bar."
 msgstr ""
 
-#: src/Admin.php:230
-msgid "Source settings in Dzen Chat ↗"
-msgstr ""
-
-#: src/Admin.php:237
+#: src/Admin.php:251
 msgid "Updated:"
 msgstr ""
 
-#: src/Admin.php:240
+#: src/Admin.php:254
 msgid "The document is too large for indexing. Shorten it in Dzen Chat or upload a smaller document."
 msgstr ""
 
-#: src/Admin.php:247
-#: src/Admin.php:285
+#: src/Admin.php:261
+#: src/Admin.php:299
 msgid "Add a document"
 msgstr ""
 
-#: src/Admin.php:253
+#: src/Admin.php:267
 msgid "Document"
 msgstr ""
 
 #. Translators: %s is the maximum upload size, such as 256 KB.
-#: src/Admin.php:256
+#: src/Admin.php:270
 #, php-format
 msgid "TXT or Markdown (.txt, .md, .markdown), UTF-8. Maximum file size: %s."
 msgstr ""
 
-#: src/Admin.php:257
+#: src/Admin.php:271
 msgid "Uploads go to Dzen Chat without being added to the WordPress media library."
 msgstr ""
 
-#: src/Admin.php:258
+#: src/Admin.php:272
 msgid "Upload for indexing"
 msgstr ""
 
-#: src/Admin.php:260
-#: src/Admin.php:505
+#: src/Admin.php:274
+#: src/Admin.php:523
 msgid "You do not have permission to upload documents."
 msgstr ""
 
-#: src/Admin.php:275
+#: src/Admin.php:289
 msgid "Back to Index"
 msgstr ""
 
-#: src/Admin.php:280
-#: src/Admin.php:336
+#: src/Admin.php:294
+#: src/Admin.php:354
 msgid "Edit document in Dzen Chat ↗"
 msgstr ""
 
-#: src/Admin.php:284
+#: src/Admin.php:298
 msgid "Track this website, additional sources and uploaded documents in one place."
 msgstr ""
 
-#: src/Admin.php:285
-#: src/PageIndex.php:29
-msgid "Refresh status"
-msgstr ""
-
-#: src/Admin.php:286
+#: src/Admin.php:300
 msgid "This WordPress site"
 msgstr ""
 
-#: src/Admin.php:288
+#: src/Admin.php:302
 msgid "Additional website sources"
 msgstr ""
 
-#: src/Admin.php:296
+#: src/Admin.php:310
 msgid "The service returned an invalid source list."
 msgstr ""
 
-#: src/Admin.php:305
+#: src/Admin.php:319
 msgid "No additional website sources are available to this connection."
 msgstr ""
 
-#: src/Admin.php:316
+#: src/Admin.php:330
 msgid "Manage sources in Dzen Chat ↗"
 msgstr ""
 
-#: src/Admin.php:319
+#: src/Admin.php:333
 msgid "Uploaded documents"
 msgstr ""
 
-#: src/Admin.php:324
-msgid "No files have been added."
-msgstr ""
-
 #. Translators: %s is the total number of uploaded documents.
-#: src/Admin.php:330
+#: src/Admin.php:338
 #, php-format
 msgid "%s uploaded document."
 msgid_plural "%s uploaded documents."
 msgstr[0] ""
 msgstr[1] ""
 
-#: src/Admin.php:346
+#: src/Admin.php:340
+msgid "Manage documents in Dzen Chat ↗"
+msgstr ""
+
+#: src/Admin.php:345
+msgid "No files have been added."
+msgstr ""
+
+#: src/Admin.php:364
 msgid "Conversations are stored in Dzen Chat."
 msgstr ""
 
-#: src/Admin.php:353
+#: src/Admin.php:371
 msgid "Filters apply to the 100 most recent conversations. Full history text search and hiding conversations are not yet available."
 msgstr ""
 
 #. Translators: %s is the WordPress site timezone, such as Europe/Sofia or +03:00.
-#: src/Admin.php:355
+#: src/Admin.php:373
 #, php-format
 msgid "Dates and times use the WordPress site timezone (%s)."
 msgstr ""
 
-#: src/Admin.php:357
+#: src/Admin.php:375
 msgid "Conversation or visitor ID"
 msgstr ""
 
-#: src/Admin.php:358
+#: src/Admin.php:376
 msgid "From date"
 msgstr ""
 
-#: src/Admin.php:358
+#: src/Admin.php:376
 msgid "To date"
 msgstr ""
 
-#: src/Admin.php:361
-#: src/Admin.php:447
+#: src/Admin.php:379
+#: src/Admin.php:465
 #: src/Plugin.php:142
 msgid "Widget"
 msgstr ""
 
-#: src/Admin.php:361
+#: src/Admin.php:379
 msgid "All widgets"
 msgstr ""
 
-#: src/Admin.php:366
+#: src/Admin.php:384
 msgid "Apply"
 msgstr ""
 
-#: src/Admin.php:375
+#: src/Admin.php:393
 msgid "No results in the loaded set."
 msgstr ""
 
-#: src/Admin.php:376
+#: src/Admin.php:394
 msgid "Conversation"
 msgstr ""
 
-#: src/Admin.php:376
-#: src/Admin.php:396
+#: src/Admin.php:394
+#: src/Admin.php:414
 msgid "Visitor"
 msgstr ""
 
-#: src/Admin.php:376
+#: src/Admin.php:394
 msgid "Created"
 msgstr ""
 
-#: src/Admin.php:385
+#: src/Admin.php:403
 msgid "All conversations"
 msgstr ""
 
-#: src/Admin.php:389
+#: src/Admin.php:407
 msgid "Open conversation in Dzen Chat ↗"
 msgstr ""
 
-#: src/Admin.php:393
+#: src/Admin.php:411
 msgid "The first 100 messages have been loaded. Open Dzen Chat to view the rest."
 msgstr ""
 
-#: src/Admin.php:397
+#: src/Admin.php:415
 msgid "Helpful answer"
 msgstr ""
 
-#: src/Admin.php:397
+#: src/Admin.php:415
 msgid "Unhelpful answer"
 msgstr ""
 
-#: src/Admin.php:399
+#: src/Admin.php:417
 msgid "Suggestions"
 msgstr ""
 
-#: src/Admin.php:405
+#: src/Admin.php:423
 msgid "Selected by visitor"
 msgstr ""
 
-#: src/Admin.php:410
+#: src/Admin.php:428
 msgid "Suggestions could not be generated for this answer. Open this conversation in Dzen Chat for details."
 msgstr ""
 
-#: src/Admin.php:412
+#: src/Admin.php:430
 msgid "No suggestions were saved for this answer."
 msgstr ""
 
-#: src/Admin.php:423
+#: src/Admin.php:441
 msgid "Open original ↗"
 msgstr ""
 
-#: src/Admin.php:432
-#: src/Admin.php:439
+#: src/Admin.php:450
+#: src/Admin.php:457
 msgid "Refresh list"
 msgstr ""
 
-#: src/Admin.php:433
+#: src/Admin.php:451
 msgid "Connection settings"
 msgstr ""
 
-#: src/Admin.php:437
+#: src/Admin.php:455
 msgid "Choose the widget to display across this site. Edit its appearance, messages and other settings in Dzen Chat."
 msgstr ""
 
-#: src/Admin.php:438
+#: src/Admin.php:456
 msgid "Add widget"
 msgstr ""
 
-#: src/Admin.php:441
+#: src/Admin.php:459
 msgid "The previously selected widget is no longer available. Select another widget for this site."
 msgstr ""
 
-#: src/Admin.php:446
+#: src/Admin.php:464
 msgid "Available project widgets"
 msgstr ""
 
-#: src/Admin.php:447
+#: src/Admin.php:465
 msgid "On site"
 msgstr ""
 
-#: src/Admin.php:447
+#: src/Admin.php:465
 msgid "Status"
 msgstr ""
 
-#: src/Admin.php:449
+#: src/Admin.php:467
 msgid "No widgets yet. Add your first widget below."
 msgstr ""
 
-#: src/Admin.php:457
+#: src/Admin.php:475
 msgid "Selected for this site"
 msgstr ""
 
-#: src/Admin.php:460
+#: src/Admin.php:478
 msgid "Edit in Dzen Chat ↗"
 msgstr ""
 
-#: src/Admin.php:464
+#: src/Admin.php:482
 msgid "Enabled in Dzen Chat"
 msgstr ""
 
-#: src/Admin.php:464
+#: src/Admin.php:482
 msgid "Disabled in Dzen Chat — hidden on the site"
 msgstr ""
 
-#: src/Admin.php:465
+#: src/Admin.php:483
 msgid "Enable it in Dzen Chat before selecting it."
 msgstr ""
 
-#: src/Admin.php:468
+#: src/Admin.php:486
 msgid "No site-wide widget"
 msgstr ""
 
-#: src/Admin.php:469
+#: src/Admin.php:487
 msgid "In the page or post editor, you can select another widget or hide it on that page."
 msgstr ""
 
-#: src/Admin.php:470
+#: src/Admin.php:488
 msgid "Save selection"
 msgstr ""
 
-#: src/Admin.php:471
+#: src/Admin.php:489
 msgid "Open site to check the widget"
 msgstr ""
 
-#: src/Admin.php:472
+#: src/Admin.php:490
 msgid "Help on 404 pages"
 msgstr ""
 
-#: src/Admin.php:476
+#: src/Admin.php:494
 msgid "Show chat on 404 pages"
 msgstr ""
 
-#: src/Admin.php:477
+#: src/Admin.php:495
 msgid "Use the selected site-wide widget to invite visitors to ask for help when a page is not found. The chat opens when they choose Start a conversation. Off by default."
 msgstr ""
 
-#: src/Admin.php:479
+#: src/Admin.php:497
 msgid "Select an enabled site-wide widget above to make chat available on 404 pages."
 msgstr ""
 
-#: src/Admin.php:481
+#: src/Admin.php:499
 msgid "Save 404 settings"
 msgstr ""
 
-#: src/Admin.php:482
+#: src/Admin.php:500
 msgid "Create widget"
 msgstr ""
 
-#: src/Admin.php:484
+#: src/Admin.php:502
 msgid "Name"
 msgstr ""
 
-#: src/Admin.php:484
+#: src/Admin.php:502
 msgid "Create"
 msgstr ""
 
-#: src/Admin.php:485
+#: src/Admin.php:503
 msgid "The new widget is added to this project. Configure it in Dzen Chat, then select it for this site."
 msgstr ""
 
-#: src/Admin.php:486
+#: src/Admin.php:504
 msgid "Before enabling the widget, remove any manually added Dzen Chat script to prevent it from loading twice."
 msgstr ""
 
-#: src/Admin.php:495
+#: src/Admin.php:513
 #: src/PageIndex.php:85
 #: src/Plugin.php:136
 #: src/Sync.php:126
 msgid "Reconnect the site in the Dzen Chat section."
 msgstr ""
 
-#: src/Admin.php:525
+#: src/Admin.php:543
 msgid "This page does not belong to this site's source."
 msgstr ""
 
-#: src/Admin.php:533
+#: src/Admin.php:551
 msgid "Select a widget or choose no site-wide widget."
 msgstr ""
 
-#: src/Admin.php:539
+#: src/Admin.php:557
 msgid "Enable the widget before placing it on the site."
 msgstr ""
 
-#: src/Admin.php:551
+#: src/Admin.php:569
 msgid "Enter a widget name."
 msgstr ""
 
-#: src/Admin.php:558
+#: src/Admin.php:576
 msgid "Unknown action."
 msgstr ""
 

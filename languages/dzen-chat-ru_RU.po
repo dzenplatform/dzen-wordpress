@@ -379,6 +379,9 @@ msgstr "Для этого подключения нет доступных до�
 msgid "Manage sources in Dzen Chat ↗"
 msgstr "Управление источниками в Dzen Chat ↗"
 
+msgid "Manage documents in Dzen Chat ↗"
+msgstr "Управление документами в Dzen Chat ↗"
+
 #: src/Admin.php:319
 msgid "Uploaded documents"
 msgstr "Загруженные документы"

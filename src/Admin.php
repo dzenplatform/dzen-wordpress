@@ -214,13 +214,24 @@ final class Admin
         echo '</dl>';
     }
 
+    private function indexControls(string $settingsUrl, string $settingsLabel): void
+    {
+        echo '<div class="dzen-index-controls">';
+        echo '<a class="button" href="' . esc_url(self::url('dzen-chat-documents')) . '"><span class="dashicons dashicons-update" aria-hidden="true"></span>' . esc_html__('Refresh status', 'dzen-chat') . '</a>';
+        if ($settingsUrl !== '') {
+            echo '<a class="button" href="' . esc_url($settingsUrl) . '" target="_blank" rel="noopener noreferrer" title="' . esc_attr($settingsLabel) . '" aria-label="' . esc_attr($settingsLabel) . '"><span class="dashicons dashicons-admin-generic" aria-hidden="true"></span></a>';
+        }
+        echo '</div>';
+    }
+
     private function sourceCard(array $status): void
     {
         $heading = 'dzen-index-' . $status['id'];
         echo '<section class="dzen-source dzen-index" aria-labelledby="' . esc_attr($heading) . '">';
         echo '<div class="dzen-index-heading">';
         echo '<h4 id="' . esc_attr($heading) . '"><a href="' . esc_url($status['details_url']) . '" target="_blank" rel="noopener noreferrer">' . esc_html($status['title']) . '</a></h4>';
-        echo '<a class="button" href="' . esc_url(self::url('dzen-chat-documents')) . '"><span class="dashicons dashicons-update" aria-hidden="true"></span>' . esc_html__('Refresh status', 'dzen-chat') . '</a></div>';
+        $this->indexControls($status['details_url'], __('Source settings in Dzen Chat ↗', 'dzen-chat'));
+        echo '</div>';
         // Translators: %s is the total number of pages in this source.
         echo '<p>' . esc_html(sprintf(_n('%s page in this source.', '%s pages in this source.', $status['total'], 'dzen-chat'), number_format_i18n($status['total']))) . '</p>';
         if (self::text($status, 'last_reindexed_at') !== '') echo '<p class="description">' . esc_html__('Last reindexed:', 'dzen-chat') . ' ' . esc_html(Dates::format($status['last_reindexed_at'])) . '</p>';
@@ -230,7 +241,7 @@ final class Admin
         if ($status['total'] === 0) echo '<p>' . esc_html__('No pages have been discovered yet.', 'dzen-chat') . '</p>';
         elseif ($status['total'] === $status['counts']['excluded']) echo '<p>' . esc_html__('All discovered pages are excluded from indexing.', 'dzen-chat') . '</p>';
         echo '<p class="description">' . esc_html__('Excluded pages are counted separately from the progress bar.', 'dzen-chat') . '</p>';
-        echo '<p class="dzen-index-actions"><a class="button" href="' . esc_url($status['details_url']) . '" target="_blank" rel="noopener noreferrer">' . esc_html__('Source settings in Dzen Chat ↗', 'dzen-chat') . '</a></p></section>';
+        echo '</section>';
     }
 
     private function documentStatus(array $file): void
@@ -321,6 +332,13 @@ final class Admin
         }
         echo '<h3 id="dzen-files">' . esc_html__('Uploaded documents', 'dzen-chat') . '</h3>';
         $files = $filesApi->all();
+        echo '<section class="dzen-source dzen-index" aria-labelledby="dzen-files"><div class="dzen-index-heading">';
+        if (!is_wp_error($files) && $files) {
+            // Translators: %s is the total number of uploaded documents.
+            echo '<p>' . esc_html(sprintf(_n('%s uploaded document.', '%s uploaded documents.', count($files), 'dzen-chat'), number_format_i18n(count($files)))) . '</p>';
+        }
+        $this->indexControls($projectUrl === '' ? '' : $projectUrl . '/files', __('Manage documents in Dzen Chat ↗', 'dzen-chat'));
+        echo '</div>';
         if (is_wp_error($files)) {
             $this->error($files);
         } elseif (!$files) {
@@ -328,9 +346,6 @@ final class Admin
         } else {
             $counts = array_fill_keys(['errors', 'pending', 'processing', 'ready'], 0);
             foreach ($files as $file) ++$counts[Files::indexStatus($file)];
-            echo '<section class="dzen-source dzen-index">';
-            // Translators: %s is the total number of uploaded documents.
-            echo '<p>' . esc_html(sprintf(_n('%s uploaded document.', '%s uploaded documents.', count($files), 'dzen-chat'), number_format_i18n(count($files)))) . '</p>';
             $this->progressBar($counts);
             foreach ($files as $file) {
                 echo '<article class="dzen-document"><h4><a href="' . esc_url(self::url('dzen-chat-documents', ['file' => $file['id']])) . '">' . esc_html($file['name']) . '</a></h4>';
@@ -339,8 +354,8 @@ final class Admin
                 if ($projectUrl !== '') $this->external($projectUrl . '/files/' . rawurlencode($file['id']), __('Edit document in Dzen Chat ↗', 'dzen-chat'));
                 echo '</article>';
             }
-            echo '</section>';
         }
+        echo '</section>';
         $this->uploadForm();
     }
 

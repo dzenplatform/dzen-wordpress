@@ -33,8 +33,10 @@
 .dzen-index-counts dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
 .dzen-index-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
 .dzen-index-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 0; }
-.dzen-index-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.dzen-index-heading { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
 .dzen-index-heading h4 { min-width: 0; margin: 0; font-size: 16px; }
+.dzen-index-heading > p { margin: 0; }
+.dzen-index-controls { display: flex; gap: 8px; margin-inline-start: auto; flex-shrink: 0; }
 .dzen-index-heading .button { display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0; }
 .dzen-index-heading .dashicons { width: 16px; height: 16px; font-size: 16px; }
 .dzen-document { padding: 16px 0; border-top: 1px solid #dcdcde; }
