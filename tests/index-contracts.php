@@ -28,10 +28,10 @@ $check(!is_wp_error($status) && $status['total'] === 115 && $status['counts']['r
     'aggregate counts are not limited to 100 documents');
 $requests = [];
 $html = $render();
-$check($requests === ['https://chat.dzen.dev/api/sources/source-one/status'],
-    'Index requests only the connected source status and ignores query overrides');
-$check(str_contains($html, '115 pages in this source.') && substr_count($html, '<dt>') === 5,
-    'Index includes the total and five status counters');
+$check($requests === ['https://chat.dzen.dev/api/sources/source-one/status', 'https://chat.dzen.dev/api/sources', 'https://chat.dzen.dev/api/files'],
+    'Index loads the connected source, assigned sources and documents while ignoring query overrides');
+$check(str_contains($html, '115 pages in this source.') && substr_count($html, '<dt>') === 9,
+    'Index includes the source and document status counters');
 $check(str_contains($html, 'https://chat.dzen.dev/projects/project-one/sources/source-one')
     && str_contains($html, 'Refresh status') && !str_contains($html, '<table') && !str_contains($html, 'name="q"'),
     'Index contains the details link and refresh without a document table or filters');
@@ -60,13 +60,13 @@ foreach (['https://evil.example/projects/p/sources/source-one',
     $override = array_replace($status, ['details_url' => $url]);
     $check(is_wp_error($api->sourceStatus('source-one')), 'unsafe or mismatched detail link rejected');
 }
-$check(!str_contains($render(), 'dzen-index-bar'), 'invalid response does not render misleading progress');
+$check(!str_contains($render(), 'id="dzen-index-source-one"'), 'invalid source response does not render misleading progress');
 $override = array_replace($status, ['counts' => array_fill_keys(array_keys($status['counts']), 0), 'total' => 0]);
-$html = $render();
+$html = explode('<h3>Additional website sources', $render())[0];
 $check(str_contains($html, 'No pages have been discovered yet.') && !str_contains($html, 'flex-grow:'), 'empty source has a neutral bar');
 $override['counts']['excluded'] = 4;
 $override['total'] = 4;
-$html = $render();
+$html = explode('<h3>Additional website sources', $render())[0];
 $check(str_contains($html, 'All discovered pages are excluded') && !str_contains($html, 'flex-grow:'), 'excluded-only source is not shown as completed');
 $override = array_replace($status, ['is_paused' => true, 'blocked_reason' => 'http_403', 'title' => '<script>alert(1)</script>']);
 $html = $render();
@@ -80,4 +80,32 @@ foreach (['network', 'revoked', 'forbidden'] as $scenario) {
 update_option('dzen_fixture_scenario', 'normal', false);
 remove_filter('pre_http_request', $observe, 9);
 remove_filter('pre_http_request', $modify, 11);
+$savedSources = get_option('dzen_fixture_sources', null);
+try {
+    $additional = array_replace($status, ['id' => 'source-two', 'title' => 'Support website',
+        'details_url' => 'https://chat.dzen.dev/projects/project-one/sources/source-two',
+        'counts' => ['errors' => 1, 'pending' => 0, 'processing' => 3, 'ready' => 8, 'excluded' => 0], 'total' => 12]);
+    update_option('dzen_fixture_sources', [$status, $additional], false);
+    $html = $render();
+    $check(substr_count($html, 'id="dzen-index-source-one"') === 1 && str_contains($html, 'id="dzen-index-source-two"')
+        && str_contains($html, '12 pages in this source.'), 'additional assigned source has its own progress without duplicating the site');
+    $check(str_contains($html, $additional['details_url'] . '" target="_blank" rel="noopener noreferrer"'),
+        'additional source opens its own validated settings in Dzen Chat');
+    $check(str_contains($html, 'name="document"') && str_contains($html, 'multipart/form-data')
+        && str_contains($html, '.txt,.md,.markdown'), 'Index includes the supported document upload form');
+    $additional['counts']['ready'] = -1;
+    update_option('dzen_fixture_sources', [$status, $additional], false);
+    $html = $render();
+    $check(str_contains($html, 'id="dzen-index-source-one"') && !str_contains($html, 'id="dzen-index-source-two"')
+        && str_contains($html, 'Uploaded documents'), 'invalid additional status is reported without hiding the site or files');
+    update_option('dzen_fixture_sources', [$status, ['id' => '../foreign']], false);
+    $requests = [];
+    add_filter('pre_http_request', $observe, 9, 3);
+    $html = $render();
+    $check(str_contains($html, 'invalid source list') && !array_filter($requests, static fn ($url) => str_contains($url, 'foreign')),
+        'invalid source IDs never become API requests');
+    remove_filter('pre_http_request', $observe, 9);
+} finally {
+    $savedSources === null ? delete_option('dzen_fixture_sources') : update_option('dzen_fixture_sources', $savedSources, false);
+}
 echo "Checks passed: $checks\n";

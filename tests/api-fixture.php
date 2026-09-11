@@ -125,6 +125,11 @@ add_filter('pre_http_request', static function ($pre, $args, $url) {
         'source_id' => 'source-one', 'status' => 'ready', 'status_error' => null, 'index_status' => 'ready', 'has_triggers' => true, 'updated_at' => '2026-09-11T01:00:00Z'];
     $file = ['id' => 'file-one', 'name' => 'Инструкция', 'content' => 'Тестовый текст файла <script>alert(1)</script>',
         'status' => 'ready', 'status_error' => null, 'size_bytes' => 100, 'updated_at' => '2026-09-11T01:00:00Z'];
+    $sources = get_option('dzen_fixture_sources', [$source + [
+        'counts' => ['errors' => 2, 'pending' => 3, 'processing' => 1, 'ready' => 105, 'excluded' => 4],
+        'total' => 115, 'details_url' => 'https://chat.dzen.dev/projects/project-one/sources/source-one',
+    ]]);
+    $files = get_option('dzen_fixture_files', [$file]);
     $chat = ['id' => 'chat-one', 'created_at' => '2026-09-11T01:00:00Z', 'updated_at' => '2026-09-11T01:01:00Z',
         'visitor' => 'visitor1234567890', 'widget_code' => 'fixture-widget', 'feedback' => null,
         'details_url' => 'https://chat.dzen.dev/projects/project-one/history/chat-one'];
@@ -142,13 +147,22 @@ add_filter('pre_http_request', static function ($pre, $args, $url) {
         if (!str_starts_with($body['url'], trailingslashit(home_url()))) return $reply(['error' => 'outside source'], 403);
         return $reply(['url' => $body['url'], 'source_id' => 'source-one', 'index_status' => 'excluded']);
     }
+    if ($path === '/api/files' && $method === 'POST') {
+        if (array_keys($body) !== ['name', 'content'] || !is_string($body['name']) || !is_string($body['content'])) {
+            throw new RuntimeException('File creation accepts name and text content only');
+        }
+        $created = ['id' => 'file-' . wp_generate_uuid4(), 'name' => $body['name'], 'content' => $body['content'],
+            'status' => 'parsing', 'status_error' => null, 'size_bytes' => strlen($body['content']), 'updated_at' => gmdate('c')];
+        $files[] = $created;
+        update_option('dzen_fixture_files', $files, false);
+        return $reply($created, 201);
+    }
     if ($method !== 'GET') return $reply(['error' => 'Unsupported method'], 405);
-    if ($path === '/api/sources') return $reply(['items' => [$source]]);
-    if ($path === '/api/sources/source-one') return $reply($source);
-    if ($path === '/api/sources/source-one/status') return $reply($source + [
-        'counts' => ['errors' => 2, 'pending' => 3, 'processing' => 1, 'ready' => 105, 'excluded' => 4],
-        'total' => 115, 'details_url' => 'https://chat.dzen.dev/projects/project-one/sources/source-one',
-    ]);
+    if ($path === '/api/sources') return $reply(['items' => $sources]);
+    if (preg_match('~^/api/sources/([^/]+)(?:/status)?$~D', $path, $match)) {
+        foreach ($sources as $item) if ($item['id'] === $match[1]) return $reply($item);
+        return $reply(['error' => 'Source not found'], 404);
+    }
     if ($path === '/api/pages') {
         if (array_diff(array_keys($query), ['limit', 'url', 'source_id'])) throw new RuntimeException('Page query does not support these fields');
         if ((isset($query['url']) && $query['url'] !== $page['url'])
@@ -161,8 +175,10 @@ add_filter('pre_http_request', static function ($pre, $args, $url) {
         'details_url' => 'https://chat.dzen.dev/projects/project-one/pages/page-one',
         'triggers' => [['key' => 'delivery', 'text' => 'Как работает доставка?'], ['key' => 'address', 'text' => 'Можно изменить адрес доставки?']],
     ]);
-    if ($path === '/api/files') return $reply(['items' => [$file]]);
-    if ($path === '/api/files/file-one') return $reply($file);
+    if ($path === '/api/files') return $reply(['items' => $files]);
+    if (str_starts_with($path, '/api/files/')) {
+        foreach ($files as $item) if ($path === '/api/files/' . $item['id']) return $reply($item);
+    }
     if ($path === '/api/chats') {
         if (array_diff(array_keys($query), ['limit'])) throw new RuntimeException('Chat query does not support these fields');
         return $reply(['items' => [$chat]]);

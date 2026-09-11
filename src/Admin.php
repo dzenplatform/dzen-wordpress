@@ -11,6 +11,14 @@ final class Admin
     {
         add_action('admin_menu', [$this, 'menu']);
         add_action('admin_post_dzen_chat_action', [$this, 'action']);
+        // Redirect before WordPress checks access to the removed menu page.
+        add_action('admin_menu', static function () {
+            if (self::input('page', $_GET) === 'dzen-chat-sources' && current_user_can('manage_options')) {
+                $file = self::input('file', $_GET);
+                wp_safe_redirect(self::url('dzen-chat-documents', $file === '' ? [] : ['file' => $file]), 302);
+                exit;
+            }
+        }, 1);
         add_action('admin_enqueue_scripts', static function ($hook) {
             if (str_contains($hook, 'dzen-chat')) {
                 wp_enqueue_style('dzen-chat-admin', plugins_url('assets/admin.css', DZEN_CHAT_FILE), [], DZEN_CHAT_VERSION);
@@ -22,8 +30,7 @@ final class Admin
     {
         add_menu_page('Dzen Chat', 'Dzen Chat', 'manage_options', 'dzen-chat', [$this, 'page'], 'dashicons-format-chat', 58);
         foreach (['dzen-chat' => __('Overview', 'dzen-chat'), 'dzen-chat-widgets' => __('Widgets', 'dzen-chat'),
-            'dzen-chat-documents' => __('Index', 'dzen-chat'), 'dzen-chat-history' => __('Conversations', 'dzen-chat'),
-            'dzen-chat-sources' => __('Sources', 'dzen-chat')] as $slug => $title) {
+            'dzen-chat-documents' => __('Index', 'dzen-chat'), 'dzen-chat-history' => __('Conversations', 'dzen-chat')] as $slug => $title) {
             add_submenu_page('dzen-chat', $title, $title, 'manage_options', $slug, [$this, 'page']);
         }
     }
@@ -74,16 +81,6 @@ final class Admin
         return isset($item[$key]) && is_scalar($item[$key]) ? (string) $item[$key] : '';
     }
 
-    private static function statusLabel(array $item): string
-    {
-        return match (self::text($item, 'status')) {
-            'crawler' => __('Waiting to be crawled', 'dzen-chat'),
-            'parsing' => __('Processing', 'dzen-chat'),
-            'ready' => __('Processing complete', 'dzen-chat'),
-            default => self::text($item, 'status'),
-        };
-    }
-
     private function error(\WP_Error $error): void
     {
         echo '<div class="notice notice-error"><p>' . esc_html($error->get_error_message()) . '</p></div>';
@@ -113,6 +110,7 @@ final class Admin
             'saved' => __('Change saved.', 'dzen-chat'),
             'widget_created' => __('Widget created. Select it below to display it on this site.', 'dzen-chat'),
             'queued' => __('Request accepted. Check processing progress in the Index section.', 'dzen-chat'),
+            'file_uploaded' => __('Document uploaded. Check its indexing status below.', 'dzen-chat'),
             'reconcile' => __('Public content reconciliation has been queued.', 'dzen-chat'),
         ];
         $notice = self::input('notice', $_GET);
@@ -127,7 +125,6 @@ final class Admin
                     'dzen-chat-widgets' => $this->widgets(),
                     'dzen-chat-documents' => $this->documents(),
                     'dzen-chat-history' => $this->history(),
-                    'dzen-chat-sources' => $this->sources(),
                     default => $this->overview(),
                 };
             } catch (\RuntimeException | \JsonException $error) {
@@ -149,7 +146,7 @@ final class Admin
             $sourceId = $this->credentials->get()['site_source_id'];
             $source = current(array_filter($sources, static fn ($item) => $item['id'] === $sourceId));
             if ($source) {
-                echo '<p>' . esc_html__('Site source:', 'dzen-chat') . ' <a href="' . esc_url(self::url('dzen-chat-sources', ['source' => $sourceId])) . '">' . esc_html(self::text($source, 'title')) . '</a></p>';
+                echo '<p>' . esc_html__('Site source:', 'dzen-chat') . ' <a href="' . esc_url(self::url('dzen-chat-documents')) . '">' . esc_html(self::text($source, 'title')) . '</a></p>';
                 $this->sourceState($source);
             } else {
                 $this->error(new \WP_Error('source', __('The site source is no longer available to this connection.', 'dzen-chat')));
@@ -193,48 +190,74 @@ final class Admin
         if (self::text($source, 'last_reindexed_at') !== '') echo '<p>' . esc_html__('Last reindexed:', 'dzen-chat') . ' ' . esc_html(self::text($source, 'last_reindexed_at')) . '</p>';
     }
 
-    private function sources(): void
+    private static function indexLabels(): array
     {
-        echo '<h2>' . esc_html__('Sources', 'dzen-chat') . '</h2>';
-        $fileId = self::input('file', $_GET);
-        if ($fileId !== '') {
-            $file = $this->api->request('GET', '/files/' . Api::segment($fileId));
-            if (is_wp_error($file)) { $this->error($file); return; }
-            if (($file['id'] ?? null) !== $fileId) { $this->error(new \WP_Error('protocol', __('The service returned a different file.', 'dzen-chat'))); return; }
-            echo '<p><a href="' . esc_url(self::url('dzen-chat-sources')) . '">← ' . esc_html__('All sources', 'dzen-chat') . '</a></p><h3>' . esc_html(self::text($file, 'name')) . '</h3>';
-            echo '<p>' . esc_html(self::statusLabel($file)) . ' ' . esc_html(self::text($file, 'status_error')) . '</p><div class="dzen-text">' . esc_html(self::text($file, 'content')) . '</div>';
-            return;
-        }
-        $id = self::input('source', $_GET);
-        if ($id !== '') {
-            $source = $this->api->request('GET', '/sources/' . Api::segment($id));
-            if (is_wp_error($source)) { $this->error($source); return; }
-            if (($source['id'] ?? null) !== $id) { $this->error(new \WP_Error('protocol', __('The service returned a different source.', 'dzen-chat'))); return; }
-            echo '<p><a href="' . esc_url(self::url('dzen-chat-sources')) . '">← ' . esc_html__('All sources', 'dzen-chat') . '</a></p>';
-            echo '<h3>' . esc_html(self::text($source, 'title')) . '</h3>';
-            $this->external($source['url'] ?? null);
-            $this->sourceState($source);
-            if ($id === $this->credentials->get()['site_source_id']) {
-                echo '<p><a href="' . esc_url(self::url('dzen-chat-documents')) . '">' . esc_html__('Indexing status', 'dzen-chat') . '</a></p>';
+        return ['errors' => __('Errors', 'dzen-chat'), 'pending' => __('Pending', 'dzen-chat'),
+            'processing' => __('Processing', 'dzen-chat'), 'ready' => __('Ready', 'dzen-chat'),
+            'excluded' => __('Excluded', 'dzen-chat')];
+    }
+
+    private function progressBar(array $counts): void
+    {
+        $labels = self::indexLabels();
+        echo '<div class="dzen-index-bar" aria-hidden="true">';
+        foreach ($counts as $key => $count) {
+            if ($key !== 'excluded' && $count > 0) {
+                echo '<span class="dzen-index-' . esc_attr($key) . '" style="flex-grow:' . esc_attr((string) $count) . '" title="' . esc_attr($labels[$key] . ': ' . number_format_i18n($count)) . '"></span>';
             }
-            return;
         }
-        $items = $this->api->items('/sources');
-        if (is_wp_error($items)) { $this->error($items); return; }
-        if (!$items) echo '<p>' . esc_html__('No sources are available.', 'dzen-chat') . '</p>';
-        foreach ($items as $source) {
-            echo '<section class="dzen-message"><h3><a href="' . esc_url(self::url('dzen-chat-sources', ['source' => $source['id']])) . '">' . esc_html(self::text($source, 'title')) . '</a></h3>';
-            $this->sourceState($source);
-            $this->external($source['url'] ?? null);
-            echo '</section>';
+        echo '</div><dl class="dzen-index-counts">';
+        foreach ($counts as $key => $count) {
+            echo '<div><dt><span class="dzen-index-dot dzen-index-' . esc_attr($key) . '" aria-hidden="true"></span>' . esc_html($labels[$key]) . '</dt><dd>' . esc_html(number_format_i18n($count)) . '</dd></div>';
         }
-        echo '<h3>' . esc_html__('Knowledge base files', 'dzen-chat') . '</h3>';
-        $files = $this->api->items('/files');
-        if (is_wp_error($files)) { $this->error($files); return; }
-        if (!$files) echo '<p>' . esc_html__('No files have been added.', 'dzen-chat') . '</p>';
-        foreach ($files as $file) {
-            echo '<section class="dzen-message"><h4><a href="' . esc_url(self::url('dzen-chat-sources', ['file' => $file['id']])) . '">' . esc_html(self::text($file, 'name')) . '</a></h4><p>' . esc_html(self::statusLabel($file)) . ' ' . esc_html(self::text($file, 'status_error')) . '</p><p>' . esc_html(self::text($file, 'updated_at')) . '</p></section>';
+        echo '</dl>';
+    }
+
+    private function sourceCard(array $status): void
+    {
+        $heading = 'dzen-index-' . $status['id'];
+        echo '<section class="dzen-source dzen-index" aria-labelledby="' . esc_attr($heading) . '">';
+        echo '<h4 id="' . esc_attr($heading) . '"><a href="' . esc_url($status['details_url']) . '" target="_blank" rel="noopener noreferrer">' . esc_html($status['title']) . '</a></h4>';
+        // Translators: %s is the total number of pages in this source.
+        echo '<p>' . esc_html(sprintf(_n('%s page in this source.', '%s pages in this source.', $status['total'], 'dzen-chat'), number_format_i18n($status['total']))) . '</p>';
+        if ($status['is_paused']) echo '<p>' . esc_html__('Updates paused', 'dzen-chat') . '</p>';
+        if ($status['blocked_reason']) echo '<p>' . esc_html__('Indexing is restricted. Open Dzen Chat for details.', 'dzen-chat') . '</p>';
+        $this->progressBar($status['counts']);
+        if ($status['total'] === 0) echo '<p>' . esc_html__('No pages have been discovered yet.', 'dzen-chat') . '</p>';
+        elseif ($status['total'] === $status['counts']['excluded']) echo '<p>' . esc_html__('All discovered pages are excluded from indexing.', 'dzen-chat') . '</p>';
+        echo '<p class="description">' . esc_html__('Excluded pages are counted separately from the progress bar.', 'dzen-chat') . '</p>';
+        echo '<p class="dzen-index-actions"><a class="button" href="' . esc_url($status['details_url']) . '" target="_blank" rel="noopener noreferrer">' . esc_html__('Source settings in Dzen Chat ↗', 'dzen-chat') . '</a></p></section>';
+    }
+
+    private function documentStatus(array $file): void
+    {
+        $status = Files::indexStatus($file);
+        echo '<p><span class="dzen-index-dot dzen-index-' . esc_attr($status) . '" aria-hidden="true"></span> ' . esc_html(self::indexLabels()[$status]) . '</p>';
+        if ($file['status_error']) {
+            echo '<p class="dzen-document-error">' . esc_html($file['status_error'] === 'too_big'
+                ? __('The document is too large for indexing. Shorten it in Dzen Chat or upload a smaller document.', 'dzen-chat')
+                : $file['status_error']) . '</p>';
         }
+    }
+
+    private function uploadForm(): void
+    {
+        echo '<section class="dzen-source dzen-index" id="dzen-upload"><h3>' . esc_html__('Add a document', 'dzen-chat') . '</h3>';
+        if (current_user_can('upload_files')) {
+            echo '<form method="post" enctype="multipart/form-data" class="dzen-document-upload" action="' . esc_url(admin_url('admin-post.php')) . '">';
+            wp_nonce_field('dzen_chat_action');
+            echo '<input type="hidden" name="action" value="dzen_chat_action"><input type="hidden" name="operation" value="file_upload">';
+            echo '<input type="hidden" name="MAX_FILE_SIZE" value="' . esc_attr((string) Files::uploadLimit()) . '">';
+            echo '<label for="dzen-document">' . esc_html__('Document', 'dzen-chat') . '</label>';
+            echo '<input id="dzen-document" type="file" name="document" accept=".txt,.md,.markdown,text/plain,text/markdown" aria-describedby="dzen-document-formats" required>';
+            // Translators: %s is the maximum upload size, such as 256 KB.
+            echo '<p id="dzen-document-formats" class="description">' . esc_html(sprintf(__('TXT or Markdown (.txt, .md, .markdown), UTF-8. Maximum file size: %s.', 'dzen-chat'), size_format(Files::uploadLimit()))) . '</p>';
+            echo '<p class="description">' . esc_html__('Uploads go to Dzen Chat without being added to the WordPress media library.', 'dzen-chat') . '</p>';
+            echo '<p><button type="submit" class="button button-primary">' . esc_html__('Upload for indexing', 'dzen-chat') . '</button></p></form>';
+        } else {
+            echo '<p>' . esc_html__('You do not have permission to upload documents.', 'dzen-chat') . '</p>';
+        }
+        echo '</section>';
     }
 
     private function documents(): void
@@ -242,33 +265,78 @@ final class Admin
         echo '<h2>' . esc_html__('Index', 'dzen-chat') . '</h2>';
         $sourceId = $this->credentials->get()['site_source_id'];
         $status = $this->api->sourceStatus($sourceId);
-        if (is_wp_error($status)) { $this->error($status); return; }
-        $labels = ['errors' => __('Errors', 'dzen-chat'), 'pending' => __('Pending', 'dzen-chat'),
-            'processing' => __('Processing', 'dzen-chat'), 'ready' => __('Ready', 'dzen-chat'),
-            'excluded' => __('Excluded', 'dzen-chat')];
-        echo '<section class="dzen-source dzen-index" aria-labelledby="dzen-index-title">';
-        echo '<h3 id="dzen-index-title">' . esc_html($status['title']) . '</h3>';
-        // Translators: %s is the total number of pages in the connected source.
-        echo '<p>' . esc_html(sprintf(_n('%s page in this source.', '%s pages in this source.', $status['total'], 'dzen-chat'), number_format_i18n($status['total']))) . '</p>';
-        if ($status['is_paused']) echo '<p>' . esc_html__('Updates paused', 'dzen-chat') . '</p>';
-        if ($status['blocked_reason']) echo '<p>' . esc_html__('Indexing is restricted. Open Dzen Chat for details.', 'dzen-chat') . '</p>';
-        echo '<div class="dzen-index-bar" aria-hidden="true">';
-        foreach ($labels as $key => $label) {
-            $count = $status['counts'][$key];
-            if ($key !== 'excluded' && $count > 0) {
-                echo '<span class="dzen-index-' . esc_attr($key) . '" style="flex-grow:' . esc_attr((string) $count) . '" title="' . esc_attr($label . ': ' . number_format_i18n($count)) . '"></span>';
+        // The project prefix comes only from a validated source settings URL.
+        $projectUrl = is_wp_error($status) ? '' : preg_replace('~/sources/[^/]+$~', '', $status['details_url']);
+        $filesApi = new Files($this->api);
+        $fileId = self::input('file', $_GET);
+        if ($fileId !== '') {
+            echo '<p><a href="' . esc_url(self::url('dzen-chat-documents')) . '">← ' . esc_html__('Back to Index', 'dzen-chat') . '</a></p>';
+            $file = $filesApi->get($fileId);
+            if (is_wp_error($file)) { $this->error($file); return; }
+            echo '<section class="dzen-source"><h3>' . esc_html($file['name']) . '</h3>';
+            $this->documentStatus($file);
+            if ($projectUrl !== '') $this->external($projectUrl . '/files/' . rawurlencode($fileId), __('Edit document in Dzen Chat ↗', 'dzen-chat'));
+            echo '<div class="dzen-text">' . esc_html($file['content']) . '</div></section>';
+            return;
+        }
+        echo '<p>' . esc_html__('Track this website, additional sources and uploaded documents in one place.', 'dzen-chat') . '</p>';
+        echo '<p class="dzen-index-actions"><a class="button" href="' . esc_url(self::url('dzen-chat-documents')) . '">' . esc_html__('Refresh status', 'dzen-chat') . '</a> <a class="button button-primary" href="#dzen-upload">' . esc_html__('Add a document', 'dzen-chat') . '</a></p>';
+        echo '<h3>' . esc_html__('This WordPress site', 'dzen-chat') . '</h3>';
+        is_wp_error($status) ? $this->error($status) : $this->sourceCard($status);
+        echo '<h3>' . esc_html__('Additional website sources', 'dzen-chat') . '</h3>';
+        $sources = $this->api->items('/sources');
+        if (is_wp_error($sources)) {
+            $this->error($sources);
+        } else {
+            $ids = [];
+            foreach ($sources as $source) {
+                if (!is_string($source['id']) || !preg_match('/^[A-Za-z0-9_-]{1,128}$/D', $source['id']) || isset($ids[$source['id']])) {
+                    $sources = new \WP_Error('source_protocol', __('The service returned an invalid source list.', 'dzen-chat'));
+                    break;
+                }
+                $ids[$source['id']] = true;
+            }
+            if (is_wp_error($sources)) {
+                $this->error($sources);
+            } else {
+                unset($ids[$sourceId]);
+                if (!$ids) echo '<p>' . esc_html__('No additional website sources are available to this connection.', 'dzen-chat') . '</p>';
+                foreach (array_keys($ids) as $id) {
+                    $additional = $this->api->sourceStatus($id);
+                    if (is_wp_error($additional)) { $this->error($additional); continue; }
+                    if ($projectUrl === '') $projectUrl = preg_replace('~/sources/[^/]+$~', '', $additional['details_url']);
+                    $this->sourceCard($additional);
+                }
             }
         }
-        echo '</div><dl class="dzen-index-counts">';
-        foreach ($labels as $key => $label) {
-            echo '<div><dt><span class="dzen-index-dot dzen-index-' . esc_attr($key) . '" aria-hidden="true"></span>' . esc_html($label) . '</dt><dd>' . esc_html(number_format_i18n($status['counts'][$key])) . '</dd></div>';
+        if ($projectUrl !== '') {
+            echo '<p>';
+            $this->external($projectUrl . '/sources', __('Manage sources in Dzen Chat ↗', 'dzen-chat'));
+            echo '</p>';
         }
-        echo '</dl>';
-        if ($status['total'] === 0) echo '<p>' . esc_html__('No pages have been discovered yet.', 'dzen-chat') . '</p>';
-        elseif ($status['total'] === $status['counts']['excluded']) echo '<p>' . esc_html__('All discovered pages are excluded from indexing.', 'dzen-chat') . '</p>';
-        echo '<p class="description">' . esc_html__('Excluded pages are counted separately from the progress bar.', 'dzen-chat') . '</p>';
-        echo '<p class="dzen-index-actions"><a class="button button-primary" href="' . esc_url($status['details_url']) . '" target="_blank" rel="noopener noreferrer">' . esc_html__('View details in Dzen Chat ↗', 'dzen-chat') . '</a> ';
-        echo '<a class="button" href="' . esc_url(self::url('dzen-chat-documents')) . '">' . esc_html__('Refresh status', 'dzen-chat') . '</a></p></section>';
+        echo '<h3 id="dzen-files">' . esc_html__('Uploaded documents', 'dzen-chat') . '</h3>';
+        $files = $filesApi->all();
+        if (is_wp_error($files)) {
+            $this->error($files);
+        } elseif (!$files) {
+            echo '<p>' . esc_html__('No files have been added.', 'dzen-chat') . '</p>';
+        } else {
+            $counts = array_fill_keys(['errors', 'pending', 'processing', 'ready'], 0);
+            foreach ($files as $file) ++$counts[Files::indexStatus($file)];
+            echo '<section class="dzen-source dzen-index">';
+            // Translators: %s is the total number of uploaded documents.
+            echo '<p>' . esc_html(sprintf(_n('%s uploaded document.', '%s uploaded documents.', count($files), 'dzen-chat'), number_format_i18n(count($files)))) . '</p>';
+            $this->progressBar($counts);
+            foreach ($files as $file) {
+                echo '<article class="dzen-document"><h4><a href="' . esc_url(self::url('dzen-chat-documents', ['file' => $file['id']])) . '">' . esc_html($file['name']) . '</a></h4>';
+                $this->documentStatus($file);
+                echo '<p class="description">' . esc_html(size_format($file['size_bytes'])) . '</p>';
+                if ($projectUrl !== '') $this->external($projectUrl . '/files/' . rawurlencode($file['id']), __('Edit document in Dzen Chat ↗', 'dzen-chat'));
+                echo '</article>';
+            }
+            echo '</section>';
+        }
+        $this->uploadForm();
     }
 
     private function history(): void
@@ -428,6 +496,14 @@ final class Admin
         $result = [];
         $widgets = new Widgets($this->credentials, $this->api);
         switch ($operation) {
+            case 'file_upload':
+                if (!current_user_can('upload_files')) wp_die(esc_html__('You do not have permission to upload documents.', 'dzen-chat'), '', ['response' => 403]);
+                $document = Files::readUpload($_FILES['document'] ?? null);
+                if (is_wp_error($document)) wp_die(esc_html($document->get_error_message()), '', ['response' => 400, 'back_link' => true]);
+                $result = (new Files($this->api))->create($document);
+                $destination = 'dzen-chat-documents';
+                $notice = 'file_uploaded';
+                break;
             case 'widget_404':
                 update_option('dzen_chat_404_enabled', self::input('enabled', $_POST) === '1', false);
                 break;

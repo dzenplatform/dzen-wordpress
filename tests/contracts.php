@@ -167,9 +167,9 @@ wp_set_current_user(get_user_by('login', 'dzen_test')->ID);
 $admin = new DzenChat\Admin($credentials, $api, $sync);
 foreach ([
     ['page' => 'dzen-chat-history', 'chat' => 'chat-one'],
-    ['page' => 'dzen-chat-sources', 'file' => 'file-one'],
+    ['page' => 'dzen-chat-documents', 'file' => 'file-one'],
     ['page' => 'dzen-chat-documents'],
-    ['page' => 'dzen-chat-sources', 'source' => 'source-one'],
+    ['page' => 'dzen-chat-documents', 'source' => 'source-one'],
 ] as $query) {
     $_GET = $query;
     ob_start();

@@ -3,7 +3,7 @@
 Connect your WordPress site to [Dzen Chat](https://chat.dzen.dev), manage chat
 widgets and keep public content available to your AI assistant.
 
-**Version 0.12.0 uses the implemented public API and includes English and Russian
+**Version 0.13.0 uses the implemented public API and includes English and Russian
 interfaces.** Authorize a site, manage real widgets, check source indexing progress,
 inspect sources and knowledge files, and read conversations directly in WordPress.
 Public pages and posts are submitted for reindexing after connection, publication
@@ -20,7 +20,8 @@ background queue → Dzen Chat index → assistant answer using the new informat
 - Offer chat help on 404 pages through an optional setting. Visitors can start
   a conversation with the selected widget or dismiss the invitation.
 - Synchronize public pages and posts through a persistent background queue.
-- Check indexing progress for the connected site source, with counts of pending,
+- Check indexing progress for the connected site and additional sources on one
+  **Index** screen, with counts of pending,
   processing, ready, failed and excluded pages. Open detailed source settings in
   Dzen Chat or refresh the status in WordPress.
 - See each page's indexing status above widget settings in the editor. The status
@@ -30,7 +31,8 @@ background queue → Dzen Chat index → assistant answer using the new informat
   page details in Dzen Chat. Refresh them with indexing status.
 - Remove a page from the Dzen Chat index and block future content updates directly
   in the editor. The page remains published on your website.
-- View source status and knowledge file contents as escaped text.
+- Upload TXT and Markdown documents for indexing. See document processing status
+  and errors, read their contents in WordPress and open their editor in Dzen Chat.
 - Read conversations, messages and feedback; filter by conversation or visitor
   ID, date and widget. See saved follow-up suggestions and visitor selections,
   or open the same conversation directly in Dzen Chat. Conversation text stays
@@ -56,6 +58,10 @@ so the close button and message composer remain accessible.
 - Products need a separate integration. The plugin submits only public
   `page`/`post` content. General crawling and additional sources are managed
   by the service.
+- Additional website sources appear when they are assigned to this API client.
+  Document uploads accept UTF-8 text only; PDF and Office uploads are not supported
+  by the current file API. File lists include contents and are subject to the
+  plugin's 2 MiB response limit.
 
 See the [current API contract](docs/contracts/dzen-chat-api.md),
 [0.7.0 indexing verification](docs/verification/2026-09-11-source-index-status.md),
@@ -64,6 +70,7 @@ See the [current API contract](docs/contracts/dzen-chat-api.md),
 [0.10.0 trigger verification](docs/verification/2026-09-11-page-triggers.md),
 [0.11.0 exclusion verification](docs/verification/2026-09-11-page-exclusion.md),
 [0.12.0 404 verification](docs/verification/2026-09-11-404-help.md),
+[0.13.0 sources and upload verification](docs/verification/2026-09-11-index-documents.md),
 [0.4.0 live verification](docs/verification/2026-09-11-full-integration.md),
 [implementation brief](docs/specs/2026-09-11-full-integration.md),
 [authorization verification](docs/verification/2026-09-11-registration.md) and
@@ -82,7 +89,19 @@ For a manual update, upload the new ZIP and confirm replacement.
 4. Open **Dzen Chat → Widgets**, select an enabled widget and click **Save selection**.
    Use **Add widget** to create one. Enable disabled widgets in Dzen Chat first.
 5. Open a public page to check the widget. Page and post overrides are in the editor.
-6. Inspect **Index**, **Sources** and **Conversations** as content and chats arrive.
+6. Inspect **Index** and **Conversations** as content and chats arrive.
+
+To add a document, open **Dzen Chat → Index → Add a document**, choose a `.txt`,
+`.md` or `.markdown` file in UTF-8, and click **Upload for indexing**. The maximum
+is 256 KiB, or the WordPress upload limit if lower. The document is sent to Dzen
+Chat without being copied to the WordPress media library. Refresh its status to
+check processing; an uploaded document is not necessarily indexed. The service
+may reject content above its indexing limit, which appears as an error. Open
+**Edit document in Dzen Chat** to inspect or shorten it.
+
+The **Index** screen includes this site, additional assigned website sources and
+uploaded documents. Source titles and settings links open the corresponding
+source in Dzen Chat. Existing links to the former **Sources** screen redirect here.
 
 To help visitors who reach a missing page, enable **Show chat on 404 pages** in
 **Dzen Chat → Widgets** and click **Save 404 settings**. The selected site-wide
@@ -171,11 +190,11 @@ To release:
    `Stable tag` and the changelog in `readme.txt`. Use `X.Y.Z`.
 2. Update and compile the [translation catalogs](docs/internationalization.md).
 3. Commit and push the changes; wait for a successful workflow.
-4. Create and push the matching tag, for example `v0.11.0`.
+4. Create and push the matching tag, for example `v0.13.0`.
 5. Download the checked ZIP and checksum from Releases.
 
 Build locally with `make package-test && make package` (Python 3 and Git).
-Version 0.11.0 produces `dist/dzen-chat-0.11.0.zip`. Only Git-tracked runtime files
+Version 0.13.0 produces `dist/dzen-chat-0.13.0.zip`. Only Git-tracked runtime files
 and `src/`, `assets/` and `languages/` are packaged. Stage new runtime and
 language files before building. Fixtures, Docker configuration, local
 certificates and development documentation are excluded.

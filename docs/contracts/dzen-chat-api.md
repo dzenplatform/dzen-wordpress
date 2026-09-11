@@ -1,4 +1,4 @@
-# Dzen Chat public API: WordPress 0.10 contract
+# Dzen Chat public API: WordPress 0.13 contract
 
 Verified on September 11, 2026 against the running local service,
 Swagger at `https://local.dzenchat.com/api-docs/` and `chat/api/` handlers.
@@ -54,6 +54,7 @@ unvalidated response does not confirm a change.
 | GET /api/sources/{id} | id, title, url, is_paused, enable_triggers, blocked_reason, last_reindexed_at |
 | GET /api/sources/{id}/status | Source metadata, counts, total and details_url; all pages, no list limit |
 | GET /api/files | Knowledge base files; no query parameters |
+| POST /api/files | JSON name (1–255 characters) and content; HTTP 201 with the created file |
 | GET /api/files/{id} | id, name, content, status, status_error, size_bytes, updated_at |
 | GET /api/chats?limit=100 | Most recently created conversations; limit 1–100 only |
 | GET /api/chats/{id} | id, created_at, updated_at, visitor, widget_code, feedback, details_url |
@@ -135,7 +136,11 @@ triggers. This version adds viewing only; trigger policy changes stay in Dzen Ch
 
 The Index screen reads `site_source_id` from the saved registration and requests
 `GET /api/sources/{site_source_id}/status`. URL query parameters cannot select
-another source. The server requires an active Bearer client, checks the source's
+another primary source. Version 0.13 also reads `GET /api/sources` and requests
+the status of each additional assigned source. It does not expand client access
+to every source in the project. Each source has its own progress bar and settings
+link. The former Sources screen redirects to Index, including old file-detail links.
+The server requires an active Bearer client, checks the source's
 project and the client's source assignment, and aggregates all its pages.
 Missing, foreign and unassigned sources return the same HTTP 404; an invalid or
 revoked client receives HTTP 401. The endpoint does not modify source state.
@@ -169,6 +174,36 @@ and transport errors display an error instead of progress. Counts are fetched
 on every Index load or **Refresh status** action and are not persisted.
 Pause and restriction states remain visible alongside the counts. The details
 link opens the actual source's settings under normal Dzen Chat web login.
+
+## Document uploads and indexing
+
+Index also lists project files from `GET /api/files`. The summary classifies each
+file as pending (`crawler`), processing (`parsing`), ready (`ready`), or error
+when `status_error` is nonempty. Errors take precedence over a raw `ready` state.
+Each file opens escaped text within WordPress and its editor in Dzen Chat.
+Source-list and individual source failures do not prevent loading the file list.
+
+The upload form requires `manage_options`, `upload_files` and a valid WordPress
+action nonce. It accepts one PHP HTTP upload with a `.txt`, `.md` or `.markdown`
+extension, valid UTF-8 and no binary control bytes. Empty files are rejected.
+The plugin caps bytes at 256 KiB or the WordPress upload limit if lower and strips
+a leading UTF-8 BOM. It reads PHP's temporary upload without creating a media
+attachment, public file or database copy, then sends `POST /api/files` with JSON
+`name` and `content` through the existing authenticated transport.
+
+HTTP 201 creates a file and queues the existing service indexing pipeline. The
+plugin validates the response identity, status and exact submitted name/content
+before showing upload acceptance. It never automatically retries an ambiguous
+upload; administrators should check the list before uploading again. Server
+indexing limits are separate from upload size: `status_error=too_big` is displayed
+as an indexing error even if the response status is `ready`.
+
+This API accepts text, not binary file attachments. PDF/Office conversion is not
+implemented here. Files are processed as Markdown by Dzen Chat. The file editor
+URL is derived from the project prefix of a validated source `details_url`, plus
+`/files/{id}`; it contains no API credentials and uses normal Dzen Chat web login.
+If no source supplies a valid project prefix, file content remains available in
+WordPress without an invented external link.
 
 ## Per-page status in the editor
 

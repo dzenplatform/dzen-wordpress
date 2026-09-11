@@ -3,7 +3,7 @@ Contributors: dzenplatform
 Requires at least: 6.8
 Tested up to: 6.8.2
 Requires PHP: 8.2
-Stable tag: 0.12.0
+Stable tag: 0.13.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -34,9 +34,16 @@ password-protected posts and products are not submitted as public content.
 Previously public URLs are rechecked after unpublishing, deletion or a permalink
 change. Rechecking does not guarantee removal from the service index.
 
-View indexing progress for the connected source, with counts covering all pages
+View indexing progress for the connected site and additional assigned sources
+on the Index screen, with counts covering all pages
 and a link to detailed status in Dzen Chat. Refresh the Index screen to get current
-counts. View sources, knowledge files and conversation messages inside WordPress.
+counts. Source titles open their settings in Dzen Chat. Upload TXT and Markdown
+documents (.txt, .md, .markdown) in UTF-8, up to 256 KiB or the WordPress upload
+limit if lower. Uploads go to Dzen Chat without being added to the media library.
+Check processing status and errors, read file contents in WordPress, and open
+the document editor in Dzen Chat. PDF and Office uploads are not supported by
+the current file API. The former Sources screen redirects to Index.
+View conversation messages inside WordPress.
 View saved suggestions, visitor selections and suggestion failures under assistant
 answers. Open the same conversation in Dzen Chat from its heading.
 Chat filters cover the latest 100 records; conversation details display up to the
@@ -80,7 +87,8 @@ the Dzen Chat service controls the language of the embedded widget.
 4. WordPress confirms authorization after exchanging the returned code.
 5. Open Dzen Chat > Widgets, select an enabled widget and click Save selection.
 6. Open a public page to check the widget. Page/post overrides are in the editor.
-7. Check Index, Sources and Conversations. Scheduled synchronization needs
+7. Check Index and Conversations. Use Index > Add a document to upload text files.
+   Scheduled synchronization needs
    working WP-Cron or a system scheduler running WordPress due events.
 
 == Frequently Asked Questions ==
@@ -108,6 +116,13 @@ service. Removing keys in WordPress does not revoke the remote API client.
 No. Products require a separate integration.
 
 == Changelog ==
+
+= 0.13.0 =
+Merge Sources into Index. Show progress for the connected site, additional
+assigned sources and uploaded documents, with links to their Dzen Chat settings.
+Upload UTF-8 TXT and Markdown files through the existing Files API. Validate
+format, size and encoding, keep files out of the public media library, and show
+processing errors separately from upload acceptance. Include English and Russian UI.
 
 = 0.12.0 =
 Add an opt-in setting to show the selected widget on WordPress 404 pages with a

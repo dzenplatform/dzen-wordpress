@@ -62,7 +62,6 @@ try {
         'dzen-chat' => ['This site is connected to Dzen Chat', 'Сайт авторизован в Dzen Chat'],
         'dzen-chat-widgets' => ['Create widget', 'Создать виджет'],
         'dzen-chat-documents' => ['Refresh status', 'Обновить статус'],
-        'dzen-chat-sources' => ['Knowledge base files', 'Файлы базы знаний'],
         'dzen-chat-history' => ['Conversation or visitor ID', 'ID диалога или посетителя'],
     ];
     foreach (['en_US' => 0, 'ru_RU' => 1] as $locale => $index) {
@@ -83,6 +82,10 @@ try {
         $widgetSettings = $capture([$admin, 'page']);
         $check(str_contains($widgetSettings, $index ? 'Показывать чат на страницах 404' : 'Show chat on 404 pages'),
             '404 setting uses ' . $locale);
+        $_GET = ['page' => 'dzen-chat-documents'];
+        $indexHtml = $capture([$admin, 'page']);
+        $check(str_contains($indexHtml, $index ? 'Загрузить для индексации' : 'Upload for indexing'),
+            'document upload form uses ' . $locale);
         $check(str_contains($html, $index ? 'Не показывать виджет' : 'Hide widget'), 'page settings use ' . $locale);
         $check(str_contains($html, $index ? 'Статус индексации' : 'Indexing status'), 'editor indexing panel uses ' . $locale);
         $check(str_contains($html, $index ? 'Удалить из индекса и заблокировать обновления' : 'Remove from index and block updates'), 'editor exclusion button uses ' . $locale);
