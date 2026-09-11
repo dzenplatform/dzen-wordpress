@@ -137,6 +137,11 @@ add_filter('pre_http_request', static function ($pre, $args, $url) {
         return $reply(['status' => 'ok', 'action' => 'queued', 'url' => $body['url'],
             'final_url' => null, 'message' => 'Page update queued'], 202);
     }
+    if ($path === '/api/pages/exclude' && $method === 'POST') {
+        if (array_keys($body) !== ['url'] || !is_string($body['url'])) throw new RuntimeException('Exclusion accepts URL only');
+        if (!str_starts_with($body['url'], trailingslashit(home_url()))) return $reply(['error' => 'outside source'], 403);
+        return $reply(['url' => $body['url'], 'source_id' => 'source-one', 'index_status' => 'excluded']);
+    }
     if ($method !== 'GET') return $reply(['error' => 'Unsupported method'], 405);
     if ($path === '/api/sources') return $reply(['items' => [$source]]);
     if ($path === '/api/sources/source-one') return $reply($source);

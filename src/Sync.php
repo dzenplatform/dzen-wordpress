@@ -84,8 +84,7 @@ final class Sync
             || !in_array($post->post_type, ['page', 'post'], true) || !$this->credentials->exists()) {
             return;
         }
-        $public = $post->post_status === 'publish' && $post->post_password === ''
-            && !get_post_meta($id, '_dzen_chat_exclude', true);
+        $public = $post->post_status === 'publish' && $post->post_password === '';
         $this->enqueue($post, $public);
         if ($before && $post->post_type === 'page'
             && ($before->post_name !== $post->post_name || $before->post_parent !== $post->post_parent)) {
@@ -100,7 +99,20 @@ final class Sync
         }
     }
 
-    private function enqueue(\WP_Post $post, bool $public): void
+    /** The same object lock serializes saves, exclusions and active HTTP submissions. */
+    public function exclude(\WP_Post $post): ?\WP_Error
+    {
+        return $this->enqueue($post, $post->post_status === 'publish' && $post->post_password === '', true);
+    }
+
+    private static function isExcluded(int $postId): bool
+    {
+        global $wpdb;
+        // A long-running worker must not use a post-meta value cached before the button click.
+        return (bool) $wpdb->get_var($wpdb->prepare("SELECT meta_value FROM $wpdb->postmeta WHERE post_id=%d AND meta_key='_dzen_chat_exclude' LIMIT 1", $postId));
+    }
+
+    private function enqueue(\WP_Post $post, bool $public, bool $exclude = false): ?\WP_Error
     {
         global $wpdb;
         [$objects, $events] = self::tables();
@@ -111,7 +123,7 @@ final class Sync
             $integration = $this->credentials->get()['client_id'];
         } catch (\RuntimeException | \JsonException $error) {
             update_option('dzen_chat_queue_error', true, false);
-            return;
+            return new \WP_Error('dzen_connection', __('Reconnect the site in the Dzen Chat section.', 'dzen-chat'));
         }
         $wpdb->query('START TRANSACTION');
         try {
@@ -123,27 +135,55 @@ final class Sync
             if (!$current) {
                 throw new \RuntimeException('queue_storage');
             }
-            if ($current['fingerprint'] === $fingerprint || (!$public && (int) $current['revision'] === 0)) {
+            if ($exclude && !self::isExcluded($post->ID)) {
+                $updated = $wpdb->update($wpdb->postmeta, ['meta_value' => '1'], ['post_id' => $post->ID, 'meta_key' => '_dzen_chat_exclude']);
+                if ($updated === false || ($updated === 0 && $wpdb->insert($wpdb->postmeta, ['post_id' => $post->ID, 'meta_key' => '_dzen_chat_exclude', 'meta_value' => '1']) === false)) {
+                    throw new \RuntimeException('queue_storage');
+                }
+            }
+            $excluded = self::isExcluded($post->ID);
+            if ($excluded) $fingerprint = hash('sha256', wp_json_encode(['exclude', $url ?: $current['url']]));
+            if ($current['fingerprint'] === $fingerprint || (!$excluded && !$public && (int) $current['revision'] === 0)) {
+                if ($exclude) {
+                    $wpdb->query($wpdb->prepare("UPDATE $events SET status='pending', attempts=0, next_attempt=0 WHERE post_id=%d AND integration_id=%s AND status IN ('pending','error','blocked')", $post->ID, $integration));
+                }
                 $wpdb->query('COMMIT');
-                return;
+                wp_cache_delete($post->ID, 'post_meta');
+                return null;
             }
             $payload = ['event_id' => wp_generate_uuid4(), 'external_id' => 'wp:post:' . $post->ID,
                 'revision' => (int) $current['revision'] + 1, 'action' => $public ? 'upsert' : 'delete',
                 'url' => $public ? $url : $current['url'], 'previous_url' => $current['url']];
+            if ($excluded) {
+                $urls = [$url, $current['url']];
+                foreach ($wpdb->get_col($wpdb->prepare("SELECT payload FROM $events WHERE post_id=%d AND integration_id=%s", $post->ID, $integration)) as $stored) {
+                    $old = json_decode($stored, true);
+                    $urls = array_merge($urls, [$old['url'] ?? '', $old['previous_url'] ?? ''], $old['urls'] ?? []);
+                }
+                $payload['action'] = 'exclude';
+                $payload['urls'] = array_values(array_unique(array_filter($urls, static fn ($url) => is_string($url) && $url !== '')));
+                if ($wpdb->query($wpdb->prepare("UPDATE $events SET status='cancelled', error_code='' WHERE post_id=%d AND integration_id=%s AND status IN ('pending','blocked','error')", $post->ID, $integration)) === false) {
+                    throw new \RuntimeException('queue_storage');
+                }
+            }
             if ($wpdb->insert($events, ['event_id' => $payload['event_id'], 'post_id' => $post->ID, 'integration_id' => $integration,
-                'payload' => wp_json_encode($payload), 'created_at' => current_time('mysql', true)]) === false
+                'payload' => wp_json_encode($payload), 'status' => $excluded && !$payload['urls'] ? 'excluded' : 'pending',
+                'created_at' => current_time('mysql', true)]) === false
                 || $wpdb->update($objects, ['url' => $url ?: $current['url'], 'revision' => $payload['revision'],
                     'fingerprint' => $fingerprint], ['post_id' => $post->ID, 'integration_id' => $integration]) === false) {
                 throw new \RuntimeException('queue_storage');
             }
             $wpdb->query('COMMIT');
+            wp_cache_delete($post->ID, 'post_meta');
+            return null;
         } catch (\RuntimeException $error) {
             $wpdb->query('ROLLBACK');
             update_option('dzen_chat_queue_error', true, false);
+            return new \WP_Error('dzen_queue', __('Could not save the indexing exclusion. Try again.', 'dzen-chat'));
         }
     }
 
-    public function run(): void
+    public function run(?int $onlyPost = null): void
     {
         global $wpdb;
         if (!$this->credentials->exists()) {
@@ -160,13 +200,14 @@ final class Sync
         }
         try {
             try {
-                $integration = $this->credentials->get()['client_id'];
+                $connection = $this->credentials->get();
+                $integration = $connection['client_id'];
             } catch (\RuntimeException | \JsonException $error) {
                 update_option('dzen_chat_queue_error', true, false);
                 return;
             }
             $cursor = get_option('dzen_chat_reconcile_cursor', false);
-            if ($cursor !== false) {
+            if ($cursor !== false && $onlyPost === null) {
                 $posts = $wpdb->get_results($wpdb->prepare("SELECT * FROM $wpdb->posts WHERE ID > %d AND post_type IN ('page','post') ORDER BY ID LIMIT 50", (int) $cursor));
                 foreach ($posts as $row) {
                     $post = new \WP_Post($row);
@@ -178,18 +219,32 @@ final class Sync
                     update_option('dzen_chat_reconcile_cursor', (int) end($posts)->ID, false);
                 }
             }
-            [, $events] = self::tables();
-            $rows = $wpdb->get_results($wpdb->prepare("SELECT * FROM $events WHERE integration_id=%s AND status IN ('pending','blocked') AND next_attempt <= %d ORDER BY id LIMIT 10", $integration, time()), ARRAY_A);
+            [$objects, $events] = self::tables();
+            $postFilter = $onlyPost === null ? '' : $wpdb->prepare(' AND post_id=%d', $onlyPost);
+            $rows = $wpdb->get_results($wpdb->prepare("SELECT * FROM $events WHERE integration_id=%s AND status IN ('pending','blocked') AND next_attempt <= %d $postFilter ORDER BY id LIMIT 10", $integration, time()), ARRAY_A);
             foreach ($rows as $row) {
+                $wpdb->query('START TRANSACTION');
+                $wpdb->get_var($wpdb->prepare("SELECT post_id FROM $objects WHERE post_id=%d AND integration_id=%s FOR UPDATE", $row['post_id'], $integration));
+                $state = $wpdb->get_var($wpdb->prepare("SELECT status FROM $events WHERE id=%d", $row['id']));
+                if (!in_array($state, ['pending', 'blocked'], true)) {
+                    $wpdb->query('COMMIT');
+                    continue;
+                }
                 $payload = json_decode($row['payload'], true);
+                $excluded = ($payload['action'] ?? '') === 'exclude';
+                if (!$excluded && self::isExcluded((int) $row['post_id'])) {
+                    $wpdb->update($events, ['status' => 'cancelled'], ['id' => $row['id']]);
+                    $wpdb->query('COMMIT');
+                    continue;
+                }
                 // A permalink change requires revisiting the old public URL as well.
-                $urls = array_values(array_unique(array_filter([
+                $urls = $excluded ? $payload['urls'] : array_values(array_unique(array_filter([
                     $payload['previous_url'] ?? '', $payload['url'] ?? '',
                 ], 'is_string')));
                 $urls = array_values(array_filter($urls, static fn ($url) => $url !== ''));
                 $response = null;
                 foreach ($urls as $url) {
-                    $response = $this->api->reindex($url);
+                    $response = $excluded ? $this->api->excludeUrl($connection['site_source_id'], $url) : $this->api->reindex($url);
                     if (is_wp_error($response)) break;
                 }
                 if (!$urls) $response = new \WP_Error('dzen_queue_url', 'Missing public URL');
@@ -200,13 +255,15 @@ final class Sync
                         'status' => !empty($error['retryable']) && $changes['attempts'] < 6 ? 'pending' : 'error',
                         'next_attempt' => time() + max((int) ($error['retry_after'] ?? 0), min(3600, 30 * 2 ** $changes['attempts']))];
                 } else {
-                    // HTTP 202 confirms scheduling, never completion of crawling/indexing.
-                    $changes += ['status' => 'accepted', 'operation_id' => '', 'error_code' => '', 'next_attempt' => 0];
+                    // Updates confirm scheduling; exclusions confirm removal from search.
+                    $changes += ['status' => $excluded ? 'excluded' : 'accepted', 'operation_id' => '', 'error_code' => '', 'next_attempt' => 0];
                 }
                 $wpdb->update($events, $changes, ['id' => $row['id']]);
+                $wpdb->query('COMMIT');
             }
             update_option('dzen_chat_worker_ran', time(), false);
         } finally {
+            $wpdb->query('ROLLBACK'); // Also releases the object lock if a transport hook throws.
             $wpdb->query($wpdb->prepare("DELETE FROM $wpdb->options WHERE option_name=%s AND option_value=%s", 'dzen_chat_worker_lock', $lock));
             wp_cache_delete('dzen_chat_worker_lock', 'options');
         }

@@ -166,6 +166,8 @@ final class Admin
         $counts = $wpdb->get_results($wpdb->prepare("SELECT status, COUNT(*) total FROM $events WHERE integration_id=%s GROUP BY status",
             $this->credentials->get()['client_id']), ARRAY_A);
         $labels = ['pending' => __('Waiting to be sent', 'dzen-chat'), 'accepted' => __('Submitted to the service', 'dzen-chat'),
+            'cancelled' => __('Cancelled by indexing exclusion', 'dzen-chat'),
+            'excluded' => __('Excluded from indexing', 'dzen-chat'),
             'blocked' => __('Waiting for access', 'dzen-chat'), 'error' => __('Submission failed', 'dzen-chat')];
         echo '<ul>';
         foreach ($counts as $row) echo '<li>' . esc_html(($labels[$row['status']] ?? $row['status']) . ': ' . $row['total']) . '</li>';

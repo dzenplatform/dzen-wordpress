@@ -126,6 +126,19 @@ final class Api
         return $result;
     }
 
+    public function excludeUrl(string $sourceId, string $url): array|\WP_Error
+    {
+        $expected = self::canonicalUrl($url);
+        if ($expected === null) return new \WP_Error('dzen_url', __('Invalid public page URL.', 'dzen-chat'));
+        $result = $this->request('POST', '/pages/exclude', [], ['url' => $url]);
+        if (is_wp_error($result)) return $result;
+        if (($result['index_status'] ?? '') !== 'excluded' || ($result['source_id'] ?? null) !== $sourceId
+            || self::canonicalUrl($result['url'] ?? null) !== $expected) {
+            return new \WP_Error('dzen_protocol', __('The service did not confirm removal from the index.', 'dzen-chat'));
+        }
+        return $result;
+    }
+
     /** Lists stay request-local; chat messages and source text are never persisted here. */
     public function items(string $path, array $query = []): array|\WP_Error
     {

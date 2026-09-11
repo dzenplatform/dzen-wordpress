@@ -3,7 +3,7 @@ Contributors: dzenplatform
 Requires at least: 6.8
 Tested up to: 6.8.2
 Requires PHP: 8.2
-Stable tag: 0.10.0
+Stable tag: 0.11.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -52,6 +52,14 @@ and password-protected pages are not submitted as public content.
 The same panel displays saved page triggers and explains when source settings or
 URL rules prevent their use. Open the indexed page in Dzen Chat for details.
 
+Use "Remove from index and block updates" to exclude a page without removing it
+from your website. Pending updates are cancelled and all known public URLs are
+excluded through POST /api/pages/exclude. Future saves do not send content updates.
+A newly published or changed URL is sent only for exclusion. Drafts that have never
+been public are blocked locally. If the service is unavailable, local blocking
+remains active and the panel shows that remote removal has not been confirmed.
+Refresh the status or retry removal after reconnecting. Widget visibility is independent.
+
 The interface is English by default and includes a Russian (ru_RU) translation.
 It follows the administrator's Users > Profile > Language preference. Site
 Default uses Settings > General > Site Language. Install the Russian WordPress
@@ -95,6 +103,12 @@ service. Removing keys in WordPress does not revoke the remote API client.
 No. Products require a separate integration.
 
 == Changelog ==
+
+= 0.11.0 =
+Add an editor button to remove a page from the Dzen Chat index and persistently
+block content updates. Cancel earlier queued revisions, exclude known URLs through
+the API and display pending, failed and confirmed removal states. Keep exclusions
+when publishing drafts or changing permalinks. Include English and Russian UI.
 
 = 0.10.0 =
 Show saved page triggers in the page/post editor. Explain disabled sources,

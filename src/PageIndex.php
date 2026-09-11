@@ -10,6 +10,7 @@ final class PageIndex
     public function register(): void
     {
         add_action('wp_ajax_dzen_chat_page_status', [$this, 'ajax']);
+        add_action('wp_ajax_dzen_chat_page_exclude', [$this, 'ajaxExclude']);
         add_action('admin_enqueue_scripts', static function ($hook) {
             $screen = get_current_screen();
             if (in_array($hook, ['post.php', 'post-new.php'], true)
@@ -27,6 +28,9 @@ final class PageIndex
         echo '<p><strong class="dzen-page-index-label">' . esc_html__('Checking indexing status…', 'dzen-chat') . '</strong></p><p class="dzen-page-index-description"></p><p class="dzen-page-index-sync"></p></div>';
         echo '<p class="dzen-page-index-actions"><button type="button" class="button dzen-page-index-refresh">' . esc_html__('Refresh status', 'dzen-chat') . '</button> <a href="' . esc_url(Admin::url('dzen-chat-documents')) . '" target="_blank" rel="noopener noreferrer">' . esc_html__('Source status ↗', 'dzen-chat') . '</a></p>';
         echo '<p class="description">' . esc_html__('Status applies to the saved page. Unsaved changes are not indexed.', 'dzen-chat') . '</p>';
+        echo '<div class="dzen-page-exclusion" data-nonce="' . esc_attr(wp_create_nonce('dzen_chat_page_exclude_' . $post->ID)) . '">';
+        echo '<button type="button" class="button dzen-page-exclude">' . esc_html__('Remove from index and block updates', 'dzen-chat') . '</button>';
+        echo '<p class="description">' . esc_html__('Blocks future content updates and requests removal from Dzen Chat. The page stays on your website.', 'dzen-chat') . '</p></div>';
         echo '<section class="dzen-page-triggers" data-loading="' . esc_attr__('Loading page triggers…', 'dzen-chat') . '" data-error="' . esc_attr__('Could not load page triggers. Refresh the status.', 'dzen-chat') . '"><h3>' . esc_html__('Page triggers', 'dzen-chat') . '</h3>';
         echo '<div aria-live="polite" aria-atomic="true"><p class="dzen-page-triggers-label">' . esc_html__('Loading page triggers…', 'dzen-chat') . '</p><ul class="dzen-page-triggers-list"></ul>';
         echo '<a class="dzen-page-triggers-link" target="_blank" rel="noopener noreferrer" hidden>' . esc_html__('Open page in Dzen Chat ↗', 'dzen-chat') . '</a></div></section></section>';
@@ -34,18 +38,38 @@ final class PageIndex
 
     public function ajax(): void
     {
+        $this->sendStatus($this->requestPost('page_status'));
+    }
+
+    public function ajaxExclude(): void
+    {
+        $post = $this->requestPost('page_exclude');
+        $sync = new Sync($this->credentials, $this->api);
+        $result = $sync->exclude($post);
+        if (is_wp_error($result)) wp_send_json_error(['message' => $result->get_error_message()], 502);
+        $sync->run($post->ID);
+        $this->sendStatus($post);
+    }
+
+    private function requestPost(string $action): \WP_Post
+    {
         $id = isset($_POST['post_id']) && is_string($_POST['post_id']) && ctype_digit($_POST['post_id']) ? (int) $_POST['post_id'] : 0;
         if (!$id || !current_user_can('manage_options') || !current_user_can('edit_post', $id)) {
             wp_send_json_error(['message' => __('You cannot view this page status.', 'dzen-chat')], 403);
         }
         if (!isset($_POST['_ajax_nonce']) || !is_string($_POST['_ajax_nonce'])
-            || !wp_verify_nonce(wp_unslash($_POST['_ajax_nonce']), 'dzen_chat_page_status_' . $id)) {
+            || !wp_verify_nonce(wp_unslash($_POST['_ajax_nonce']), 'dzen_chat_' . $action . '_' . $id)) {
             wp_send_json_error(['message' => __('The status request expired. Reload the editor.', 'dzen-chat')], 403);
         }
         $post = get_post($id);
         if (!$post || !in_array($post->post_type, ['page', 'post'], true)) {
             wp_send_json_error(['message' => __('This content type is not supported.', 'dzen-chat')], 400);
         }
+        return $post;
+    }
+
+    private function sendStatus(\WP_Post $post): void
+    {
         $result = $this->status($post);
         if (is_wp_error($result)) {
             wp_send_json_error(['message' => $result->get_error_message()], 502);
@@ -62,7 +86,8 @@ final class PageIndex
         }
         global $wpdb;
         [, $events] = Sync::tables();
-        $sync = $wpdb->get_var($wpdb->prepare("SELECT status FROM $events WHERE post_id=%d AND integration_id=%s ORDER BY id DESC LIMIT 1", $post->ID, $connection['client_id']));
+        $event = $wpdb->get_row($wpdb->prepare("SELECT status,payload FROM $events WHERE post_id=%d AND integration_id=%s ORDER BY id DESC LIMIT 1", $post->ID, $connection['client_id']), ARRAY_A);
+        $sync = $event['status'] ?? null;
         $syncLabels = [
             'pending' => __('Saved changes are waiting to be sent to Dzen Chat.', 'dzen-chat'),
             'accepted' => __('The last saved change was submitted. This does not confirm indexing is complete.', 'dzen-chat'),
@@ -70,8 +95,23 @@ final class PageIndex
             'error' => __('The last saved change could not be sent. Check the Dzen Chat overview.', 'dzen-chat'),
         ];
         $result = ['state' => 'not_public', 'label' => __('Not public', 'dzen-chat'), 'description' => '', 'sync' => $syncLabels[$sync] ?? '',
+            'exclusion' => ['done' => false, 'label' => __('Remove from index and block updates', 'dzen-chat')],
             'triggers' => ['state' => 'not_public', 'label' => __('Page triggers are available for public pages and posts.', 'dzen-chat'), 'items' => [], 'details_url' => '']];
-        if ($post->post_status !== 'publish' || $post->post_password !== '' || get_post_meta($post->ID, '_dzen_chat_exclude', true)) {
+        if (get_post_meta($post->ID, '_dzen_chat_exclude', true)) {
+            $payload = json_decode($event['payload'] ?? '{}', true);
+            $done = ($payload['action'] ?? '') === 'exclude' && $sync === 'excluded';
+            $result['state'] = $done ? 'excluded' : 'exclusion_pending';
+            $result['label'] = $done ? __('Excluded from indexing', 'dzen-chat') : __('Updates blocked; removal not confirmed', 'dzen-chat');
+            $result['description'] = __('This page is excluded from automatic indexing. Saving or publishing it will not submit content updates.', 'dzen-chat');
+            $result['sync'] = $done
+                ? (empty($payload['urls']) ? __('No previously submitted public URL needs removal.', 'dzen-chat') : __('Dzen Chat confirmed exclusion of the known public URLs.', 'dzen-chat'))
+                : ($sync === 'error' ? __('Removal failed. Retry the removal or check the connection in Dzen Chat.', 'dzen-chat')
+                    : __('Removal is waiting to be sent to Dzen Chat. Refresh the status to check completion.', 'dzen-chat'));
+            $result['exclusion'] = ['done' => $done, 'label' => __('Retry removal', 'dzen-chat')];
+            $result['triggers'] = ['state' => 'excluded', 'label' => __('Page triggers are unavailable while this page is excluded.', 'dzen-chat'), 'items' => [], 'details_url' => ''];
+            return $result;
+        }
+        if ($post->post_status !== 'publish' || $post->post_password !== '') {
             $result['description'] = $post->post_status !== 'publish'
                 ? __('Only published pages and posts are sent for indexing.', 'dzen-chat')
                 : ($post->post_password !== '' ? __('Password-protected content is not sent for indexing.', 'dzen-chat')

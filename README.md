@@ -3,7 +3,7 @@
 Connect your WordPress site to [Dzen Chat](https://chat.dzen.dev), manage chat
 widgets and keep public content available to your AI assistant.
 
-**Version 0.10.0 uses the implemented public API and includes English and Russian
+**Version 0.11.0 uses the implemented public API and includes English and Russian
 interfaces.** Authorize a site, manage real widgets, check source indexing progress,
 inspect sources and knowledge files, and read conversations directly in WordPress.
 Public pages and posts are submitted for reindexing after connection, publication
@@ -26,6 +26,8 @@ background queue → Dzen Chat index → assistant answer using the new informat
   from Dzen Chat processing. Draft and protected content is identified separately.
 - View saved page triggers in the editor, with source/rule status and a link to
   page details in Dzen Chat. Refresh them with indexing status.
+- Remove a page from the Dzen Chat index and block future content updates directly
+  in the editor. The page remains published on your website.
 - View source status and knowledge file contents as escaped text.
 - Read conversations, messages and feedback; filter by conversation or visitor
   ID, date and widget. See saved follow-up suggestions and visitor selections,
@@ -58,6 +60,7 @@ See the [current API contract](docs/contracts/dzen-chat-api.md),
 [0.8.0 editor verification](docs/verification/2026-09-11-page-index-status.md),
 [0.9.0 conversation verification](docs/verification/2026-09-11-conversation-suggestions.md),
 [0.10.0 trigger verification](docs/verification/2026-09-11-page-triggers.md),
+[0.11.0 exclusion verification](docs/verification/2026-09-11-page-exclusion.md),
 [0.4.0 live verification](docs/verification/2026-09-11-full-integration.md),
 [implementation brief](docs/specs/2026-09-11-full-integration.md),
 [authorization verification](docs/verification/2026-09-11-registration.md) and
@@ -117,6 +120,17 @@ URLs through `POST /api/update`; temporary failures are retried with a delay,
 up to six attempts. HTTP 202 confirms acceptance; **Index** shows processing
 separately. The overview provides a reconciliation and retry button.
 
+**Remove from index and block updates** immediately stores a per-post exclusion
+and cancels queued content updates. It calls `POST /api/pages/exclude` for the
+current and previously submitted URLs; Dzen Chat removes search chunks and keeps
+a manual exclusion so future crawls cannot restore the URL. Drafts with no public
+URL are blocked locally without a remote request. Saving or publishing an excluded
+post never submits content updates; a changed public URL is submitted only for
+exclusion. Widget visibility is independent. If removal fails or a worker is busy,
+the panel shows that updates are blocked and removal is not confirmed. Refresh
+the status or use **Retry removal** after restoring service access. This button
+does not restore indexing; changing an exclusion requires an explicit separate action.
+
 The queue requires WP-Cron or an external scheduler. Local Compose includes a
 `cron` profile that runs only plugin jobs. A successful API response does not
 confirm the project's billing status. Removing credentials in WordPress is a
@@ -144,11 +158,11 @@ To release:
    `Stable tag` and the changelog in `readme.txt`. Use `X.Y.Z`.
 2. Update and compile the [translation catalogs](docs/internationalization.md).
 3. Commit and push the changes; wait for a successful workflow.
-4. Create and push the matching tag, for example `v0.10.0`.
+4. Create and push the matching tag, for example `v0.11.0`.
 5. Download the checked ZIP and checksum from Releases.
 
 Build locally with `make package-test && make package` (Python 3 and Git).
-Version 0.10.0 produces `dist/dzen-chat-0.10.0.zip`. Only Git-tracked runtime files
+Version 0.11.0 produces `dist/dzen-chat-0.11.0.zip`. Only Git-tracked runtime files
 and `src/`, `assets/` and `languages/` are packaged. Stage new runtime and
 language files before building. Fixtures, Docker configuration, local
 certificates and development documentation are excluded.
