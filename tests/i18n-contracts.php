@@ -61,7 +61,7 @@ try {
     $screens = [
         'dzen-chat' => ['This site is connected to Dzen Chat', 'Сайт авторизован в Dzen Chat'],
         'dzen-chat-widgets' => ['Create widget', 'Создать виджет'],
-        'dzen-chat-documents' => ['Title or URL', 'Название или URL'],
+        'dzen-chat-documents' => ['Refresh status', 'Обновить статус'],
         'dzen-chat-sources' => ['Knowledge base files', 'Файлы базы знаний'],
         'dzen-chat-history' => ['Conversation or visitor ID', 'ID диалога или посетителя'],
     ];

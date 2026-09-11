@@ -212,7 +212,9 @@ final class Admin
             echo '<h3>' . esc_html(self::text($source, 'title')) . '</h3>';
             $this->external($source['url'] ?? null);
             $this->sourceState($source);
-            echo '<p><a href="' . esc_url(self::url('dzen-chat-documents', ['source_id' => $id])) . '">' . esc_html__('Source documents', 'dzen-chat') . '</a></p>';
+            if ($id === $this->credentials->get()['site_source_id']) {
+                echo '<p><a href="' . esc_url(self::url('dzen-chat-documents')) . '">' . esc_html__('Indexing status', 'dzen-chat') . '</a></p>';
+            }
             return;
         }
         $items = $this->api->items('/sources');
@@ -236,65 +238,35 @@ final class Admin
     private function documents(): void
     {
         echo '<h2>' . esc_html__('Index', 'dzen-chat') . '</h2>';
-        $id = self::input('document', $_GET);
-        if ($id !== '') {
-            $page = $this->api->request('GET', '/pages/' . Api::segment($id));
-            if (is_wp_error($page)) { $this->error($page); return; }
-            if (($page['id'] ?? null) !== $id) { $this->error(new \WP_Error('protocol', __('The service returned a different document.', 'dzen-chat'))); return; }
-            echo '<p><a href="' . esc_url(self::url('dzen-chat-documents')) . '">← ' . esc_html__('All documents', 'dzen-chat') . '</a></p>';
-            echo '<h3>' . esc_html(self::text($page, 'title') ?: self::text($page, 'url')) . '</h3>';
-            $this->documentState($page);
-            $this->documentLinks($page);
-            return;
+        $sourceId = $this->credentials->get()['site_source_id'];
+        $status = $this->api->sourceStatus($sourceId);
+        if (is_wp_error($status)) { $this->error($status); return; }
+        $labels = ['errors' => __('Errors', 'dzen-chat'), 'pending' => __('Pending', 'dzen-chat'),
+            'processing' => __('Processing', 'dzen-chat'), 'ready' => __('Ready', 'dzen-chat'),
+            'excluded' => __('Excluded', 'dzen-chat')];
+        echo '<section class="dzen-source dzen-index" aria-labelledby="dzen-index-title">';
+        echo '<h3 id="dzen-index-title">' . esc_html($status['title']) . '</h3>';
+        // Translators: %s is the total number of pages in the connected source.
+        echo '<p>' . esc_html(sprintf(_n('%s page in this source.', '%s pages in this source.', $status['total'], 'dzen-chat'), number_format_i18n($status['total']))) . '</p>';
+        if ($status['is_paused']) echo '<p>' . esc_html__('Updates paused', 'dzen-chat') . '</p>';
+        if ($status['blocked_reason']) echo '<p>' . esc_html__('Indexing is restricted. Open Dzen Chat for details.', 'dzen-chat') . '</p>';
+        echo '<div class="dzen-index-bar" aria-hidden="true">';
+        foreach ($labels as $key => $label) {
+            $count = $status['counts'][$key];
+            if ($key !== 'excluded' && $count > 0) {
+                echo '<span class="dzen-index-' . esc_attr($key) . '" style="flex-grow:' . esc_attr((string) $count) . '" title="' . esc_attr($label . ': ' . number_format_i18n($count)) . '"></span>';
+            }
         }
-        $filters = self::filters($_GET);
-        if (is_wp_error($filters)) { $this->error($filters); return; }
-        $items = $this->api->items('/pages', ['limit' => 100]);
-        if (is_wp_error($items)) { $this->error($items); return; }
-        echo '<p>' . esc_html__('Showing up to 100 recently updated documents. Filters apply to this set.', 'dzen-chat') . '</p>';
-        echo '<form method="get" class="dzen-filters"><input type="hidden" name="page" value="dzen-chat-documents">';
-        foreach (['q' => __('Title or URL', 'dzen-chat'), 'status' => __('Status', 'dzen-chat'), 'source_id' => __('Source ID', 'dzen-chat')] as $key => $label) {
-            echo '<label>' . esc_html($label) . '<input name="' . esc_attr($key) . '" value="' . esc_attr($filters[$key] ?? '') . '"></label>';
+        echo '</div><dl class="dzen-index-counts">';
+        foreach ($labels as $key => $label) {
+            echo '<div><dt><span class="dzen-index-dot dzen-index-' . esc_attr($key) . '" aria-hidden="true"></span>' . esc_html($label) . '</dt><dd>' . esc_html(number_format_i18n($status['counts'][$key])) . '</dd></div>';
         }
-        echo '<button class="button"> ' . esc_html__('Apply', 'dzen-chat') . '</button></form>';
-        $items = array_filter($items, static function ($item) use ($filters) {
-            if (isset($filters['source_id']) && ($item['source_id'] ?? '') !== $filters['source_id']) return false;
-            if (isset($filters['status']) && ($item['status'] ?? '') !== $filters['status']) return false;
-            return !isset($filters['q']) || preg_match('/' . preg_quote($filters['q'], '/') . '/iu', self::text($item, 'title') . ' ' . self::text($item, 'url')) === 1;
-        });
-        if (!$items) echo '<p>' . esc_html__('No results in the loaded set.', 'dzen-chat') . '</p>';
-        echo '<table class="widefat striped"><thead><tr><th>' . esc_html__('Document', 'dzen-chat') . '</th><th>' . esc_html__('State', 'dzen-chat') . '</th><th>' . esc_html__('Links and actions', 'dzen-chat') . '</th></tr></thead><tbody>';
-        foreach ($items as $page) {
-            echo '<tr><td><a href="' . esc_url(self::url('dzen-chat-documents', ['document' => $page['id']])) . '">' . esc_html(self::text($page, 'title') ?: self::text($page, 'url')) . '</a></td><td>';
-            $this->documentState($page);
-            echo '</td><td>';
-            $this->documentLinks($page);
-            echo '</td></tr>';
-        }
-        echo '</tbody></table>';
-    }
-
-    private function documentState(array $page): void
-    {
-        echo '<p>' . esc_html(self::statusLabel($page)) . '</p>';
-        if (self::text($page, 'status_error') !== '') echo '<p>' . esc_html(self::text($page, 'status_error')) . '</p>';
-        if (self::text($page, 'updated_at') !== '') echo '<p>' . esc_html__('Updated:', 'dzen-chat') . ' ' . esc_html(self::text($page, 'updated_at')) . '</p>';
-        echo '<p>' . esc_html(($page['has_triggers'] ?? null) === true ? __('Triggers prepared', 'dzen-chat') : __('Triggers not prepared', 'dzen-chat')) . '</p>';
-    }
-
-    private function documentLinks(array $page): void
-    {
-        $this->external($page['url'] ?? null);
-        $post = is_string($page['url'] ?? null) ? url_to_postid($page['url']) : 0;
-        if ($post && current_user_can('edit_post', $post)) {
-            echo '<p><a href="' . esc_url(get_edit_post_link($post, '')) . '">' . esc_html__('Edit in WordPress', 'dzen-chat') . '</a></p>';
-        }
-        if (self::text($page, 'source_id') !== '') {
-            echo '<p><a href="' . esc_url(self::url('dzen-chat-sources', ['source' => $page['source_id']])) . '">' . esc_html__('View source in WordPress', 'dzen-chat') . '</a></p>';
-        }
-        if (($page['source_id'] ?? null) === $this->credentials->get()['site_source_id'] && self::publicUrl($page['url'] ?? null)) {
-            $this->form('dzen_chat_action', 'dzen_chat_action', ['operation' => 'reindex', 'id' => $page['id']], __('Reindex', 'dzen-chat'));
-        }
+        echo '</dl>';
+        if ($status['total'] === 0) echo '<p>' . esc_html__('No pages have been discovered yet.', 'dzen-chat') . '</p>';
+        elseif ($status['total'] === $status['counts']['excluded']) echo '<p>' . esc_html__('All discovered pages are excluded from indexing.', 'dzen-chat') . '</p>';
+        echo '<p class="description">' . esc_html__('Excluded pages are counted separately from the progress bar.', 'dzen-chat') . '</p>';
+        echo '<p class="dzen-index-actions"><a class="button button-primary" href="' . esc_url($status['details_url']) . '" target="_blank" rel="noopener noreferrer">' . esc_html__('View details in Dzen Chat ↗', 'dzen-chat') . '</a> ';
+        echo '<a class="button" href="' . esc_url(self::url('dzen-chat-documents')) . '">' . esc_html__('Refresh status', 'dzen-chat') . '</a></p></section>';
     }
 
     private function history(): void

@@ -1,4 +1,4 @@
-# Dzen Chat public API: WordPress 0.4 contract
+# Dzen Chat public API: WordPress 0.7 contract
 
 Verified on September 11, 2026 against the running local service,
 Swagger at `https://local.dzenchat.com/api-docs/` and `chat/api/` handlers.
@@ -8,11 +8,10 @@ This contract replaces the Integration API v1 proposal from version 0.1.
 Routes have no version number, scopes or HMAC signature. Version 0.5 adds
 localization without changing this API contract.
 
-Version 0.6 adds the widget selection list and accepts an optional `edit_url`
-on widget responses. The current local server does not supply that field yet;
-the required addition is described in [widget editor links](widget-editor-links.md).
-Without it, the plugin opens the service dashboard instead of inventing a
-project identifier or editor URL.
+Version 0.7 uses the new `GET /api/sources/{id}/status` aggregate endpoint and
+`edit_url` supplied by all widget responses. Source and widget browser links
+use the configured service origin and never contain credentials. See
+[widget editor links](widget-editor-links.md).
 
 ## Registration and transport
 
@@ -45,13 +44,13 @@ unvalidated response does not confirm a change.
 | --- | --- |
 | GET /api/widgets | All available widgets; no query parameters |
 | POST /api/widgets | name only, 1–128 characters; HTTP 201 |
-| GET /api/widgets/{id} | id, name, code, is_enabled, suggestions_enabled, trigger_templates, appearance |
+| GET /api/widgets/{id} | id, name, code, is_enabled, suggestions_enabled, trigger_templates, appearance, edit_url |
 | PATCH /api/widgets/{id} | name, is_enabled, suggestions_enabled; confirmed fields in response |
 | POST /api/update | JSON url only; HTTP 202 means crawling was queued |
-| GET /api/pages?limit=100 | Most recently updated pages; limit 1–100 only |
 | GET /api/pages/{id} | id, url, title, source_id, status, status_error, has_triggers, updated_at |
 | GET /api/sources | Sources assigned to the client; no query parameters |
 | GET /api/sources/{id} | id, title, url, is_paused, enable_triggers, blocked_reason, last_reindexed_at |
+| GET /api/sources/{id}/status | Source metadata, counts, total and details_url; all pages, no list limit |
 | GET /api/files | Knowledge base files; no query parameters |
 | GET /api/files/{id} | id, name, content, status, status_error, size_bytes, updated_at |
 | GET /api/chats?limit=100 | Most recently created conversations; limit 1–100 only |
@@ -60,8 +59,8 @@ unvalidated response does not confirm a change.
 
 Page, conversation and message lists currently have no cursor/offset.
 There are no server filters for search, date, source or widget. The plugin
-applies its available filters to the received 100 objects and explains this
-limit. It does not claim a long conversation is fully loaded after 100 messages.
+applies conversation filters to the received 100 conversations and explains this
+limit. The Index screen uses aggregate source counts instead of a document list. It does not claim a long conversation is fully loaded after 100 messages.
 
 Widgets use the real `/widget/{code}` loader. WordPress prints one
 `<div id="chat-chat"></div>` before the footer script. The loader creates a
@@ -73,6 +72,45 @@ Render only user/assistant messages with escaped text. Internal prompts are not
 shown. The client blocks history deletion/modification before HTTP. Source
 metadata, file content and original links are available inside WordPress, but
 the messages API has no references for individual answers.
+
+## Source indexing status
+
+The Index screen reads `site_source_id` from the saved registration and requests
+`GET /api/sources/{site_source_id}/status`. URL query parameters cannot select
+another source. The server requires an active Bearer client, checks the source's
+project and the client's source assignment, and aggregates all its pages.
+Missing, foreign and unassigned sources return the same HTTP 404; an invalid or
+revoked client receives HTTP 401. The endpoint does not modify source state.
+
+Response example:
+
+~~~json
+{
+  "id": "source-example",
+  "title": "Website",
+  "url": "https://wp-site.com/",
+  "is_paused": false,
+  "enable_triggers": false,
+  "blocked_reason": null,
+  "last_reindexed_at": null,
+  "counts": {"errors": 2, "pending": 3, "processing": 1, "ready": 105, "excluded": 4},
+  "total": 115,
+  "details_url": "https://chat.dzen.dev/projects/project-example/sources/source-example"
+}
+~~~
+
+`total` includes all five counts. Classification is shared with the Dzen Chat
+Sources screen: exclusions take precedence, then errors, then the pending,
+processing and ready stages for pages without an error. The colored progress
+bar includes errors, pending, processing and ready; excluded pages have a
+separate counter. Empty and excluded-only sources have a neutral bar.
+
+The plugin validates nonnegative integer counts, their sum, source identity
+and the exact source URL on its configured service origin. Invalid responses
+and transport errors display an error instead of progress. Counts are fetched
+on every Index load or **Refresh status** action and are not persisted.
+Pause and restriction states remain visible alongside the counts. The details
+link opens the actual source's settings under normal Dzen Chat web login.
 
 ## Content updates
 
@@ -101,7 +139,7 @@ Acknowledgment:
 
 WordPress's accepted state means the URL was submitted. This API has no
 operation IDs, polling or deletion events. It uses the existing Dzen Chat crawler.
-Read actual page processing through /api/pages. Acknowledgment compares normalized
+Read source progress through GET /api/sources/{id}/status. Acknowledgment compares normalized
 URLs, including root trailing slash, default port, IDN and Unicode. A different
 host, port, path or query does not confirm the original request.
 

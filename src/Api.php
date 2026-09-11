@@ -139,6 +139,29 @@ final class Api
         return $result['items'];
     }
 
+    /** Aggregate status is always scoped to an explicitly requested, assigned source. */
+    public function sourceStatus(string $sourceId): array|\WP_Error
+    {
+        $result = $this->request('GET', '/sources/' . self::segment($sourceId) . '/status');
+        if (is_wp_error($result)) return $result;
+        $invalid = new \WP_Error('dzen_protocol', __('The service returned an invalid indexing status.', 'dzen-chat'));
+        if (($result['id'] ?? null) !== $sourceId || !is_string($result['title'] ?? null)
+            || !is_bool($result['is_paused'] ?? null) || !array_key_exists('blocked_reason', $result)
+            || ($result['blocked_reason'] !== null && !is_string($result['blocked_reason']))
+            || !is_array($result['counts'] ?? null) || !is_int($result['total'] ?? null)
+            || $result['total'] < 0) return $invalid;
+        $total = 0;
+        foreach (['errors', 'pending', 'processing', 'ready', 'excluded'] as $key) {
+            $count = $result['counts'][$key] ?? null;
+            if (!is_int($count) || $count < 0) return $invalid;
+            $total += $count;
+        }
+        if ($total !== $result['total'] || !is_string($result['details_url'] ?? null)
+            || !preg_match('~^' . preg_quote(self::origin(), '~') . '/projects/[A-Za-z0-9_-]+/sources/'
+                . preg_quote($sourceId, '~') . '$~D', $result['details_url'])) return $invalid;
+        return $result;
+    }
+
     public static function segment(string $value): string
     {
         return rawurlencode($value);

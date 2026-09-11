@@ -3,7 +3,7 @@ Contributors: dzenplatform
 Requires at least: 6.8
 Tested up to: 6.8.2
 Requires PHP: 8.2
-Stable tag: 0.6.0
+Stable tag: 0.7.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -18,8 +18,8 @@ source identifier. Credentials are never exposed in page HTML or JavaScript.
 
 View all project widgets and create new ones from WordPress. Choose a widget
 for the site, select a different widget for a page or post, or hide it on that
-page. Open widget settings in Dzen Chat; direct editor links require the service
-to supply editor URLs. Widget settings apply to the Dzen Chat project; placement
+page. Open each widget's settings directly in Dzen Chat. Widget settings apply to
+the Dzen Chat project; placement
 settings apply to this WordPress site.
 
 Public pages and posts are submitted for reindexing on connection, publication
@@ -29,11 +29,12 @@ password-protected posts and products are not submitted as public content.
 Previously public URLs are rechecked after unpublishing, deletion or a permalink
 change. Rechecking does not guarantee removal from the service index.
 
-View indexed documents, source status, knowledge files and conversation messages
-inside WordPress. Open documents in the WordPress editor or follow their original
-links. Document and chat filters currently cover the latest 100 records only;
-conversation details display up to the first 100 messages. Conversation hiding,
-answer-source references, full-history search, per-page trigger controls and
+View indexing progress for the connected source, with counts covering all pages
+and a link to detailed status in Dzen Chat. Refresh the Index screen to get current
+counts. View sources, knowledge files and conversation messages inside WordPress.
+Chat filters cover the latest 100 records; conversation details display up to the
+first 100 messages. Conversation hiding, answer-source references, full-history
+search, per-page trigger controls and
 project billing status are not yet available through this integration.
 
 The plugin stores encrypted integration credentials in WordPress. It does not
@@ -85,6 +86,12 @@ service. Removing keys in WordPress does not revoke the remote API client.
 No. Products require a separate integration.
 
 == Changelog ==
+
+= 0.7.0 =
+Replace the Index document table with a progress bar for the connected site source.
+Show counts for all pages by status, including excluded pages separately. Add a
+refresh action and a direct link to source details. Use the new source status API
+and direct widget editor URLs. Include English and Russian interface strings.
 
 = 0.6.0 =
 List project widgets in a compact table with an explicit site-wide selection.

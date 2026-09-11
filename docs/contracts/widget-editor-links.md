@@ -1,13 +1,12 @@
 # Widget editor links
 
-## Required service addition
+## Implemented service contract
 
-The WordPress widget list needs a direct editor link for each widget. Existing
-`/auth/exchange/` and `/api/widgets` responses contain neither the project's
-opaque ID nor the editor URL. The plugin must not infer a project from a widget
-code or ask site owners to enter a project ID manually.
+The WordPress widget list uses a direct editor link for each widget.
+Registration remains unchanged; the plugin does not infer a project from a
+widget code or ask site owners to enter a project ID manually.
 
-Add `edit_url` to the widget objects in `GET /api/widgets`. It identifies the
+`edit_url` is returned on widget objects in `GET /api/widgets`. It identifies the
 existing authenticated editor:
 
 ~~~json
@@ -29,7 +28,7 @@ project membership checks. Do not include API tokens, authorization codes,
 secrets or signed query parameters. The editor still requires a Dzen Chat user
 session; the link does not grant access.
 
-The same field can be returned by widget detail, creation and update responses.
+The same field is returned by widget detail, creation and update responses.
 No new management route or change to registration is necessary.
 
 ## Plugin behavior
@@ -41,8 +40,9 @@ query or fragment. These are escaped browser links opened in a new tab with
 
 Responses without a valid editor URL still allow listing, creation and site
 selection. The corresponding row links to the service dashboard. The local
-fixture includes editor URLs to test the new field, but this does not establish
-that the running Dzen Chat service implements it.
+service and fixture both supply editor URLs. See the
+[0.7.0 verification report](../verification/2026-09-11-source-index-status.md) for
+the local checks and production boundary.
 
 ## Service acceptance
 

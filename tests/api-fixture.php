@@ -139,6 +139,10 @@ add_filter('pre_http_request', static function ($pre, $args, $url) {
     if ($method !== 'GET') return $reply(['error' => 'Unsupported method'], 405);
     if ($path === '/api/sources') return $reply(['items' => [$source]]);
     if ($path === '/api/sources/source-one') return $reply($source);
+    if ($path === '/api/sources/source-one/status') return $reply($source + [
+        'counts' => ['errors' => 2, 'pending' => 3, 'processing' => 1, 'ready' => 105, 'excluded' => 4],
+        'total' => 115, 'details_url' => 'https://chat.dzen.dev/projects/project-one/sources/source-one',
+    ]);
     if ($path === '/api/pages') {
         if (array_diff(array_keys($query), ['limit'])) throw new RuntimeException('Page query does not support these fields');
         return $reply(['items' => [$page]]);

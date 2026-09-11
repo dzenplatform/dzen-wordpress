@@ -3,9 +3,9 @@
 Connect your WordPress site to [Dzen Chat](https://chat.dzen.dev), manage chat
 widgets and keep public content available to your AI assistant.
 
-**Version 0.6.0 uses the implemented public API and includes English and Russian
-interfaces.** Authorize a site, manage real widgets, inspect indexed documents,
-sources and knowledge files, and read conversations directly in WordPress.
+**Version 0.7.0 uses the implemented public API and includes English and Russian
+interfaces.** Authorize a site, manage real widgets, check source indexing progress,
+inspect sources and knowledge files, and read conversations directly in WordPress.
 Public pages and posts are submitted for reindexing after connection, publication
 and changes. The complete update flow has been verified locally: edited content →
 background queue → Dzen Chat index → assistant answer using the new information.
@@ -13,14 +13,14 @@ background queue → Dzen Chat index → assistant answer using the new informat
 ## Features
 
 - View all project widgets in one list and create new widgets in WordPress.
-- Open widget settings in Dzen Chat. A direct editor link is shown when the
-  service supplies its URL; otherwise the link opens the Dzen Chat dashboard.
+- Open the settings of each widget directly in Dzen Chat.
 - Select a widget for the whole site, choose another for a page or post, or hide
   it on that page. Widget settings apply to the Dzen Chat project; placement
   applies to this WordPress site.
 - Synchronize public pages and posts through a persistent background queue.
-- Inspect document processing, open the original source or edit the matching
-  WordPress post.
+- Check indexing progress for the connected site source, with counts of pending,
+  processing, ready, failed and excluded pages. Open detailed source settings in
+  Dzen Chat or refresh the status in WordPress.
 - View source status and knowledge file contents as escaped text.
 - Read conversations, messages and feedback; filter by conversation or visitor
   ID, date and widget. Conversation text stays on the service.
@@ -34,8 +34,9 @@ so the close button and message composer remain accessible.
 
 ## Current API limits
 
-- Document and conversation lists contain at most the latest 100 records.
-  Filters apply to that set. A conversation displays its first 100 messages.
+- Conversation lists contain at most the latest 100 records. Filters apply to
+  that set. A conversation displays its first 100 messages. Source indexing
+  counts cover all pages and are refreshed when the Index screen loads.
 - Hiding/restoring conversations, full-history text search, individual answer
   sources, page trigger controls and billing status are not yet available.
 - Deleting, unpublishing or changing the URL of a previously public post submits
@@ -46,6 +47,7 @@ so the close button and message composer remain accessible.
   by the service.
 
 See the [current API contract](docs/contracts/dzen-chat-api.md),
+[0.7.0 indexing verification](docs/verification/2026-09-11-source-index-status.md),
 [0.4.0 live verification](docs/verification/2026-09-11-full-integration.md),
 [implementation brief](docs/specs/2026-09-11-full-integration.md),
 [authorization verification](docs/verification/2026-09-11-registration.md) and
@@ -132,11 +134,11 @@ To release:
    `Stable tag` and the changelog in `readme.txt`. Use `X.Y.Z`.
 2. Update and compile the [translation catalogs](docs/internationalization.md).
 3. Commit and push the changes; wait for a successful workflow.
-4. Create and push the matching tag, for example `v0.6.0`.
+4. Create and push the matching tag, for example `v0.7.0`.
 5. Download the checked ZIP and checksum from Releases.
 
 Build locally with `make package-test && make package` (Python 3 and Git).
-Version 0.6.0 produces `dist/dzen-chat-0.6.0.zip`. Only Git-tracked runtime files
+Version 0.7.0 produces `dist/dzen-chat-0.7.0.zip`. Only Git-tracked runtime files
 and `src/`, `assets/` and `languages/` are packaged. Stage new runtime and
 language files before building. Fixtures, Docker configuration, local
 certificates and development documentation are excluded.
