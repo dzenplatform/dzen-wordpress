@@ -101,7 +101,7 @@ try {
     $check(str_contains($replay, 'notice=authorization_failed') && count($calls) === 1, 'callback cannot exchange twice');
     set_transient($pending, $credentials->encrypt($attempt), 300);
     $check(str_contains($finish($query), 'notice=authorization_failed') && count($calls) === 1, 'atomic claim rejects a concurrently read callback');
-    $check($api->request('GET', '/widgets')->get_error_code() === 'dzen_api_pending' && count($calls) === 1, 'deferred management API never receives registration credentials');
+    $check($api->request('GET', '/chats')->get_error_code() === 'dzen_api_pending' && count($calls) === 1, 'deferred history API never receives registration credentials');
 
     global $wpdb;
     [, $events] = DzenChat\Sync::tables();

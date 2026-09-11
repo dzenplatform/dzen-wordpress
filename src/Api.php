@@ -56,28 +56,37 @@ final class Api
             return new \WP_Error('dzen_history_immutable', __('Историю чатов нельзя удалять или изменять. Доступно только скрытие и восстановление.', 'dzen-chat'));
         }
         try {
-            if ($this->credentials->registrationOnly()) {
-                return new \WP_Error('dzen_api_pending', __('Сайт авторизован. Управление виджетами, индексом и диалогами будет подключено после реализации соответствующих API в Dzen Chat.', 'dzen-chat'));
+            $widgetRequest = (bool) preg_match('~^/widgets(?:/[A-Za-z0-9_-]{1,128})?$~D', $path);
+            if ($this->credentials->registrationOnly() && !$widgetRequest) {
+                return new \WP_Error('dzen_api_pending', __('Индекс, диалоги и источники пока не подключены в плагине.', 'dzen-chat'));
+            }
+            if ($widgetRequest && ($query || !in_array($method, $path === '/widgets' ? ['GET', 'POST'] : ['GET', 'PATCH'], true))) {
+                throw new \RuntimeException('invalid_widget_request');
             }
             if (!preg_match('~^/[a-zA-Z0-9/_%.-]+$~D', $path) || str_contains($path, '..')
                 || !in_array($method, ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'], true)) {
                 throw new \RuntimeException('invalid_api_request');
             }
             ksort($query, SORT_STRING);
-            $target = '/api/v1' . $path . ($query ? '?' . http_build_query($query, '', '&', PHP_QUERY_RFC3986) : '');
+            $target = ($widgetRequest ? '/api' : '/api/v1') . $path . ($query ? '?' . http_build_query($query, '', '&', PHP_QUERY_RFC3986) : '');
             $body = $data === null ? '' : wp_json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
             $headers = ['Accept' => 'application/json', 'Content-Type' => 'application/json'];
             $credentials = $this->credentials->get();
-            $timestamp = (string) time();
-            $nonce = bin2hex(random_bytes(24));
-            $headers += [
-                'X-Dzen-Auth-Version' => '1', 'X-Dzen-Client-Id' => $credentials['client_id'],
-                'X-Dzen-Timestamp' => $timestamp, 'X-Dzen-Nonce' => $nonce,
-                'X-Dzen-Signature' => self::signature($credentials['client_secret'], $method, $target,
-                    $credentials['client_id'], $timestamp, $nonce, $idempotency, $body),
-            ];
-            if ($idempotency !== '') {
-                $headers['Idempotency-Key'] = $idempotency;
+            if ($widgetRequest) {
+                $headers['Authorization'] = 'Bearer ' . $credentials['client_id'] . '.' . $credentials['client_secret'];
+            } else {
+                // The other screens still use their proposed contract until their own migration.
+                $timestamp = (string) time();
+                $nonce = bin2hex(random_bytes(24));
+                $headers += [
+                    'X-Dzen-Auth-Version' => '1', 'X-Dzen-Client-Id' => $credentials['client_id'],
+                    'X-Dzen-Timestamp' => $timestamp, 'X-Dzen-Nonce' => $nonce,
+                    'X-Dzen-Signature' => self::signature($credentials['client_secret'], $method, $target,
+                        $credentials['client_id'], $timestamp, $nonce, $idempotency, $body),
+                ];
+                if ($idempotency !== '') {
+                    $headers['Idempotency-Key'] = $idempotency;
+                }
             }
             $response = wp_safe_remote_request(self::origin() . $target, [
                 'method' => $method, 'headers' => $headers, 'body' => $body,
@@ -95,10 +104,12 @@ final class Api
         $payload = json_decode($raw, true);
         if ($status < 200 || $status >= 300) {
             $messages = [
+                400 => __('Проверьте введённые данные.', 'dzen-chat'),
                 401 => __('Нужно повторно подключить сайт к Dzen Chat.', 'dzen-chat'),
                 403 => __('Действие недоступно: проверьте права и состояние проекта в Dzen Chat.', 'dzen-chat'),
                 404 => __('Объект недоступен или API ещё не поддерживает эту операцию.', 'dzen-chat'),
                 409 => __('Состояние изменилось. Обновите страницу и повторите действие.', 'dzen-chat'),
+                422 => __('Проверьте введённые данные.', 'dzen-chat'),
                 429 => __('Слишком много запросов. Повторите позже.', 'dzen-chat'),
             ];
             $retryAfter = wp_remote_retrieve_header($response, 'retry-after');

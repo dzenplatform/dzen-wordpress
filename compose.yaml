@@ -16,7 +16,7 @@ services:
   wordpress:
     image: wordpress:6.8.2-php8.3-apache
     ports:
-      - "127.0.0.1:8868:80"
+      - "127.0.0.1:${DZEN_WORDPRESS_PORT:-8868}:80"
     environment: &wp_environment
       WORDPRESS_DB_HOST: db
       WORDPRESS_DB_NAME: wordpress

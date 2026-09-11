@@ -4,7 +4,7 @@ if (wp_get_environment_type() !== 'local') {
 }
 $credentials = new DzenChat\Credentials();
 // Synthetic management identity only; real registration never supplies these IDs.
-update_option('dzen_chat_credentials', $credentials->encrypt(['client_id' => 'chatid-fixture',
+update_option('dzen_chat_credentials', $credentials->encrypt(['client_id' => 'chatid-fixture-12345',
     'client_secret' => 'fixture-secret-for-tests-only-123456789', 'integration_id' => 'integration-fixture',
     'site_url' => trailingslashit(home_url()), 'project_id' => 'project-fixture']), false);
 update_option('dzen_fixture_scenario', 'normal', false);

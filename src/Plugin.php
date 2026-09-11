@@ -54,7 +54,7 @@ final class Plugin
     public function widget(): void
     {
         $credentials = new Credentials();
-        if (!$credentials->exists() || !get_option('dzen_chat_verified')) {
+        if (!$credentials->exists()) {
             return;
         }
         try {
@@ -68,14 +68,11 @@ final class Plugin
         }
         $id = is_singular() ? get_post_meta($post, '_dzen_chat_widget', true) : '';
         $id = $id ?: get_option('dzen_chat_widget', '');
-        $widgets = get_option('dzen_chat_widgets', []);
-        $widget = $widgets[$id] ?? null;
-        if (!$widget || empty($widget['is_enabled']) || !preg_match('/^[A-Za-z0-9_-]+$/D', $widget['code'])) {
+        if (!is_string($id) || !preg_match('/^[A-Za-z0-9_-]{1,128}$/D', $id)) {
             return;
         }
-        $status = (new Api($credentials))->cachedStatus();
-        if (is_wp_error($status) || ($status['allowed_operations']['widget_answers'] ?? false) !== true
-            || ($status['integration']['status'] ?? '') !== 'active') {
+        $widget = (new Widgets($credentials, new Api($credentials)))->cached($id);
+        if (is_wp_error($widget) || !$widget['is_enabled']) {
             return;
         }
         wp_enqueue_script('dzen-chat-widget', Api::origin() . '/widget/' . rawurlencode($widget['code']), [], null,
@@ -99,20 +96,31 @@ final class Plugin
 
     public function metaBox(\WP_Post $post): void
     {
+        try {
+            $pending = (new Credentials())->registrationOnly();
+        } catch (\RuntimeException | \JsonException $error) {
+            echo '<p>' . esc_html__('Подключите сайт заново в разделе Dzen Chat.', 'dzen-chat') . '</p>';
+            return;
+        }
         wp_nonce_field('dzen_chat_post_' . $post->ID, 'dzen_chat_post_nonce');
-        foreach (['_dzen_chat_widget_disabled' => __('Не показывать виджет', 'dzen-chat'), '_dzen_chat_exclude' => __('Исключить из индекса Dzen Chat', 'dzen-chat')] as $key => $label) {
+        $fields = ['_dzen_chat_widget_disabled' => __('Не показывать виджет', 'dzen-chat')];
+        if (!$pending) $fields['_dzen_chat_exclude'] = __('Исключить из индекса Dzen Chat', 'dzen-chat');
+        foreach ($fields as $key => $label) {
             echo '<p><label><input type="checkbox" name="' . esc_attr($key) . '" value="1"' . checked((bool) get_post_meta($post->ID, $key, true), true, false) . '> ' . esc_html($label) . '</label></p>';
         }
-        $mode = get_post_meta($post->ID, '_dzen_chat_triggers', true) ?: 'inherit';
-        echo '<p><label>' . esc_html__('Триггеры страницы', 'dzen-chat') . '<br><select name="_dzen_chat_triggers">';
-        foreach (['inherit' => __('Наследовать', 'dzen-chat'), 'enabled' => __('Включить', 'dzen-chat'), 'disabled' => __('Выключить', 'dzen-chat')] as $value => $label) {
-            echo '<option value="' . esc_attr($value) . '"' . selected($mode, $value, false) . '>' . esc_html($label) . '</option>';
+        if (!$pending) {
+            $mode = get_post_meta($post->ID, '_dzen_chat_triggers', true) ?: 'inherit';
+            echo '<p><label>' . esc_html__('Триггеры страницы', 'dzen-chat') . '<br><select name="_dzen_chat_triggers">';
+            foreach (['inherit' => __('Наследовать', 'dzen-chat'), 'enabled' => __('Включить', 'dzen-chat'), 'disabled' => __('Выключить', 'dzen-chat')] as $value => $label) {
+                echo '<option value="' . esc_attr($value) . '"' . selected($mode, $value, false) . '>' . esc_html($label) . '</option>';
+            }
+            echo '</select></label></p>';
         }
-        echo '</select></label></p><p><label>' . esc_html__('Виджет', 'dzen-chat') . '<br><select name="_dzen_chat_widget"><option value="">' . esc_html__('Как на всём сайте', 'dzen-chat') . '</option>';
+        echo '<p><label>' . esc_html__('Виджет', 'dzen-chat') . '<br><select name="_dzen_chat_widget"><option value="">' . esc_html__('Как на всём сайте', 'dzen-chat') . '</option>';
         foreach (get_option('dzen_chat_widgets', []) as $id => $widget) {
             echo '<option value="' . esc_attr($id) . '"' . selected(get_post_meta($post->ID, '_dzen_chat_widget', true), $id, false) . '>' . esc_html($widget['name']) . '</option>';
         }
-        echo '</select></label></p><p class="description">' . esc_html__('Изменения индекса и триггеров применяются после обработки сервисом.', 'dzen-chat') . '</p>';
+        echo '</select></label></p><p class="description">' . esc_html__('Эти настройки виджета относятся только к этой странице.', 'dzen-chat') . '</p>';
     }
 
     public function saveMeta(int $id, \WP_Post $post): void
@@ -123,11 +131,16 @@ final class Plugin
             || !wp_verify_nonce(wp_unslash($_POST['dzen_chat_post_nonce']), 'dzen_chat_post_' . $id)) {
             return;
         }
-        foreach (['_dzen_chat_widget_disabled', '_dzen_chat_exclude'] as $key) {
+        try {
+            $pending = (new Credentials())->registrationOnly();
+        } catch (\RuntimeException | \JsonException $error) {
+            return;
+        }
+        foreach ($pending ? ['_dzen_chat_widget_disabled'] : ['_dzen_chat_widget_disabled', '_dzen_chat_exclude'] as $key) {
             update_post_meta($id, $key, isset($_POST[$key]) && $_POST[$key] === '1' ? '1' : '');
         }
         $policy = isset($_POST['_dzen_chat_triggers']) && is_string($_POST['_dzen_chat_triggers']) ? wp_unslash($_POST['_dzen_chat_triggers']) : '';
-        if (in_array($policy, ['inherit', 'enabled', 'disabled'], true)) {
+        if (!$pending && in_array($policy, ['inherit', 'enabled', 'disabled'], true)) {
             update_post_meta($id, '_dzen_chat_triggers', $policy);
         }
         $widget = isset($_POST['_dzen_chat_widget']) && is_string($_POST['_dzen_chat_widget']) ? wp_unslash($_POST['_dzen_chat_widget']) : '';

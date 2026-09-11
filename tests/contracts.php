@@ -12,7 +12,7 @@ $check = static function (bool $ok, string $label) use (&$checks) {
 $credentials = new DzenChat\Credentials();
 $api = new DzenChat\Api($credentials);
 $check(!str_contains(get_option('dzen_chat_credentials'), 'fixture-secret'), 'secret encrypted at rest');
-$check($credentials->get()['client_id'] === 'chatid-fixture', 'credential round trip');
+$check($credentials->get()['client_id'] === 'chatid-fixture-12345', 'credential round trip');
 $check($credentials->encrypt(['value' => 1]) !== $credentials->encrypt(['value' => 1]), 'random nonce on each encryption');
 $encrypted = $credentials->encrypt(['value' => 1]);
 $tampered = substr($encrypted, 0, 12) . ($encrypted[12] === 'A' ? 'B' : 'A') . substr($encrypted, 13);
