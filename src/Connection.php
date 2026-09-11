@@ -104,6 +104,7 @@ final class Connection
                 throw new \RuntimeException('exchange_failed');
             }
             $this->credentials->saveRegistration($result, $attempt['site_url'], $attempt['api_origin']);
+            (new Sync($this->credentials, $this->api))->reconcile();
             wp_safe_redirect(Admin::url('dzen-chat', ['notice' => 'registered']), 303);
             exit;
         } catch (\RuntimeException | \JsonException $error) {
@@ -116,17 +117,8 @@ final class Connection
     public function disconnect(): void
     {
         self::authorize('dzen_chat_disconnect');
-        if ($this->credentials->registrationOnly()) {
-            $this->credentials->forget();
-            wp_safe_redirect(Admin::url('dzen-chat', ['notice' => 'credentials_removed']), 303);
-            exit;
-        }
-        $result = $this->api->request('DELETE', '/integration', [], null, wp_generate_uuid4());
-        if (is_wp_error($result)) {
-            wp_die(esc_html($result->get_error_message()), '', ['response' => 502, 'back_link' => true]);
-        }
         $this->credentials->forget();
-        wp_safe_redirect(Admin::url('dzen-chat', ['notice' => 'disconnected']), 303);
+        wp_safe_redirect(Admin::url('dzen-chat', ['notice' => 'credentials_removed']), 303);
         exit;
     }
 }

@@ -42,6 +42,19 @@ services:
     depends_on:
       db:
         condition: service_healthy
+  cron:
+    image: wordpress:cli-php8.3
+    user: "33:33"
+    environment: *wp_environment
+    volumes: *wp_volumes
+    profiles: [cron]
+    entrypoint: [/bin/sh, -c]
+    command: ["while true; do wp cron event run dzen_chat_worker --due-now; sleep 15; done"]
+    depends_on:
+      db:
+        condition: service_healthy
+      wordpress:
+        condition: service_started
 volumes:
   db:
   wordpress:

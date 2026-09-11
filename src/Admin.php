@@ -10,9 +10,8 @@ final class Admin
     public function register(): void
     {
         add_action('admin_menu', [$this, 'menu']);
-        add_action('admin_post_dzen_chat_visibility', [$this, 'visibility']);
         add_action('admin_post_dzen_chat_action', [$this, 'action']);
-        add_action('admin_enqueue_scripts', function ($hook) {
+        add_action('admin_enqueue_scripts', static function ($hook) {
             if (str_contains($hook, 'dzen-chat')) {
                 wp_enqueue_style('dzen-chat-admin', plugins_url('assets/admin.css', DZEN_CHAT_FILE), [], DZEN_CHAT_VERSION);
             }
@@ -23,7 +22,7 @@ final class Admin
     {
         add_menu_page('Dzen Chat', 'Dzen Chat', 'manage_options', 'dzen-chat', [$this, 'page'], 'dashicons-format-chat', 58);
         foreach (['dzen-chat' => __('Обзор', 'dzen-chat'), 'dzen-chat-widgets' => __('Виджеты', 'dzen-chat'),
-            'dzen-chat-documents' => __('Индекс и триггеры', 'dzen-chat'), 'dzen-chat-history' => __('Диалоги', 'dzen-chat'),
+            'dzen-chat-documents' => __('Индекс', 'dzen-chat'), 'dzen-chat-history' => __('Диалоги', 'dzen-chat'),
             'dzen-chat-sources' => __('Источники', 'dzen-chat')] as $slug => $title) {
             add_submenu_page('dzen-chat', $title, $title, 'manage_options', $slug, [$this, 'page']);
         }
@@ -41,24 +40,19 @@ final class Admin
 
     public static function filters(array $input): array|\WP_Error
     {
-        $result = ['limit' => 20, 'visibility' => self::input('visibility', $input) ?: 'visible'];
-        if (!in_array($result['visibility'], ['visible', 'hidden', 'all'], true)) {
-            return new \WP_Error('filter', __('Выберите корректный фильтр видимости.', 'dzen-chat'));
-        }
-        foreach (['q' => 200, 'widget_id' => 128, 'cursor' => 512, 'date_from' => 10, 'date_to' => 10] as $key => $max) {
+        $result = [];
+        foreach (['q' => 200, 'widget_code' => 128, 'source_id' => 128, 'status' => 64,
+            'date_from' => 10, 'date_to' => 10] as $key => $max) {
             $value = self::input($key, $input);
-            if (strlen($value) > $max) {
-                return new \WP_Error('filter', __('Слишком длинное значение фильтра.', 'dzen-chat'));
-            }
-            if ($value !== '') {
-                if (str_starts_with($key, 'date_')) {
-                    $date = \DateTimeImmutable::createFromFormat('!Y-m-d', $value, new \DateTimeZone('UTC'));
-                    if (!$date || $date->format('Y-m-d') !== $value) {
-                        return new \WP_Error('filter', __('Укажите дату в формате ГГГГ-ММ-ДД.', 'dzen-chat'));
-                    }
+            if (strlen($value) > $max) return new \WP_Error('filter', __('Слишком длинный фильтр.', 'dzen-chat'));
+            if ($value === '') continue;
+            if (str_starts_with($key, 'date_')) {
+                $date = \DateTimeImmutable::createFromFormat('!Y-m-d', $value, new \DateTimeZone('UTC'));
+                if (!$date || $date->format('Y-m-d') !== $value) {
+                    return new \WP_Error('filter', __('Укажите дату в формате ГГГГ-ММ-ДД.', 'dzen-chat'));
                 }
-                $result[$key] = $value;
             }
+            $result[$key] = $value;
         }
         if (isset($result['date_from'], $result['date_to']) && $result['date_from'] > $result['date_to']) {
             return new \WP_Error('filter', __('Начальная дата должна быть не позже конечной.', 'dzen-chat'));
@@ -68,15 +62,26 @@ final class Admin
 
     public static function publicUrl(mixed $value): string
     {
-        if (!is_string($value)) {
-            return '';
-        }
+        if (!is_string($value)) return '';
         $parts = wp_parse_url($value);
         if (!$parts || !in_array($parts['scheme'] ?? '', ['http', 'https'], true)
-            || empty($parts['host']) || isset($parts['user']) || isset($parts['pass'])) {
-            return '';
-        }
+            || empty($parts['host']) || isset($parts['user']) || isset($parts['pass'])) return '';
         return esc_url($value, ['http', 'https']);
+    }
+
+    private static function text(array $item, string $key): string
+    {
+        return isset($item[$key]) && is_scalar($item[$key]) ? (string) $item[$key] : '';
+    }
+
+    private static function statusLabel(array $item): string
+    {
+        return match (self::text($item, 'status')) {
+            'crawler' => __('Ожидает обхода', 'dzen-chat'),
+            'parsing' => __('Обрабатывается', 'dzen-chat'),
+            'ready' => __('Обработка завершена', 'dzen-chat'),
+            default => self::text($item, 'status'),
+        };
     }
 
     private function error(\WP_Error $error): void
@@ -90,327 +95,265 @@ final class Admin
         echo '<input type="hidden" name="action" value="' . esc_attr($action) . '">';
         wp_nonce_field($nonce);
         foreach ($fields as $key => $value) {
-            if (is_scalar($value)) {
-                echo '<input type="hidden" name="' . esc_attr($key) . '" value="' . esc_attr((string) $value) . '">';
-            }
+            if (is_scalar($value)) echo '<input type="hidden" name="' . esc_attr($key) . '" value="' . esc_attr((string) $value) . '">';
         }
         echo '<button class="button" type="submit">' . esc_html($label) . '</button></form>';
     }
 
     public function page(): void
     {
-        if (!current_user_can('manage_options')) {
-            wp_die(esc_html__('Недостаточно прав.', 'dzen-chat'), '', ['response' => 403]);
-        }
+        if (!current_user_can('manage_options')) wp_die(esc_html__('Недостаточно прав.', 'dzen-chat'), '', ['response' => 403]);
         nocache_headers();
         echo '<div class="wrap dzen-chat"><h1>Dzen Chat</h1>';
         $notices = [
-            'connected' => __('Сайт подключён. Начальная сверка поставлена в очередь.', 'dzen-chat'),
-            'registered' => __('Авторизация завершена. Ключи подключения сохранены в WordPress.', 'dzen-chat'),
+            'registered' => __('Авторизация завершена. Публичные страницы будут отправлены на переиндексацию.', 'dzen-chat'),
             'credentials_removed' => __('Ключи удалены из WordPress. Для отзыва API-клиента откройте Dzen Chat.', 'dzen-chat'),
-            'disconnected' => __('Интеграция отключена.', 'dzen-chat'),
             'cancelled' => __('Подключение отменено.', 'dzen-chat'),
-            'authorization_failed' => __('Подключение не завершено. Начните его заново из этой страницы.', 'dzen-chat'),
-            'unverified' => __('Ключи сохранены, но сервис ещё не подтвердил подключение. Нажмите «Проверить подключение».', 'dzen-chat'),
-            'hidden' => __('Чат скрыт из основного списка. Переписка и биллинговая история сохранены в Dzen Chat.', 'dzen-chat'),
-            'restored' => __('Чат возвращён в основной список.', 'dzen-chat'),
+            'authorization_failed' => __('Подключение не завершено. Начните его заново.', 'dzen-chat'),
             'saved' => __('Изменение сохранено.', 'dzen-chat'),
-            'queued' => __('Сверка и повторная обработка ошибок поставлены в очередь.', 'dzen-chat'),
+            'queued' => __('Запрос принят. Статус обработки можно посмотреть в разделе «Индекс».', 'dzen-chat'),
+            'reconcile' => __('Сверка публичных страниц поставлена в очередь.', 'dzen-chat'),
         ];
         $notice = self::input('notice', $_GET);
-        if (isset($notices[$notice])) {
-            echo '<div class="notice notice-info"><p>' . esc_html($notices[$notice]) . '</p></div>';
-        }
+        if (isset($notices[$notice])) echo '<div class="notice notice-info"><p>' . esc_html($notices[$notice]) . '</p></div>';
         if (!$this->credentials->exists()) {
             echo '<p>' . esc_html__('Подключите сайт к существующему или новому проекту Dzen Chat.', 'dzen-chat') . '</p>';
             $this->form('dzen_chat_connect', 'dzen_chat_connect', [], __('Подключить Dzen Chat', 'dzen-chat'));
-            echo '</div>';
-            return;
-        }
-        $page = self::input('page', $_GET);
-        try {
-            if ($this->credentials->registrationOnly()) {
-                $page === 'dzen-chat-widgets' ? $this->widgets() : $this->registration();
-                echo '</div>';
-                return;
+        } else {
+            try {
+                $this->credentials->get();
+                match (self::input('page', $_GET)) {
+                    'dzen-chat-widgets' => $this->widgets(),
+                    'dzen-chat-documents' => $this->documents(),
+                    'dzen-chat-history' => $this->history(),
+                    'dzen-chat-sources' => $this->sources(),
+                    default => $this->overview(),
+                };
+            } catch (\RuntimeException | \JsonException $error) {
+                $this->error(new \WP_Error('connection', __('Адрес сайта, сервис или ключи безопасности изменились. Подключите сайт заново.', 'dzen-chat')));
+                $this->form('dzen_chat_connect', 'dzen_chat_connect', [], __('Подключить заново', 'dzen-chat'));
             }
-        } catch (\RuntimeException | \JsonException $error) {
-            $this->error(new \WP_Error('connection', __('Адрес сайта, сервис или ключи безопасности изменились. Подключите сайт заново.', 'dzen-chat')));
-            $this->form('dzen_chat_connect', 'dzen_chat_connect', [], __('Подключить заново', 'dzen-chat'));
-            echo '</div>';
-            return;
         }
-        match ($page) {
-            'dzen-chat-history' => $this->history(),
-            'dzen-chat-widgets' => $this->widgets(),
-            'dzen-chat-documents' => $this->documents(),
-            'dzen-chat-sources' => $this->sources(),
-            default => $this->overview(),
-        };
         echo '</div>';
-    }
-
-    private function registration(): void
-    {
-        echo '<h2>' . esc_html__('Сайт авторизован в Dzen Chat', 'dzen-chat') . '</h2>';
-        echo '<p>' . esc_html__('Сайт:', 'dzen-chat') . ' ' . esc_html(Credentials::siteUrl()) . '</p>';
-        echo '<p><a class="button button-primary" href="' . esc_url(self::url('dzen-chat-widgets')) . '">' . esc_html__('Настроить виджеты', 'dzen-chat') . '</a></p>';
-        echo '<p>' . esc_html__('Виджеты уже доступны. Индекс, диалоги и источники будут подключены в следующих версиях плагина.', 'dzen-chat') . '</p>';
-        echo '<p><a class="button" href="' . esc_url(Api::origin() . '/') . '" target="_blank" rel="noopener noreferrer">' . esc_html__('Открыть Dzen Chat', 'dzen-chat') . '</a></p>';
-        $this->form('dzen_chat_connect', 'dzen_chat_connect', [], __('Подключить заново', 'dzen-chat'));
-        $this->form('dzen_chat_disconnect', 'dzen_chat_disconnect', [], __('Удалить ключи из WordPress', 'dzen-chat'));
-        echo '<p class="description">' . esc_html__('Удаление ключей действует только в WordPress. Отозвать доступ клиента можно в Dzen Chat.', 'dzen-chat') . '</p>';
     }
 
     private function overview(): void
     {
-        $status = $this->api->status();
-        if (is_wp_error($status)) {
-            $this->error($status);
+        echo '<h2>' . esc_html__('Сайт авторизован в Dzen Chat', 'dzen-chat') . '</h2><p>' . esc_html(Credentials::siteUrl()) . '</p>';
+        $sources = $this->api->items('/sources');
+        if (is_wp_error($sources)) {
+            $this->error($sources);
         } else {
-            echo '<h2>' . esc_html($status['project']['title']) . '</h2><p>'
-                . esc_html__('Сайт:', 'dzen-chat') . ' ' . esc_html(Credentials::siteUrl()) . '</p>';
-            $active = $status['integration']['status'] === 'active' && $status['project']['status'] === 'active';
-            echo '<p><strong>' . esc_html($active ? __('Проект активен', 'dzen-chat') : __('Работа проекта ограничена', 'dzen-chat')) . '</strong></p>';
-            if (!$active) {
-                echo '<p>' . esc_html__('Проверьте состояние проекта и оплату в Dzen Chat. Отправка контента зависит от доступных операций.', 'dzen-chat') . '</p>';
+            echo '<p>' . esc_html__('Доступ к сервису подтверждён.', 'dzen-chat') . '</p>';
+            $sourceId = $this->credentials->get()['site_source_id'];
+            $source = current(array_filter($sources, static fn ($item) => $item['id'] === $sourceId));
+            if ($source) {
+                echo '<p>' . esc_html__('Источник сайта:', 'dzen-chat') . ' <a href="' . esc_url(self::url('dzen-chat-sources', ['source' => $sourceId])) . '">' . esc_html(self::text($source, 'title')) . '</a></p>';
+                $this->sourceState($source);
+            } else {
+                $this->error(new \WP_Error('source', __('Источник сайта больше не доступен этому подключению.', 'dzen-chat')));
             }
-            echo '<a class="button" target="_blank" rel="noopener noreferrer" href="' . esc_url(Api::origin() . '/projects/' . Api::segment($status['project']['id']) . '/pages') . '">' . esc_html__('Открыть проект в Dzen Chat', 'dzen-chat') . '</a> ';
         }
-        echo '<p><a class="button" href="' . esc_url(self::url('dzen-chat')) . '">' . esc_html__('Проверить подключение', 'dzen-chat') . '</a></p>';
+        echo '<p><a class="button button-primary" href="' . esc_url(self::url('dzen-chat-widgets')) . '">' . esc_html__('Настроить виджеты', 'dzen-chat') . '</a> ';
+        $this->external(Api::origin(), __('Открыть Dzen Chat ↗', 'dzen-chat'));
+        echo '</p>';
         $this->form('dzen_chat_connect', 'dzen_chat_connect', [], __('Подключить заново', 'dzen-chat'));
-        $this->form('dzen_chat_disconnect', 'dzen_chat_disconnect', [], __('Отключить интеграцию', 'dzen-chat'));
-        echo '<h2>' . esc_html__('Синхронизация страниц и записей', 'dzen-chat') . '</h2>';
+        $this->form('dzen_chat_disconnect', 'dzen_chat_disconnect', [], __('Удалить ключи из WordPress', 'dzen-chat'));
+        echo '<h2>' . esc_html__('Обновление публичных страниц и записей', 'dzen-chat') . '</h2>';
         global $wpdb;
         [, $events] = Sync::tables();
-        $counts = is_wp_error($status) ? [] : $wpdb->get_results($wpdb->prepare(
-            "SELECT status, COUNT(*) total FROM $events WHERE integration_id=%s GROUP BY status",
-            $status['integration']['id']), ARRAY_A);
-        $labels = ['pending' => 'Ожидает отправки', 'accepted' => 'Принято, обрабатывается', 'blocked' => 'Ожидает доступа', 'done' => 'Завершено', 'error' => 'Ошибка'];
+        $counts = $wpdb->get_results($wpdb->prepare("SELECT status, COUNT(*) total FROM $events WHERE integration_id=%s GROUP BY status",
+            $this->credentials->get()['client_id']), ARRAY_A);
+        $labels = ['pending' => __('Ожидает отправки', 'dzen-chat'), 'accepted' => __('Передано сервису', 'dzen-chat'),
+            'blocked' => __('Ожидает доступа', 'dzen-chat'), 'error' => __('Ошибка отправки', 'dzen-chat')];
         echo '<ul>';
-        foreach ($counts as $row) {
-            echo '<li>' . esc_html(($labels[$row['status']] ?? $row['status']) . ': ' . $row['total']) . '</li>';
-        }
-        echo '</ul><p>' . esc_html__('Товары не отправляются. Задания выполняет WP-Cron; на сайте без посещений нужен планировщик хостинга.', 'dzen-chat') . '</p>';
-        if (get_option('dzen_chat_queue_error')) {
-            $this->error(new \WP_Error('queue', __('Не удалось записать событие. Проверьте базу WordPress и запустите сверку.', 'dzen-chat')));
-        }
+        foreach ($counts as $row) echo '<li>' . esc_html(($labels[$row['status']] ?? $row['status']) . ': ' . $row['total']) . '</li>';
+        echo '</ul><p>' . esc_html__('Принятый запрос ещё не означает завершённую индексацию. Результат обработки отображается в разделе «Индекс».', 'dzen-chat') . '</p>';
+        if (get_option('dzen_chat_queue_error')) $this->error(new \WP_Error('queue', __('Не удалось записать событие. Проверьте подключение и базу WordPress, затем запустите сверку.', 'dzen-chat')));
         $this->form('dzen_chat_action', 'dzen_chat_action', ['operation' => 'reconcile'], __('Сверить контент и повторить ошибки', 'dzen-chat'));
+        echo '<p>' . esc_html__('Задания выполняет планировщик WordPress. Товары, черновики и защищённые записи не отправляются как публичный контент.', 'dzen-chat') . '</p>';
+        echo '<p class="description">' . esc_html__('Статус оплаты, скрытие диалогов, источники ответов и управление триггерами страниц пока недоступны в этой версии интеграции.', 'dzen-chat') . '</p>';
+    }
+
+    private function sourceState(array $source): void
+    {
+        if (!is_bool($source['is_paused'] ?? null) || !is_bool($source['enable_triggers'] ?? null)) {
+            $this->error(new \WP_Error('protocol', __('Сервис вернул некорректное состояние источника.', 'dzen-chat')));
+            return;
+        }
+        if (self::text($source, 'blocked_reason') !== '') {
+            echo '<p>' . esc_html__('Обработка ограничена:', 'dzen-chat') . ' ' . esc_html(self::text($source, 'blocked_reason')) . '</p>';
+        } else {
+            echo '<p>' . esc_html(($source['is_paused'] ?? null) === true ? __('Обновление приостановлено', 'dzen-chat') : __('Обновление разрешено', 'dzen-chat')) . '</p>';
+        }
+        echo '<p>' . esc_html__('Триггеры источника:', 'dzen-chat') . ' ' . esc_html(($source['enable_triggers'] ?? null) === true ? __('включены', 'dzen-chat') : __('выключены', 'dzen-chat')) . '</p>';
+        if (self::text($source, 'last_reindexed_at') !== '') echo '<p>' . esc_html__('Последняя переиндексация:', 'dzen-chat') . ' ' . esc_html(self::text($source, 'last_reindexed_at')) . '</p>';
+    }
+
+    private function sources(): void
+    {
+        echo '<h2>' . esc_html__('Источники', 'dzen-chat') . '</h2>';
+        $fileId = self::input('file', $_GET);
+        if ($fileId !== '') {
+            $file = $this->api->request('GET', '/files/' . Api::segment($fileId));
+            if (is_wp_error($file)) { $this->error($file); return; }
+            if (($file['id'] ?? null) !== $fileId) { $this->error(new \WP_Error('protocol', __('Сервис вернул другой файл.', 'dzen-chat'))); return; }
+            echo '<p><a href="' . esc_url(self::url('dzen-chat-sources')) . '">← ' . esc_html__('Все источники', 'dzen-chat') . '</a></p><h3>' . esc_html(self::text($file, 'name')) . '</h3>';
+            echo '<p>' . esc_html(self::text($file, 'status')) . ' ' . esc_html(self::text($file, 'status_error')) . '</p><div class="dzen-text">' . esc_html(self::text($file, 'content')) . '</div>';
+            return;
+        }
+        $id = self::input('source', $_GET);
+        if ($id !== '') {
+            $source = $this->api->request('GET', '/sources/' . Api::segment($id));
+            if (is_wp_error($source)) { $this->error($source); return; }
+            if (($source['id'] ?? null) !== $id) { $this->error(new \WP_Error('protocol', __('Сервис вернул другой источник.', 'dzen-chat'))); return; }
+            echo '<p><a href="' . esc_url(self::url('dzen-chat-sources')) . '">← ' . esc_html__('Все источники', 'dzen-chat') . '</a></p>';
+            echo '<h3>' . esc_html(self::text($source, 'title')) . '</h3>';
+            $this->external($source['url'] ?? null);
+            $this->sourceState($source);
+            echo '<p><a href="' . esc_url(self::url('dzen-chat-documents', ['source_id' => $id])) . '">' . esc_html__('Документы источника', 'dzen-chat') . '</a></p>';
+            return;
+        }
+        $items = $this->api->items('/sources');
+        if (is_wp_error($items)) { $this->error($items); return; }
+        if (!$items) echo '<p>' . esc_html__('Нет доступных источников.', 'dzen-chat') . '</p>';
+        foreach ($items as $source) {
+            echo '<section class="dzen-message"><h3><a href="' . esc_url(self::url('dzen-chat-sources', ['source' => $source['id']])) . '">' . esc_html(self::text($source, 'title')) . '</a></h3>';
+            $this->sourceState($source);
+            $this->external($source['url'] ?? null);
+            echo '</section>';
+        }
+        echo '<h3>' . esc_html__('Файлы базы знаний', 'dzen-chat') . '</h3>';
+        $files = $this->api->items('/files');
+        if (is_wp_error($files)) { $this->error($files); return; }
+        if (!$files) echo '<p>' . esc_html__('Файлы не добавлены.', 'dzen-chat') . '</p>';
+        foreach ($files as $file) {
+            echo '<section class="dzen-message"><h4><a href="' . esc_url(self::url('dzen-chat-sources', ['file' => $file['id']])) . '">' . esc_html(self::text($file, 'name')) . '</a></h4><p>' . esc_html(self::text($file, 'status')) . ' ' . esc_html(self::text($file, 'status_error')) . '</p><p>' . esc_html(self::text($file, 'updated_at')) . '</p></section>';
+        }
+    }
+
+    private function documents(): void
+    {
+        echo '<h2>' . esc_html__('Индекс', 'dzen-chat') . '</h2>';
+        $id = self::input('document', $_GET);
+        if ($id !== '') {
+            $page = $this->api->request('GET', '/pages/' . Api::segment($id));
+            if (is_wp_error($page)) { $this->error($page); return; }
+            if (($page['id'] ?? null) !== $id) { $this->error(new \WP_Error('protocol', __('Сервис вернул другой документ.', 'dzen-chat'))); return; }
+            echo '<p><a href="' . esc_url(self::url('dzen-chat-documents')) . '">← ' . esc_html__('Все документы', 'dzen-chat') . '</a></p>';
+            echo '<h3>' . esc_html(self::text($page, 'title') ?: self::text($page, 'url')) . '</h3>';
+            $this->documentState($page);
+            $this->documentLinks($page);
+            return;
+        }
+        $filters = self::filters($_GET);
+        if (is_wp_error($filters)) { $this->error($filters); return; }
+        $items = $this->api->items('/pages', ['limit' => 100]);
+        if (is_wp_error($items)) { $this->error($items); return; }
+        echo '<p>' . esc_html__('Показаны до 100 последних обновлённых документов. Фильтры применяются к этому набору.', 'dzen-chat') . '</p>';
+        echo '<form method="get" class="dzen-filters"><input type="hidden" name="page" value="dzen-chat-documents">';
+        foreach (['q' => __('Название или URL', 'dzen-chat'), 'status' => __('Статус', 'dzen-chat'), 'source_id' => __('ID источника', 'dzen-chat')] as $key => $label) {
+            echo '<label>' . esc_html($label) . '<input name="' . esc_attr($key) . '" value="' . esc_attr($filters[$key] ?? '') . '"></label>';
+        }
+        echo '<button class="button"> ' . esc_html__('Применить', 'dzen-chat') . '</button></form>';
+        $items = array_filter($items, static function ($item) use ($filters) {
+            if (isset($filters['source_id']) && ($item['source_id'] ?? '') !== $filters['source_id']) return false;
+            if (isset($filters['status']) && ($item['status'] ?? '') !== $filters['status']) return false;
+            return !isset($filters['q']) || preg_match('/' . preg_quote($filters['q'], '/') . '/iu', self::text($item, 'title') . ' ' . self::text($item, 'url')) === 1;
+        });
+        if (!$items) echo '<p>' . esc_html__('В загруженном наборе ничего не найдено.', 'dzen-chat') . '</p>';
+        echo '<table class="widefat striped"><thead><tr><th>' . esc_html__('Документ', 'dzen-chat') . '</th><th>' . esc_html__('Состояние', 'dzen-chat') . '</th><th>' . esc_html__('Ссылки и действия', 'dzen-chat') . '</th></tr></thead><tbody>';
+        foreach ($items as $page) {
+            echo '<tr><td><a href="' . esc_url(self::url('dzen-chat-documents', ['document' => $page['id']])) . '">' . esc_html(self::text($page, 'title') ?: self::text($page, 'url')) . '</a></td><td>';
+            $this->documentState($page);
+            echo '</td><td>';
+            $this->documentLinks($page);
+            echo '</td></tr>';
+        }
+        echo '</tbody></table>';
+    }
+
+    private function documentState(array $page): void
+    {
+        echo '<p>' . esc_html(self::statusLabel($page)) . '</p>';
+        if (self::text($page, 'status_error') !== '') echo '<p>' . esc_html(self::text($page, 'status_error')) . '</p>';
+        if (self::text($page, 'updated_at') !== '') echo '<p>' . esc_html__('Обновлён:', 'dzen-chat') . ' ' . esc_html(self::text($page, 'updated_at')) . '</p>';
+        echo '<p>' . esc_html(($page['has_triggers'] ?? null) === true ? __('Триггеры подготовлены', 'dzen-chat') : __('Триггеры не подготовлены', 'dzen-chat')) . '</p>';
+    }
+
+    private function documentLinks(array $page): void
+    {
+        $this->external($page['url'] ?? null);
+        $post = is_string($page['url'] ?? null) ? url_to_postid($page['url']) : 0;
+        if ($post && current_user_can('edit_post', $post)) {
+            echo '<p><a href="' . esc_url(get_edit_post_link($post, '')) . '">' . esc_html__('Открыть запись в WordPress', 'dzen-chat') . '</a></p>';
+        }
+        if (self::text($page, 'source_id') !== '') {
+            echo '<p><a href="' . esc_url(self::url('dzen-chat-sources', ['source' => $page['source_id']])) . '">' . esc_html__('Открыть источник в WordPress', 'dzen-chat') . '</a></p>';
+        }
+        if (($page['source_id'] ?? null) === $this->credentials->get()['site_source_id'] && self::publicUrl($page['url'] ?? null)) {
+            $this->form('dzen_chat_action', 'dzen_chat_action', ['operation' => 'reindex', 'id' => $page['id']], __('Переиндексировать', 'dzen-chat'));
+        }
     }
 
     private function history(): void
     {
-        echo '<h2>' . esc_html__('Диалоги', 'dzen-chat') . '</h2><p>'
-            . esc_html__('История хранится в Dzen Chat. Скрытие меняет общий список проекта; сообщения и биллинг сохраняются.', 'dzen-chat') . '</p>';
+        echo '<h2>' . esc_html__('Диалоги', 'dzen-chat') . '</h2><p>' . esc_html__('Переписка хранится в Dzen Chat.', 'dzen-chat') . '</p>';
+        $id = self::input('chat', $_GET);
+        if ($id !== '') { $this->chat($id); return; }
         $filters = self::filters($_GET);
-        if (is_wp_error($filters)) {
-            $this->error($filters);
-            return;
-        }
-        $chatId = self::input('chat', $_GET);
-        if ($chatId !== '') {
-            $this->chat($chatId, $filters);
-            return;
-        }
+        if (is_wp_error($filters)) { $this->error($filters); return; }
+        $items = $this->api->items('/chats', ['limit' => 100]);
+        if (is_wp_error($items)) { $this->error($items); return; }
+        echo '<p>' . esc_html__('Фильтры применяются к 100 последним диалогам. Поиск по тексту всей истории и скрытие пока недоступны.', 'dzen-chat') . '</p>';
         echo '<form method="get" class="dzen-filters"><input type="hidden" name="page" value="dzen-chat-history">';
-        echo '<label>' . esc_html__('Поиск', 'dzen-chat') . '<input type="search" name="q" value="' . esc_attr($filters['q'] ?? '') . '" maxlength="200"></label>';
-        echo '<label>' . esc_html__('Видимость', 'dzen-chat') . '<select name="visibility">';
-        foreach (['visible' => __('Видимые', 'dzen-chat'), 'hidden' => __('Скрытые', 'dzen-chat'), 'all' => __('Все', 'dzen-chat')] as $value => $label) {
-            echo '<option value="' . esc_attr($value) . '"' . selected($filters['visibility'], $value, false) . '>' . esc_html($label) . '</option>';
-        }
-        echo '</select></label>';
+        echo '<label>' . esc_html__('ID диалога или посетителя', 'dzen-chat') . '<input name="q" value="' . esc_attr($filters['q'] ?? '') . '" maxlength="200"></label>';
         foreach (['date_from' => __('С даты (UTC)', 'dzen-chat'), 'date_to' => __('По дату (UTC)', 'dzen-chat')] as $key => $label) {
             echo '<label>' . esc_html($label) . '<input type="date" name="' . esc_attr($key) . '" value="' . esc_attr($filters[$key] ?? '') . '"></label>';
         }
-        echo '<label>' . esc_html__('Виджет', 'dzen-chat') . '<select name="widget_id"><option value="">' . esc_html__('Все виджеты', 'dzen-chat') . '</option>';
-        $widgets = get_option('dzen_chat_widgets', []);
-        if (!$widgets) {
-            $available = $this->api->request('GET', '/widgets');
-            if (!is_wp_error($available) && isset($available['items'])) {
-                foreach ($available['items'] as $widget) {
-                    $widgets[(string) $widget['id']] = ['name' => $widget['name'] ?? $widget['id']];
-                }
-            }
+        echo '<label>' . esc_html__('Виджет', 'dzen-chat') . '<select name="widget_code"><option value="">' . esc_html__('Все виджеты', 'dzen-chat') . '</option>';
+        $widgets = $this->api->items('/widgets');
+        if (!is_wp_error($widgets)) foreach ($widgets as $widget) {
+            echo '<option value="' . esc_attr(self::text($widget, 'code')) . '"' . selected($filters['widget_code'] ?? '', self::text($widget, 'code'), false) . '>' . esc_html(self::text($widget, 'name')) . '</option>';
         }
-        foreach ($widgets as $widgetId => $widget) {
-            echo '<option value="' . esc_attr($widgetId) . '"' . selected($filters['widget_id'] ?? '', $widgetId, false) . '>' . esc_html($widget['name']) . '</option>';
-        }
-        echo '</select></label>';
-        echo '<button class="button button-primary">' . esc_html__('Применить', 'dzen-chat') . '</button></form>';
-        $result = $this->api->request('GET', '/chats', $filters);
-        if (!$this->listing($result)) {
-            return;
-        }
-        echo '<table class="widefat striped"><thead><tr><th>' . esc_html__('Диалог', 'dzen-chat') . '</th><th>' . esc_html__('Создан (UTC)', 'dzen-chat') . '</th><th>' . esc_html__('Сообщения', 'dzen-chat') . '</th><th>' . esc_html__('Действие', 'dzen-chat') . '</th></tr></thead><tbody>';
-        foreach ($result['items'] as $chat) {
-            echo '<tr><td><a href="' . esc_url(self::url('dzen-chat-history', $filters + ['chat' => (string) $chat['id']])) . '">' . esc_html($chat['title'] ?? $chat['id']) . '</a><p>' . esc_html($chat['preview'] ?? '') . '</p>';
-            if (($chat['hidden'] ?? false) === true) {
-                echo '<strong>' . esc_html__('Скрыт', 'dzen-chat') . '</strong>';
-            }
-            echo '</td><td>' . esc_html($chat['created_at'] ?? '') . '</td><td>' . esc_html((string) ($chat['message_count'] ?? '')) . '</td><td>';
-            $this->visibilityForm($chat, $filters);
-            echo '</td></tr>';
+        echo '</select></label><button class="button">' . esc_html__('Применить', 'dzen-chat') . '</button></form>';
+        $items = array_filter($items, static function ($item) use ($filters) {
+            $date = substr(self::text($item, 'created_at'), 0, 10);
+            if (isset($filters['date_from']) && $date < $filters['date_from']) return false;
+            if (isset($filters['date_to']) && $date > $filters['date_to']) return false;
+            if (isset($filters['widget_code']) && ($item['widget_code'] ?? '') !== $filters['widget_code']) return false;
+            return !isset($filters['q']) || stripos(self::text($item, 'id') . ' ' . self::text($item, 'visitor'), $filters['q']) !== false;
+        });
+        if (!$items) echo '<p>' . esc_html__('В загруженном наборе ничего не найдено.', 'dzen-chat') . '</p>';
+        echo '<table class="widefat striped"><thead><tr><th>' . esc_html__('Диалог', 'dzen-chat') . '</th><th>' . esc_html__('Посетитель', 'dzen-chat') . '</th><th>' . esc_html__('Создан (UTC)', 'dzen-chat') . '</th></tr></thead><tbody>';
+        foreach ($items as $chat) {
+            echo '<tr><td><a href="' . esc_url(self::url('dzen-chat-history', ['chat' => $chat['id']])) . '">' . esc_html(self::text($chat, 'id')) . '</a></td><td>' . esc_html(self::text($chat, 'visitor')) . '</td><td>' . esc_html(self::text($chat, 'created_at')) . '</td></tr>';
         }
         echo '</tbody></table>';
-        $this->nextPage($result, 'dzen-chat-history', $filters);
     }
 
-    private function chat(string $id, array $filters): void
+    private function chat(string $id): void
     {
-        echo '<p><a href="' . esc_url(self::url('dzen-chat-history', $filters)) . '">← ' . esc_html__('К списку диалогов', 'dzen-chat') . '</a></p>';
-        $path = '/chats/' . Api::segment($id);
-        $chat = $this->api->request('GET', $path);
-        if (is_wp_error($chat)) {
-            $this->error($chat);
-            return;
-        }
-        if (($chat['id'] ?? null) !== $id) {
-            $this->error(new \WP_Error('protocol', __('Сервис вернул другой диалог.', 'dzen-chat')));
-            return;
-        }
-        echo '<h3>' . esc_html($chat['title'] ?? $id) . '</h3>';
-        $this->visibilityForm($chat, $filters + ['return_chat' => $id]);
-        if (($chat['hidden'] ?? false) === true) {
-            echo '<p><strong>' . esc_html__('Скрыт из основного списка', 'dzen-chat') . '</strong></p>';
-        }
-        $message = self::input('message_id', $_GET);
-        $reference = self::input('reference_id', $_GET);
-        if ($message !== '' && $reference !== '') {
-            echo '<p><a href="' . esc_url(self::url('dzen-chat-history', $filters + ['chat' => $id])) . '">← ' . esc_html__('К сообщениям', 'dzen-chat') . '</a></p>';
-            $source = $this->api->request('GET', $path . '/messages/' . Api::segment($message) . '/sources/' . Api::segment($reference));
-            if (is_wp_error($source)) {
-                $this->error($source);
-                return;
-            }
-            echo '<section class="dzen-source"><h3>' . esc_html($source['title'] ?? __('Источник', 'dzen-chat')) . '</h3>';
-            if (($source['available'] ?? false) !== true) {
-                echo '<p>' . esc_html__('Источник удалён или право просмотра недоступно. Содержимое не загружается.', 'dzen-chat') . '</p>';
-            } else {
-                echo '<p>' . esc_html(($source['content_kind'] ?? '') === 'excerpt' ? __('Цитата, использованная в ответе', 'dzen-chat') : __('Содержимое источника', 'dzen-chat')) . '</p>';
-                if (!empty($source['captured_at'])) {
-                    echo '<p>' . esc_html__('Снимок от', 'dzen-chat') . ' ' . esc_html($source['captured_at']) . '</p>';
-                }
-                echo '<div class="dzen-text">' . esc_html($source['content'] ?? '') . '</div>';
-                $this->external($source['url'] ?? null);
-            }
-            echo '</section>';
-            return;
-        }
-        $messageQuery = ['limit' => 50];
-        $cursor = self::input('message_cursor', $_GET);
-        if ($cursor !== '') {
-            $messageQuery['cursor'] = $cursor;
-        }
-        $messages = $this->api->request('GET', $path . '/messages', $messageQuery);
-        if (!$this->listing($messages)) {
-            return;
-        }
-        foreach ($messages['items'] as $msg) {
-            if (!in_array($msg['role'] ?? '', ['user', 'assistant'], true)) {
-                continue;
-            }
-            echo '<article class="dzen-message"><h3>' . esc_html($msg['role'] === 'user' ? __('Посетитель', 'dzen-chat') : __('Dzen Chat', 'dzen-chat')) . '</h3><p class="description">' . esc_html($msg['created_at'] ?? '') . '</p><div class="dzen-text">' . esc_html($msg['text'] ?? '') . '</div>';
-            if (isset($msg['vote']) && is_bool($msg['vote'])) {
-                echo '<p>' . esc_html($msg['vote'] ? __('Полезный ответ', 'dzen-chat') : __('Ответ не помог', 'dzen-chat')) . '</p>';
-            }
-            foreach ($msg['sources'] ?? [] as $source) {
-                $link = self::url('dzen-chat-history', $filters + ['chat' => $id, 'message_id' => (string) $msg['id'], 'reference_id' => (string) $source['id']]);
-                echo '<div class="dzen-reference"><strong>' . esc_html($source['title'] ?? __('Источник', 'dzen-chat')) . '</strong> <a href="' . esc_url($link) . '">' . esc_html__('Показать в WordPress', 'dzen-chat') . '</a> ';
-                if (($source['available'] ?? false) === true) {
-                    $this->external($source['url'] ?? null);
-                } else {
-                    echo esc_html__('Источник недоступен', 'dzen-chat');
-                }
-                echo '</div>';
-            }
+        echo '<p><a href="' . esc_url(self::url('dzen-chat-history')) . '">← ' . esc_html__('Все диалоги', 'dzen-chat') . '</a></p>';
+        $chat = $this->api->request('GET', '/chats/' . Api::segment($id));
+        if (is_wp_error($chat)) { $this->error($chat); return; }
+        if (($chat['id'] ?? null) !== $id) { $this->error(new \WP_Error('protocol', __('Сервис вернул другой диалог.', 'dzen-chat'))); return; }
+        $items = $this->api->items('/chats/' . Api::segment($id) . '/messages', ['limit' => 100]);
+        if (is_wp_error($items)) { $this->error($items); return; }
+        echo '<h3>' . esc_html($id) . '</h3>';
+        if (count($items) === 100) echo '<p>' . esc_html__('Получены первые 100 сообщений. Продолжение пока доступно только в Dzen Chat.', 'dzen-chat') . '</p>';
+        foreach ($items as $message) {
+            if (!in_array($message['role'] ?? '', ['user', 'assistant'], true)) continue;
+            echo '<article class="dzen-message"><h3>' . esc_html($message['role'] === 'user' ? __('Посетитель', 'dzen-chat') : __('Dzen Chat', 'dzen-chat')) . '</h3><p class="description">' . esc_html(self::text($message, 'created_at')) . '</p><div class="dzen-text">' . esc_html(self::text($message, 'text')) . '</div>';
+            if (is_bool($message['vote'] ?? null)) echo '<p>' . esc_html($message['vote'] ? __('Полезный ответ', 'dzen-chat') : __('Ответ не помог', 'dzen-chat')) . '</p>';
             echo '</article>';
         }
-        if (!empty($messages['next_cursor'])) {
-            echo '<p><a class="button" href="' . esc_url(self::url('dzen-chat-history', $filters + ['chat' => $id, 'message_cursor' => $messages['next_cursor']])) . '">' . esc_html__('Следующие сообщения', 'dzen-chat') . '</a></p>';
-        }
     }
 
-    private function external(mixed $url): void
+    private function external(mixed $url, ?string $label = null): void
     {
         $safe = self::publicUrl($url);
-        if ($safe !== '') {
-            echo '<a class="dzen-external" href="' . $safe . '" target="_blank" rel="noopener noreferrer">' . esc_html__('Открыть оригинал ↗', 'dzen-chat') . '</a>';
-        }
-    }
-
-    private function visibilityForm(array $chat, array $filters): void
-    {
-        $status = get_transient('dzen_chat_status');
-        if (!$status || !in_array('chats:visibility:update', $status['scopes'] ?? [], true)) {
-            // Fetch permissions, never cache chat history to get them.
-            $status = $this->api->status();
-        }
-        if (is_wp_error($status) || !in_array('chats:visibility:update', $status['scopes'] ?? [], true)
-            || !isset($chat['visibility_version']) || !is_bool($chat['hidden'] ?? null)) {
-            return;
-        }
-        $this->form('dzen_chat_visibility', 'dzen_chat_visibility_' . $chat['id'], $filters + [
-            'chat_id' => $chat['id'], 'hidden' => $chat['hidden'] ? '0' : '1',
-            'expected_version' => (string) $chat['visibility_version'],
-        ], $chat['hidden'] ? __('Вернуть в список', 'dzen-chat') : __('Скрыть', 'dzen-chat'));
-    }
-
-    public function visibility(): void
-    {
-        $id = self::input('chat_id', $_POST);
-        Connection::authorize('dzen_chat_visibility_' . $id);
-        $hidden = self::input('hidden', $_POST);
-        $version = self::input('expected_version', $_POST);
-        $filters = self::filters($_POST);
-        if ($id === '' || strlen($id) > 128 || !in_array($hidden, ['0', '1'], true)
-            || !preg_match('/^[0-9]{1,10}$/D', $version) || is_wp_error($filters)) {
-            wp_die(esc_html__('Некорректное действие.', 'dzen-chat'), '', ['response' => 400]);
-        }
-        $status = $this->api->status();
-        if (is_wp_error($status) || !in_array('chats:visibility:update', $status['scopes'] ?? [], true)) {
-            wp_die(esc_html__('Нет права менять видимость чата.', 'dzen-chat'), '', ['response' => 403, 'back_link' => true]);
-        }
-        $result = $this->api->request('PATCH', '/chats/' . Api::segment($id) . '/visibility', [], [
-            'hidden' => $hidden === '1', 'expected_version' => (int) $version,
-        ], wp_generate_uuid4());
-        if (is_wp_error($result)) {
-            wp_die(esc_html($result->get_error_message()), '', ['response' => $result->get_error_data()['status'] ?? 502, 'back_link' => true]);
-        }
-        if (($result['id'] ?? '') !== $id || ($result['hidden'] ?? null) !== ($hidden === '1')
-            || !is_int($result['visibility_version'] ?? null) || $result['visibility_version'] < (int) $version) {
-            wp_die(esc_html__('Сервис не подтвердил новое состояние. Обновите список.', 'dzen-chat'), '', ['response' => 502, 'back_link' => true]);
-        }
-        unset($filters['cursor']);
-        if (self::input('return_chat', $_POST) === $id) {
-            $filters['chat'] = $id;
-        }
-        $filters['notice'] = $hidden === '1' ? 'hidden' : 'restored';
-        wp_safe_redirect(self::url('dzen-chat-history', $filters), 303);
-        exit;
-    }
-
-    private function listing(array|\WP_Error $result): bool
-    {
-        if (is_wp_error($result)) {
-            $this->error($result);
-            return false;
-        }
-        if (!isset($result['items']) || !is_array($result['items'])) {
-            $this->error(new \WP_Error('protocol', __('Сервис вернул некорректный список.', 'dzen-chat')));
-            return false;
-        }
-        if (!$result['items']) {
-            echo '<p>' . esc_html__('По этим условиям ничего не найдено.', 'dzen-chat') . '</p>';
-        }
-        return true;
-    }
-
-    private function nextPage(array $result, string $page, array $filters): void
-    {
-        if (!empty($result['next_cursor'])) {
-            $filters['cursor'] = $result['next_cursor'];
-            echo '<p><a class="button" href="' . esc_url(self::url($page, $filters)) . '">' . esc_html__('Следующая страница', 'dzen-chat') . '</a></p>';
-        }
+        if ($safe !== '') echo '<a class="dzen-external" href="' . $safe . '" target="_blank" rel="noopener noreferrer">' . esc_html($label ?? __('Открыть оригинал ↗', 'dzen-chat')) . '</a>';
     }
 
     private function widgets(): void
@@ -455,126 +398,64 @@ final class Admin
         echo '<p>' . esc_html__('Перед включением уберите ранее вставленный вручную скрипт Dzen Chat, чтобы виджет не загружался дважды.', 'dzen-chat') . '</p>';
     }
 
-    private function documents(): void
-    {
-        echo '<h2>' . esc_html__('Индекс и триггеры', 'dzen-chat') . '</h2>';
-        $query = ['limit' => 20];
-        foreach (['cursor', 'q', 'status', 'source_id'] as $field) {
-            if (self::input($field, $_GET) !== '') {
-                $query[$field] = self::input($field, $_GET);
-            }
-        }
-        echo '<form method="get"><input type="hidden" name="page" value="dzen-chat-documents"><label>' . esc_html__('Поиск URL или названия', 'dzen-chat') . ' <input name="q" value="' . esc_attr($query['q'] ?? '') . '"></label> <button class="button">' . esc_html__('Найти', 'dzen-chat') . '</button></form>';
-        $result = $this->api->request('GET', '/documents', $query);
-        if (!$this->listing($result)) {
-            return;
-        }
-        echo '<table class="widefat striped"><thead><tr><th>' . esc_html__('Документ', 'dzen-chat') . '</th><th>' . esc_html__('Состояние', 'dzen-chat') . '</th><th>' . esc_html__('Триггеры страницы', 'dzen-chat') . '</th></tr></thead><tbody>';
-        foreach ($result['items'] as $doc) {
-            echo '<tr><td>' . esc_html($doc['title'] ?? '') . '<br>';
-            $this->external($doc['url'] ?? null);
-            echo '</td><td>' . esc_html($doc['status'] ?? '') . '<br>' . esc_html($doc['error_message'] ?? '') . '</td><td>';
-            if (!empty($doc['external_id'])) {
-                echo '<p>' . esc_html(($doc['triggers_enabled'] ?? false) ? __('Действуют', 'dzen-chat') : __('Выключены или ещё не готовы', 'dzen-chat')) . '</p>';
-                foreach (['inherit' => __('Наследовать', 'dzen-chat'), 'enabled' => __('Включить', 'dzen-chat'), 'disabled' => __('Выключить', 'dzen-chat')] as $policy => $label) {
-                    $this->form('dzen_chat_action', 'dzen_chat_action', ['operation' => 'triggers', 'id' => $doc['external_id'], 'policy' => $policy], $label);
-                }
-            }
-            echo '</td></tr>';
-        }
-        echo '</tbody></table>';
-        $this->nextPage($result, 'dzen-chat-documents', $query);
-    }
-
-    private function sources(): void
-    {
-        echo '<h2>' . esc_html__('Источники', 'dzen-chat') . '</h2>';
-        $query = ['limit' => 20];
-        if (self::input('cursor', $_GET) !== '') {
-            $query['cursor'] = self::input('cursor', $_GET);
-        }
-        $result = $this->api->request('GET', '/sources', $query);
-        if (!$this->listing($result)) {
-            return;
-        }
-        echo '<table class="widefat striped"><thead><tr><th>' . esc_html__('Источник', 'dzen-chat') . '</th><th>' . esc_html__('Состояние', 'dzen-chat') . '</th><th>' . esc_html__('Документы', 'dzen-chat') . '</th><th>' . esc_html__('Обновление (UTC)', 'dzen-chat') . '</th></tr></thead><tbody>';
-        foreach ($result['items'] as $source) {
-            echo '<tr><td>' . esc_html($source['title'] ?? '') . '</td><td>' . esc_html($source['status'] ?? '') . '<br>' . esc_html($source['error_message'] ?? '') . '</td><td>' . esc_html((string) ($source['document_count'] ?? '')) . '</td><td>' . esc_html($source['last_indexed_at'] ?? '') . '<br>' . esc_html($source['next_index_at'] ?? '') . '</td></tr>';
-        }
-        echo '</tbody></table>';
-        $this->nextPage($result, 'dzen-chat-sources', $query);
-    }
 
     public function action(): void
     {
         Connection::authorize('dzen_chat_action');
+        try { $this->credentials->get(); }
+        catch (\RuntimeException | \JsonException $error) {
+            wp_die(esc_html__('Подключите сайт заново в разделе Dzen Chat.', 'dzen-chat'), '', ['response' => 409]);
+        }
         $operation = self::input('operation', $_POST);
         $id = self::input('id', $_POST);
         $destination = 'dzen-chat-widgets';
+        $notice = 'saved';
         $result = [];
-        $widgetApi = new Widgets($this->credentials, $this->api);
-        try {
-            if (!$this->credentials->exists()) {
-                throw new \RuntimeException('credentials_removed');
-            }
-            $registered = $this->credentials->registrationOnly();
-        } catch (\RuntimeException | \JsonException $error) {
-            wp_die(esc_html__('Подключите сайт заново в разделе Dzen Chat.', 'dzen-chat'), '', ['response' => 409]);
-        }
-        if ($registered
-            && !in_array($operation, ['widget_select', 'widget_toggle', 'widget_edit', 'widget_create'], true)) {
-            wp_die(esc_html__('Этот раздел пока не подключён в плагине.', 'dzen-chat'), '', ['response' => 400]);
-        }
+        $widgets = new Widgets($this->credentials, $this->api);
         switch ($operation) {
             case 'reconcile':
                 $this->sync->retry();
-                wp_safe_redirect(self::url('dzen-chat', ['notice' => 'queued']), 303);
-                exit;
+                $destination = 'dzen-chat';
+                $notice = 'reconcile';
+                break;
+            case 'reindex':
+                $page = $this->api->request('GET', '/pages/' . Api::segment($id));
+                if (is_wp_error($page)) { $result = $page; break; }
+                if (($page['id'] ?? '') !== $id || ($page['source_id'] ?? '') !== $this->credentials->get()['site_source_id']
+                    || !self::publicUrl($page['url'] ?? null)) {
+                    wp_die(esc_html__('Страница не относится к источнику этого сайта.', 'dzen-chat'), '', ['response' => 403]);
+                }
+                $result = $this->api->reindex($page['url']);
+                $destination = 'dzen-chat-documents';
+                $notice = 'queued';
+                break;
             case 'widget_select':
                 if ($id !== '') {
-                    $result = $widgetApi->get($id);
+                    $result = $widgets->get($id);
                     if (is_wp_error($result)) break;
                     if (!$result['is_enabled']) {
-                        $result = new \WP_Error('dzen_widget_disabled', __('Сначала включите виджет в Dzen Chat, затем разместите его на сайте.', 'dzen-chat'));
+                        $result = new \WP_Error('disabled', __('Сначала включите виджет, затем разместите его на сайте.', 'dzen-chat'));
                         break;
                     }
                 }
                 update_option('dzen_chat_widget', $id, false);
                 break;
             case 'widget_toggle':
-                $enabled = self::input('enabled', $_POST) === '1';
-                $result = $widgetApi->save($id, ['is_enabled' => $enabled]);
+                $result = $widgets->save($id, ['is_enabled' => self::input('enabled', $_POST) === '1']);
                 break;
             case 'widget_edit':
             case 'widget_create':
                 $name = self::input('name', $_POST);
-                if (!preg_match('/\A.{1,128}\z/us', $name)) {
-                    wp_die(esc_html__('Укажите название виджета.', 'dzen-chat'), '', ['response' => 400]);
-                }
-                $payload = ['name' => $name];
-                if ($operation === 'widget_edit') {
-                    $payload['suggestions_enabled'] = self::input('suggestions_enabled', $_POST) === '1';
-                }
-                $result = $widgetApi->save($operation === 'widget_create' ? null : $id, $payload);
-                break;
-            case 'triggers':
-                $policy = self::input('policy', $_POST);
-                if (!in_array($policy, ['inherit', 'enabled', 'disabled'], true)) {
-                    wp_die(esc_html__('Неверная политика триггеров.', 'dzen-chat'), '', ['response' => 400]);
-                }
-                $result = $this->api->request('PUT', '/page-policies/' . Api::segment($id), [], ['mode' => $policy], wp_generate_uuid4());
-                $destination = 'dzen-chat-documents';
-                if (!is_wp_error($result) && preg_match('/^wp:post:(\d+)$/D', $id, $match)) {
-                    update_post_meta((int) $match[1], '_dzen_chat_triggers', $policy);
-                }
+                if (!preg_match('/\A.{1,128}\z/us', $name)) wp_die(esc_html__('Укажите название виджета.', 'dzen-chat'), '', ['response' => 400]);
+                $changes = ['name' => $name];
+                if ($operation === 'widget_edit') $changes['suggestions_enabled'] = self::input('suggestions_enabled', $_POST) === '1';
+                $result = $widgets->save($operation === 'widget_create' ? null : $id, $changes);
                 break;
             default:
                 wp_die(esc_html__('Неизвестное действие.', 'dzen-chat'), '', ['response' => 400]);
         }
-        if (is_wp_error($result)) {
-            wp_die(esc_html($result->get_error_message()), '', ['response' => 502, 'back_link' => true]);
-        }
-        wp_safe_redirect(self::url($destination, ['notice' => 'saved']), 303);
+        if (is_wp_error($result)) wp_die(esc_html($result->get_error_message()), '', ['response' => 502, 'back_link' => true]);
+        wp_safe_redirect(self::url($destination, ['notice' => $notice]), 303);
         exit;
     }
 }

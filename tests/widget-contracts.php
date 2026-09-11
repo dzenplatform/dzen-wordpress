@@ -70,7 +70,7 @@ try {
     $credentials->saveRegistration(['client_id' => 'chatid-fixture-12345',
         'client_secret' => 'fixture-secret-for-tests-only-123456789', 'site_source_id' => 'source-one'],
         DzenChat\Credentials::siteUrl(), DzenChat\Api::origin());
-    $check($credentials->registrationOnly() && !get_option('dzen_chat_verified')
+    $check($credentials->get()['auth_type'] === 'external_registration' && !get_option('dzen_chat_verified')
         && !isset($credentials->get()['integration_id']), 'widget tests use real registration-shaped credentials');
     $widget = ['id' => 'widget-one', 'code' => 'fixture-widget', 'name' => 'Widget regression',
         'is_enabled' => true, 'suggestions_enabled' => true, 'trigger_templates' => [], 'appearance' => (object) []];
@@ -157,7 +157,8 @@ try {
     $check(isset($result['error']) && count($requests) === $before, 'subscriber cannot manage widgets');
     wp_set_current_user(get_user_by('login', 'dzen_test')->ID);
     $result = $submit(['operation' => 'reconcile']);
-    $check(isset($result['error']) && count($requests) === $before, 'indexing action remains unavailable');
+    $check(isset($result['redirect']) && get_option('dzen_chat_reconcile_cursor') === 0 && count($requests) === $before,
+        'reconciliation schedules work without blocking the admin action on crawling');
     $_GET = ['page' => 'dzen-chat-widgets'];
     ob_start();
     $admin->page();

@@ -3,11 +3,11 @@ Contributors: dzenplatform
 Requires at least: 6.8
 Tested up to: 6.8.2
 Requires PHP: 8.2
-Stable tag: 0.3.0
+Stable tag: 0.4.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Connect Dzen Chat and manage AI chat widgets on your WordPress site.
+Connect Dzen Chat, manage widgets, sync public content and view conversations.
 
 == Description ==
 
@@ -21,14 +21,24 @@ from WordPress. Choose a widget for the site, select a different widget for a
 page or post, or hide it on that page. Widget settings apply to the Dzen Chat
 project; placement settings apply to this WordPress site.
 
-Indexing, conversation history and source status screens remain pending in the
-plugin. This release does not start content synchronization or validate project
-billing status; the current Widgets API does not provide billing state.
+Public pages and posts are submitted for reindexing on connection, publication
+and changes. A background queue retries temporary failures. WordPress sends
+public URLs; Dzen Chat retrieves and processes the content. Drafts, initially
+password-protected posts and products are not submitted as public content.
+Previously public URLs are rechecked after unpublishing, deletion or a permalink
+change. Rechecking does not guarantee removal from the service index.
+
+View indexed documents, source status, knowledge files and conversation messages
+inside WordPress. Open documents in the WordPress editor or follow their original
+links. Document and chat filters currently cover the latest 100 records only;
+conversation details display up to the first 100 messages. Conversation hiding,
+answer-source references, full-history search, per-page trigger controls and
+project billing status are not yet available through this integration.
 
 The plugin stores encrypted integration credentials in WordPress. It does not
 store conversation text or source excerpts. The service must support /auth/add
-and /auth/exchange/, plus GET/POST /api/widgets and GET/PATCH /api/widgets/{id}.
-Widget API requests use the saved client credentials as a server-side Bearer
+and /auth/exchange/, plus the public /api/ widget, page, source, file, chat and
+URL-update methods. API requests use the saved client credentials as a server-side Bearer
 token over HTTPS. Only the public widget code is sent to the visitor's browser.
 
 == Installation ==
@@ -39,6 +49,8 @@ token over HTTPS. Only the public widget code is sent to the visitor's browser.
 4. WordPress confirms authorization after exchanging the returned code.
 5. Open Dzen Chat > Widgets, enable a widget and choose Place on this site.
 6. Open a public page to check the widget. Page/post overrides are in the editor.
+7. Check Index, Sources and Conversations. Scheduled synchronization needs
+   working WP-Cron or a system scheduler running WordPress due events.
 
 == Frequently Asked Questions ==
 
@@ -47,8 +59,14 @@ Enabling controls the widget for the whole Dzen Chat project. Choose Place on
 this site to select it for WordPress. Page-level exclusions can hide the widget.
 Changes made directly in Dzen Chat are refreshed by WordPress within five minutes.
 
-= Does hiding remove billing data? =
-No. Planned conversation APIs will change visibility without deleting billing data.
+= Can I hide or delete conversations? =
+This release provides read-only conversation history. Hiding awaits the service
+API. Conversation deletion is not supported; billing history stays on the server.
+
+= Does accepting an update mean the page is indexed? =
+No. Acceptance confirms that Dzen Chat queued the public URL. Check its processing
+status in Index. Removing or protecting a published WordPress page triggers a
+recheck, but immediate removal from retrieval is not guaranteed by this API.
 
 = What happens when I deactivate or uninstall? =
 Deactivation stops widget insertion and scheduled jobs. Uninstall removes local
@@ -59,6 +77,13 @@ service. Removing keys in WordPress does not revoke the remote API client.
 No. Products require a separate integration.
 
 == Changelog ==
+
+= 0.4.0 =
+Connect document, source, knowledge-file and conversation screens to the real
+Bearer API. Submit public page and post URLs through /api/update using a durable
+queue, initial synchronization and bounded retries. Show processing separately
+from request acceptance. Remove the proposed versioned transport and simulated
+history mutations. Keep missing service capabilities explicit.
 
 = 0.3.0 =
 Connect widget listing, creation, editing, enablement and follow-up suggestions

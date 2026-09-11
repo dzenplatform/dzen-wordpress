@@ -18,3 +18,7 @@ services:
     environment: *registration_environment
     extra_hosts: *registration_hosts
     volumes: *registration_volumes
+  cron:
+    environment: *registration_environment
+    extra_hosts: *registration_hosts
+    volumes: *registration_volumes

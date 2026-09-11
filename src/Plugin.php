@@ -37,6 +37,7 @@ final class Plugin
             wp_die(esc_html__('Подключайте Dzen Chat отдельно для каждого сайта. Сетевая активация пока не поддерживается.', 'dzen-chat'));
         }
         Sync::install();
+        delete_option('dzen_chat_sync_client');
         add_filter('cron_schedules', [self::class, 'schedules']);
         if (!wp_next_scheduled('dzen_chat_worker')) {
             wp_schedule_event(time() + 60, 'dzen_chat_minute', 'dzen_chat_worker');
@@ -82,7 +83,7 @@ final class Plugin
     public function widgetContainer(): void
     {
         if (!is_admin() && wp_script_is('dzen-chat-widget', 'enqueued')) {
-            // The Dzen loader mounts its launcher and iframe inside this element.
+            // The Dzen loader requires this mount point before its script runs.
             echo '<div id="chat-chat"></div>';
         }
     }
@@ -97,25 +98,13 @@ final class Plugin
     public function metaBox(\WP_Post $post): void
     {
         try {
-            $pending = (new Credentials())->registrationOnly();
+            (new Credentials())->get();
         } catch (\RuntimeException | \JsonException $error) {
             echo '<p>' . esc_html__('Подключите сайт заново в разделе Dzen Chat.', 'dzen-chat') . '</p>';
             return;
         }
         wp_nonce_field('dzen_chat_post_' . $post->ID, 'dzen_chat_post_nonce');
-        $fields = ['_dzen_chat_widget_disabled' => __('Не показывать виджет', 'dzen-chat')];
-        if (!$pending) $fields['_dzen_chat_exclude'] = __('Исключить из индекса Dzen Chat', 'dzen-chat');
-        foreach ($fields as $key => $label) {
-            echo '<p><label><input type="checkbox" name="' . esc_attr($key) . '" value="1"' . checked((bool) get_post_meta($post->ID, $key, true), true, false) . '> ' . esc_html($label) . '</label></p>';
-        }
-        if (!$pending) {
-            $mode = get_post_meta($post->ID, '_dzen_chat_triggers', true) ?: 'inherit';
-            echo '<p><label>' . esc_html__('Триггеры страницы', 'dzen-chat') . '<br><select name="_dzen_chat_triggers">';
-            foreach (['inherit' => __('Наследовать', 'dzen-chat'), 'enabled' => __('Включить', 'dzen-chat'), 'disabled' => __('Выключить', 'dzen-chat')] as $value => $label) {
-                echo '<option value="' . esc_attr($value) . '"' . selected($mode, $value, false) . '>' . esc_html($label) . '</option>';
-            }
-            echo '</select></label></p>';
-        }
+        echo '<p><label><input type="checkbox" name="_dzen_chat_widget_disabled" value="1"' . checked((bool) get_post_meta($post->ID, '_dzen_chat_widget_disabled', true), true, false) . '> ' . esc_html__('Не показывать виджет', 'dzen-chat') . '</label></p>';
         echo '<p><label>' . esc_html__('Виджет', 'dzen-chat') . '<br><select name="_dzen_chat_widget"><option value="">' . esc_html__('Как на всём сайте', 'dzen-chat') . '</option>';
         foreach (get_option('dzen_chat_widgets', []) as $id => $widget) {
             echo '<option value="' . esc_attr($id) . '"' . selected(get_post_meta($post->ID, '_dzen_chat_widget', true), $id, false) . '>' . esc_html($widget['name']) . '</option>';
@@ -132,17 +121,11 @@ final class Plugin
             return;
         }
         try {
-            $pending = (new Credentials())->registrationOnly();
+            (new Credentials())->get();
         } catch (\RuntimeException | \JsonException $error) {
             return;
         }
-        foreach ($pending ? ['_dzen_chat_widget_disabled'] : ['_dzen_chat_widget_disabled', '_dzen_chat_exclude'] as $key) {
-            update_post_meta($id, $key, isset($_POST[$key]) && $_POST[$key] === '1' ? '1' : '');
-        }
-        $policy = isset($_POST['_dzen_chat_triggers']) && is_string($_POST['_dzen_chat_triggers']) ? wp_unslash($_POST['_dzen_chat_triggers']) : '';
-        if (!$pending && in_array($policy, ['inherit', 'enabled', 'disabled'], true)) {
-            update_post_meta($id, '_dzen_chat_triggers', $policy);
-        }
+        update_post_meta($id, '_dzen_chat_widget_disabled', isset($_POST['_dzen_chat_widget_disabled']) && $_POST['_dzen_chat_widget_disabled'] === '1' ? '1' : '');
         $widget = isset($_POST['_dzen_chat_widget']) && is_string($_POST['_dzen_chat_widget']) ? wp_unslash($_POST['_dzen_chat_widget']) : '';
         if ($widget === '' || isset(get_option('dzen_chat_widgets', [])[$widget])) {
             update_post_meta($id, '_dzen_chat_widget', $widget);

@@ -30,7 +30,7 @@
 - `chat/views/projects/workspaces.py`: создание проекта и источников.
 - `chat/views/projects/views.py`: создание API-клиента и настройки источников.
 - `chat/views/projects/chats.py`: списки и детали истории в интерфейсе Dzen Chat.
-- [Предлагаемый контракт интеграции](../contracts/dzen-chat-api-v1.md).
+- [Актуальный контракт интеграции и оставшиеся требования](../contracts/dzen-chat-api.md).
 - WordPress API: `admin_url()`, `home_url()`, Options API,
   `wp_after_insert_post`, `transition_post_status`, `before_delete_post`, WP-Cron.
 

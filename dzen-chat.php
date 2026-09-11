@@ -1,8 +1,8 @@
 <?php
 /**
  * Plugin Name: Dzen Chat
- * Description: Connect Dzen Chat and manage AI chat widgets on your WordPress site.
- * Version: 0.3.0
+ * Description: Connect Dzen Chat, manage widgets, sync public content and view conversations.
+ * Version: 0.4.0
  * Requires at least: 6.8
  * Requires PHP: 8.2
  * Author: Dzen Platform
@@ -13,7 +13,7 @@
 
 defined('ABSPATH') || exit;
 
-define('DZEN_CHAT_VERSION', '0.3.0');
+define('DZEN_CHAT_VERSION', '0.4.0');
 define('DZEN_CHAT_FILE', __FILE__);
 foreach (['Credentials', 'Api', 'Widgets', 'Connection', 'Sync', 'Admin', 'Plugin'] as $dzen_class) {
     require_once __DIR__ . '/src/' . $dzen_class . '.php';

@@ -19,14 +19,7 @@ final class Api
         return $url;
     }
 
-    public static function signature(string $secret, string $method, string $target, string $client,
-        string $timestamp, string $nonce, string $key, string $body): string
-    {
-        return hash_hmac('sha256', implode("\n", ['DZEN-HMAC-V1', $method, $target,
-            $client, $timestamp, $nonce, $key, hash('sha256', $body)]), $secret);
-    }
-
-    /** The implemented registration endpoint is independent of the future /api/v1 API. */
+    /** The implemented registration endpoint exchanges credentials separately from the public API. */
     public function exchange(string $code, string $verifier, string $redirectUri): array|\WP_Error
     {
         $response = wp_safe_remote_post(self::origin() . '/auth/exchange/', [
@@ -49,45 +42,22 @@ final class Api
 
     /** All paths are constructed by the plugin, never taken from an API response. */
     public function request(string $method, string $path, array $query = [], ?array $data = null,
-        string $idempotency = '', int $timeout = 15): array|\WP_Error
+        int $timeout = 15): array|\WP_Error
     {
-        if (str_starts_with($path, '/chats') && $method !== 'GET'
-            && !($method === 'PATCH' && preg_match('~^/chats/[^/]+/visibility$~D', $path))) {
-            return new \WP_Error('dzen_history_immutable', __('Историю чатов нельзя удалять или изменять. Доступно только скрытие и восстановление.', 'dzen-chat'));
+        if (str_starts_with($path, '/chats') && $method !== 'GET') {
+            return new \WP_Error('dzen_history_immutable', __('В этой версии доступен только просмотр истории чатов.', 'dzen-chat'));
         }
         try {
-            $widgetRequest = (bool) preg_match('~^/widgets(?:/[A-Za-z0-9_-]{1,128})?$~D', $path);
-            if ($this->credentials->registrationOnly() && !$widgetRequest) {
-                return new \WP_Error('dzen_api_pending', __('Индекс, диалоги и источники пока не подключены в плагине.', 'dzen-chat'));
-            }
-            if ($widgetRequest && ($query || !in_array($method, $path === '/widgets' ? ['GET', 'POST'] : ['GET', 'PATCH'], true))) {
-                throw new \RuntimeException('invalid_widget_request');
-            }
             if (!preg_match('~^/[a-zA-Z0-9/_%.-]+$~D', $path) || str_contains($path, '..')
                 || !in_array($method, ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'], true)) {
                 throw new \RuntimeException('invalid_api_request');
             }
             ksort($query, SORT_STRING);
-            $target = ($widgetRequest ? '/api' : '/api/v1') . $path . ($query ? '?' . http_build_query($query, '', '&', PHP_QUERY_RFC3986) : '');
+            $target = '/api' . $path . ($query ? '?' . http_build_query($query, '', '&', PHP_QUERY_RFC3986) : '');
             $body = $data === null ? '' : wp_json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
             $headers = ['Accept' => 'application/json', 'Content-Type' => 'application/json'];
             $credentials = $this->credentials->get();
-            if ($widgetRequest) {
-                $headers['Authorization'] = 'Bearer ' . $credentials['client_id'] . '.' . $credentials['client_secret'];
-            } else {
-                // The other screens still use their proposed contract until their own migration.
-                $timestamp = (string) time();
-                $nonce = bin2hex(random_bytes(24));
-                $headers += [
-                    'X-Dzen-Auth-Version' => '1', 'X-Dzen-Client-Id' => $credentials['client_id'],
-                    'X-Dzen-Timestamp' => $timestamp, 'X-Dzen-Nonce' => $nonce,
-                    'X-Dzen-Signature' => self::signature($credentials['client_secret'], $method, $target,
-                        $credentials['client_id'], $timestamp, $nonce, $idempotency, $body),
-                ];
-                if ($idempotency !== '') {
-                    $headers['Idempotency-Key'] = $idempotency;
-                }
-            }
+            $headers['Authorization'] = 'Bearer ' . $credentials['client_id'] . '.' . $credentials['client_secret'];
             $response = wp_safe_remote_request(self::origin() . $target, [
                 'method' => $method, 'headers' => $headers, 'body' => $body,
                 'timeout' => $timeout, 'redirection' => 0, 'sslverify' => true,
@@ -118,57 +88,55 @@ final class Api
                 $messages[$status] ?? __('Сервис не подтвердил операцию. Попробуйте позднее.', 'dzen-chat'),
                 ['status' => $status, 'retryable' => $status === 429 || $status >= 500, 'retry_after' => min(86400, $seconds)]);
         }
+        if ($status === 204 && $raw === '') return [];
         if (strlen($raw) > 2097152 || !is_array($payload)) {
             return new \WP_Error('dzen_protocol', __('Dzen Chat вернул некорректный ответ. Операция не подтверждена.', 'dzen-chat'));
         }
         return $payload;
     }
 
-    /** Refresh a missing cache even on sites without a working cron runner. */
-    public function cachedStatus(): array|\WP_Error
+    /** HttpUrl on the service normalizes origins and Unicode URLs before acknowledging them. */
+    private static function canonicalUrl(mixed $url): ?string
     {
-        $status = get_transient('dzen_chat_status');
-        if (is_array($status)) {
-            return $status;
+        if (!is_string($url)) return null;
+        $parts = wp_parse_url($url);
+        if (!$parts || !in_array(strtolower($parts['scheme'] ?? ''), ['http', 'https'], true)
+            || empty($parts['host']) || isset($parts['user']) || isset($parts['pass'])) return null;
+        try {
+            // Requests is bundled with the supported WordPress versions and its HTTP client.
+            $iri = new \WpOrg\Requests\Iri($url);
+            $iri->ihost = \WpOrg\Requests\IdnaEncoder::encode($iri->ihost);
+            if ($iri->path === '') $iri->path = '/';
+            return $iri->uri;
+        } catch (\WpOrg\Requests\Exception $error) {
+            return null;
         }
-        if (get_transient('dzen_chat_status_retry')) {
-            return new \WP_Error('dzen_status_pending', __('Статус Dzen Chat временно недоступен. Проверка будет повторена.', 'dzen-chat'));
-        }
-        // Bound visitor latency and avoid one failed request for every page view.
-        set_transient('dzen_chat_status_retry', true, 60);
-        return $this->status(3);
     }
 
-    public function status(int $timeout = 15): array|\WP_Error
+    public function reindex(string $url): array|\WP_Error
     {
-        $result = $this->request('GET', '/integration', timeout: $timeout);
-        if (is_wp_error($result)) {
-            delete_transient('dzen_chat_status');
-            return $result;
+        $expected = self::canonicalUrl($url);
+        if ($expected === null) return new \WP_Error('dzen_url', __('Некорректный публичный адрес страницы.', 'dzen-chat'));
+        $result = $this->request('POST', '/update', [], ['url' => $url]);
+        if (is_wp_error($result)) return $result;
+        if (($result['status'] ?? '') !== 'ok' || ($result['action'] ?? '') !== 'queued'
+            || self::canonicalUrl($result['url'] ?? null) !== $expected) {
+            return new \WP_Error('dzen_protocol', __('Сервис не подтвердил запрос переиндексации.', 'dzen-chat'));
         }
-        try {
-            $local = $this->credentials->get();
-            if (($result['integration']['id'] ?? '') !== $local['integration_id']
-                || (string) ($result['project']['id'] ?? '') !== $local['project_id']
-                || ($result['site_url'] ?? '') !== $local['site_url']
-                || !is_array($result['allowed_operations'] ?? null) || !is_array($result['scopes'] ?? null)) {
-                throw new \RuntimeException('integration_mismatch');
-            }
-        } catch (\RuntimeException $error) {
-            delete_transient('dzen_chat_status');
-            return new \WP_Error('dzen_identity', __('Сервис не подтвердил проект и сайт этой интеграции.', 'dzen-chat'));
+        return $result;
+    }
+
+    /** Lists stay request-local; chat messages and source text are never persisted here. */
+    public function items(string $path, array $query = []): array|\WP_Error
+    {
+        $result = $this->request('GET', $path, $query);
+        if (is_wp_error($result)) return $result;
+        if (!isset($result['items']) || !is_array($result['items']) || !array_is_list($result['items'])
+            || array_filter($result['items'], static fn ($item) => !is_array($item)
+                || (!is_string($item['id'] ?? null) && !is_int($item['id'] ?? null)) || (string) $item['id'] === '')) {
+            return new \WP_Error('dzen_protocol', __('Сервис вернул некорректный список.', 'dzen-chat'));
         }
-        $safe = [
-            'integration' => ['id' => $local['integration_id'], 'status' => sanitize_key($result['integration']['status'] ?? '')],
-            'project' => ['id' => $local['project_id'], 'title' => sanitize_text_field($result['project']['title'] ?? ''),
-                'status' => sanitize_key($result['project']['status'] ?? ''), 'reason_code' => sanitize_key($result['project']['reason_code'] ?? '')],
-            'allowed_operations' => array_map(static fn ($value) => $value === true, $result['allowed_operations']),
-            'scopes' => array_values(array_filter($result['scopes'], 'is_string')), 'checked_at' => time(),
-        ];
-        set_transient('dzen_chat_status', $safe, 300);
-        delete_transient('dzen_chat_status_retry');
-        update_option('dzen_chat_verified', true, false);
-        return $safe;
+        return $result['items'];
     }
 
     public static function segment(string $value): string

@@ -61,8 +61,7 @@ final class Credentials
         return $data;
     }
 
-    /** Save the actual exchange response, binding it to the initiating WP site and service. */
-    public function saveRegistration(array $data, string $siteUrl, string $apiOrigin): void
+    private static function validateRegistration(array $data): void
     {
         foreach (['client_id', 'client_secret', 'site_source_id'] as $field) {
             if (!isset($data[$field]) || !is_string($data[$field])
@@ -70,8 +69,16 @@ final class Credentials
                 throw new \RuntimeException('invalid_exchange_response');
             }
         }
-        if (strlen($data['client_id']) < 16 || strlen($data['client_secret']) < 24
-            || $siteUrl !== self::siteUrl() || $apiOrigin !== Api::origin()) {
+        if (strlen($data['client_id']) < 16 || strlen($data['client_secret']) < 24) {
+            throw new \RuntimeException('invalid_exchange_response');
+        }
+    }
+
+    /** Save the actual exchange response, binding it to the initiating WP site and service. */
+    public function saveRegistration(array $data, string $siteUrl, string $apiOrigin): void
+    {
+        self::validateRegistration($data);
+        if ($siteUrl !== self::siteUrl() || $apiOrigin !== Api::origin()) {
             throw new \RuntimeException('invalid_exchange_response');
         }
         $value = $this->encrypt([
@@ -83,27 +90,27 @@ final class Credentials
         if (get_option(self::OPTION) !== $value) {
             throw new \RuntimeException('credentials_not_saved');
         }
-        // Registration does not grant capabilities from the proposed management API.
+        // Reset connection-specific state without persisting inferred project permissions.
         delete_option('dzen_chat_verified');
         delete_transient('dzen_chat_status');
         delete_transient('dzen_chat_status_retry');
         delete_option('dzen_chat_reconcile_cursor');
+        delete_option('dzen_chat_sync_client');
         delete_option('dzen_chat_widgets');
         delete_option('dzen_chat_widget');
-    }
-
-    public function registrationOnly(): bool
-    {
-        return $this->exists() && ($this->get()['auth_type'] ?? '') === 'external_registration';
     }
 
     public function get(): array
     {
         $data = $this->decrypt((string) get_option(self::OPTION, ''));
+        self::validateRegistration($data);
+        if (($data['auth_type'] ?? '') !== 'external_registration') {
+            throw new \RuntimeException('credentials_invalid');
+        }
         if (($data['site_url'] ?? '') !== self::siteUrl()) {
             throw new \RuntimeException('site_changed');
         }
-        if (isset($data['api_origin']) && $data['api_origin'] !== Api::origin()) {
+        if (($data['api_origin'] ?? '') !== Api::origin()) {
             throw new \RuntimeException('service_changed');
         }
         return $data;
@@ -117,6 +124,7 @@ final class Credentials
     public function forget(): void
     {
         delete_option(self::OPTION);
+        delete_option('dzen_chat_sync_client');
         delete_option('dzen_chat_verified');
         delete_transient('dzen_chat_status');
         delete_transient('dzen_chat_status_retry');

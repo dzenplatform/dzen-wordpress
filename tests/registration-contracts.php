@@ -1,6 +1,6 @@
 <?php
 /** Actual registration contract; no management API or real credentials involved. */
-if (wp_get_environment_type() !== 'local') {
+if (wp_get_environment_type() !== 'local' || !function_exists('dzen_fixture_widgets')) {
     throw new RuntimeException('Run only in the isolated local WordPress');
 }
 ob_start(); // Keep HTTP callbacks testable before any CLI output is flushed.
@@ -51,6 +51,12 @@ $mode = 'success';
 $payload = ['client_id' => str_repeat('c', 43), 'client_secret' => str_repeat('s', 64), 'site_source_id' => 'source1234'];
 $transport = static function ($pre, $args, $url) use (&$calls, &$mode, $payload) {
     $calls[] = ['url' => $url, 'args' => $args];
+    if ($url === DzenChat\Api::origin() . '/api/sources') {
+        return ['headers' => [], 'response' => ['code' => 200], 'body' => wp_json_encode(['items' => [[
+            'id' => $payload['site_source_id'], 'title' => 'Registration test', 'url' => DzenChat\Credentials::siteUrl(),
+            'is_paused' => false, 'enable_triggers' => true, 'blocked_reason' => null, 'last_reindexed_at' => null,
+        ]]]), 'cookies' => [], 'filename' => null];
+    }
     if ($url !== DzenChat\Api::origin() . '/auth/exchange/') {
         throw new RuntimeException('Unexpected management API request');
     }
@@ -94,14 +100,15 @@ try {
     $stored = $credentials->get();
     $check($stored['client_id'] === $payload['client_id'] && $stored['site_source_id'] === $payload['site_source_id']
         && $stored['site_url'] === $localHome && $stored['api_origin'] === DzenChat\Api::origin(), 'actual credentials and source bound to site and service');
-    $check(!isset($stored['project_id'], $stored['integration_id']) && $credentials->registrationOnly(), 'no invented project or integration identifiers');
+    $check(!isset($stored['project_id'], $stored['integration_id']) && $credentials->get()['auth_type'] === 'external_registration', 'no invented project or integration identifiers');
     $check(!str_contains(get_option('dzen_chat_credentials'), $payload['client_secret']), 'new credentials encrypted at rest');
     $check(!get_option('dzen_chat_verified') && get_transient('dzen_chat_status') === false, 'registration does not imply billing or management capabilities');
     $replay = $finish($query);
     $check(str_contains($replay, 'notice=authorization_failed') && count($calls) === 1, 'callback cannot exchange twice');
     set_transient($pending, $credentials->encrypt($attempt), 300);
     $check(str_contains($finish($query), 'notice=authorization_failed') && count($calls) === 1, 'atomic claim rejects a concurrently read callback');
-    $check($api->request('GET', '/chats')->get_error_code() === 'dzen_api_pending' && count($calls) === 1, 'deferred history API never receives registration credentials');
+    $check(get_option('dzen_chat_reconcile_cursor') === 0 && count($calls) === 1,
+        'successful registration schedules initial synchronization without another HTTP request');
 
     global $wpdb;
     [, $events] = DzenChat\Sync::tables();
@@ -110,14 +117,17 @@ try {
     wp_update_post(['ID' => $post, 'post_content' => 'Updated']);
     wp_delete_post($post, true);
     $post = 0;
-    $check((int) $wpdb->get_var("SELECT COUNT(*) FROM $events") === $before, 'registration alone does not queue indexing events');
+    $check((int) $wpdb->get_var("SELECT COUNT(*) FROM $events") === $before + 3,
+        'registered site queues public creation, update and removal');
     $_GET = ['page' => 'dzen-chat'];
     ob_start();
     (new DzenChat\Admin($credentials, $api, new DzenChat\Sync($credentials, $api)))->page();
     $html = ob_get_clean();
-    $check(str_contains($html, 'Сайт авторизован') && !str_contains($html, $payload['client_secret']) && count($calls) === 1, 'connected admin renders without secrets or unimplemented API');
+    $check(str_contains($html, 'Сайт авторизован') && !str_contains($html, $payload['client_secret']) && count($calls) === 2,
+        'connected admin verifies actual source access without exposing secrets');
 
     foreach (['wrong_state', 'expired_attempt', 'different_session', 'different_service', 'invalid_code'] as $failure) {
+        $before = count($calls);
         [, $q] = $begin();
         $attempt = $credentials->decrypt(get_transient($pending));
         if ($failure === 'wrong_state') $q['state'] = str_repeat('z', 64);
@@ -131,7 +141,7 @@ try {
         } else {
             $r = $finish($q);
         }
-        $check(str_contains($r, 'notice=authorization_failed') && count($calls) === 1, $failure . ' rejected before exchange');
+        $check(str_contains($r, 'notice=authorization_failed') && count($calls) === $before, $failure . ' rejected before exchange');
     }
     $previous = get_option('dzen_chat_credentials');
     foreach (['expired_code', 'network', 'redirect', 'invalid_json', 'missing_source'] as $mode) {

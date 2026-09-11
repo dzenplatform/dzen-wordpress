@@ -48,10 +48,29 @@ final class Sync
 
     public function register(): void
     {
+        add_action('init', [$this, 'initialize']);
         add_action('wp_after_insert_post', [$this, 'saved'], 20, 4);
         add_action('before_delete_post', [$this, 'deleted'], 10, 2);
         add_action('update_option_permalink_structure', [$this, 'reconcile']);
         add_action('dzen_chat_worker', [$this, 'run']);
+    }
+
+    /** Also starts the initial scan when an already connected 0.3 site upgrades. */
+    public function initialize(): void
+    {
+        if (!$this->credentials->exists()) return;
+        try {
+            $client = $this->credentials->get()['client_id'];
+        } catch (\RuntimeException | \JsonException $error) {
+            return;
+        }
+        if (get_option('dzen_chat_sync_client') !== $client) {
+            $this->reconcile();
+            update_option('dzen_chat_sync_client', $client, false);
+        }
+        if (!wp_next_scheduled('dzen_chat_worker')) {
+            wp_schedule_event(time() + 60, 'dzen_chat_minute', 'dzen_chat_worker');
+        }
     }
 
     public function reconcile(): void
@@ -86,14 +105,10 @@ final class Sync
         global $wpdb;
         [$objects, $events] = self::tables();
         $url = $public ? get_permalink($post) : '';
-        $policy = get_post_meta($post->ID, '_dzen_chat_triggers', true) ?: 'inherit';
         $fingerprint = hash('sha256', wp_json_encode([$url, $public ? [$post->post_modified_gmt,
-            $post->post_title, $post->post_content, $post->post_excerpt] : '', $policy]));
+            $post->post_title, $post->post_content, $post->post_excerpt] : '']));
         try {
-            if ($this->credentials->registrationOnly()) {
-                return;
-            }
-            $integration = $this->credentials->get()['integration_id'];
+            $integration = $this->credentials->get()['client_id'];
         } catch (\RuntimeException | \JsonException $error) {
             update_option('dzen_chat_queue_error', true, false);
             return;
@@ -114,8 +129,7 @@ final class Sync
             }
             $payload = ['event_id' => wp_generate_uuid4(), 'external_id' => 'wp:post:' . $post->ID,
                 'revision' => (int) $current['revision'] + 1, 'action' => $public ? 'upsert' : 'delete',
-                'url' => $public ? $url : $current['url'], 'previous_url' => $current['url'],
-                'trigger_policy' => $policy];
+                'url' => $public ? $url : $current['url'], 'previous_url' => $current['url']];
             if ($wpdb->insert($events, ['event_id' => $payload['event_id'], 'post_id' => $post->ID, 'integration_id' => $integration,
                 'payload' => wp_json_encode($payload), 'created_at' => current_time('mysql', true)]) === false
                 || $wpdb->update($objects, ['url' => $url ?: $current['url'], 'revision' => $payload['revision'],
@@ -132,7 +146,7 @@ final class Sync
     public function run(): void
     {
         global $wpdb;
-        if (!$this->credentials->exists() || !get_option('dzen_chat_verified')) {
+        if (!$this->credentials->exists()) {
             return;
         }
         $lock = time() . ':' . wp_generate_uuid4();
@@ -145,11 +159,12 @@ final class Sync
             return;
         }
         try {
-            $status = $this->api->status();
-            if (is_wp_error($status)) {
+            try {
+                $integration = $this->credentials->get()['client_id'];
+            } catch (\RuntimeException | \JsonException $error) {
+                update_option('dzen_chat_queue_error', true, false);
                 return;
             }
-            $integration = $status['integration']['id'];
             $cursor = get_option('dzen_chat_reconcile_cursor', false);
             if ($cursor !== false) {
                 $posts = $wpdb->get_results($wpdb->prepare("SELECT * FROM $wpdb->posts WHERE ID > %d AND post_type IN ('page','post') ORDER BY ID LIMIT 50", (int) $cursor));
@@ -164,33 +179,29 @@ final class Sync
                 }
             }
             [, $events] = self::tables();
-            $rows = $wpdb->get_results($wpdb->prepare("SELECT * FROM $events WHERE integration_id=%s AND status IN ('pending','accepted','blocked') AND next_attempt <= %d ORDER BY id LIMIT 10", $integration, time()), ARRAY_A);
+            $rows = $wpdb->get_results($wpdb->prepare("SELECT * FROM $events WHERE integration_id=%s AND status IN ('pending','blocked') AND next_attempt <= %d ORDER BY id LIMIT 10", $integration, time()), ARRAY_A);
             foreach ($rows as $row) {
                 $payload = json_decode($row['payload'], true);
-                $permission = $payload['action'] === 'delete' ? 'documents_delete' : 'documents_upsert';
-                if (($status['allowed_operations'][$permission] ?? false) !== true) {
-                    $wpdb->update($events, ['status' => 'blocked', 'next_attempt' => time() + 300], ['id' => $row['id']]);
-                    continue;
+                // A permalink change requires revisiting the old public URL as well.
+                $urls = array_values(array_unique(array_filter([
+                    $payload['previous_url'] ?? '', $payload['url'] ?? '',
+                ], 'is_string')));
+                $urls = array_values(array_filter($urls, static fn ($url) => $url !== ''));
+                $response = null;
+                foreach ($urls as $url) {
+                    $response = $this->api->reindex($url);
+                    if (is_wp_error($response)) break;
                 }
-                $response = $row['operation_id'] !== ''
-                    ? $this->api->request('GET', '/operations/' . Api::segment($row['operation_id']))
-                    : $this->api->request('POST', '/document-events', [], $payload, $row['event_id']);
-                $changes = [];
+                if (!$urls) $response = new \WP_Error('dzen_queue_url', 'Missing public URL');
+                $changes = ['attempts' => (int) $row['attempts'] + 1];
                 if (is_wp_error($response)) {
                     $error = $response->get_error_data() ?: [];
-                    $changes['attempts'] = (int) $row['attempts'] + 1;
                     $changes += ['error_code' => $response->get_error_code(),
                         'status' => !empty($error['retryable']) && $changes['attempts'] < 6 ? 'pending' : 'error',
                         'next_attempt' => time() + max((int) ($error['retry_after'] ?? 0), min(3600, 30 * 2 ** $changes['attempts']))];
-                } elseif ($row['operation_id'] === '' && !empty($response['operation_id'])) {
-                    $changes += ['status' => 'accepted', 'operation_id' => $response['operation_id'],
-                        'next_attempt' => time() + 30, 'error_code' => '', 'attempts' => 0];
-                } elseif ($row['operation_id'] !== '' && in_array($response['status'] ?? '', ['succeeded', 'superseded'], true)) {
-                    $changes += ['status' => 'done', 'error_code' => ''];
-                } elseif ($row['operation_id'] !== '' && in_array($response['status'] ?? '', ['queued', 'running'], true)) {
-                    $changes += ['status' => 'accepted', 'next_attempt' => time() + 60, 'attempts' => 0];
                 } else {
-                    $changes += ['status' => 'error', 'error_code' => 'operation_failed'];
+                    // HTTP 202 confirms scheduling, never completion of crawling/indexing.
+                    $changes += ['status' => 'accepted', 'operation_id' => '', 'error_code' => '', 'next_attempt' => 0];
                 }
                 $wpdb->update($events, $changes, ['id' => $row['id']]);
             }
@@ -206,7 +217,7 @@ final class Sync
         global $wpdb;
         [, $events] = self::tables();
         try {
-            $integration = $this->credentials->get()['integration_id'];
+            $integration = $this->credentials->get()['client_id'];
         } catch (\RuntimeException | \JsonException $error) {
             return;
         }
