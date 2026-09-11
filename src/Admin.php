@@ -187,7 +187,7 @@ final class Admin
             echo '<p>' . esc_html(($source['is_paused'] ?? null) === true ? __('Updates paused', 'dzen-chat') : __('Updates allowed', 'dzen-chat')) . '</p>';
         }
         echo '<p>' . esc_html__('Source triggers:', 'dzen-chat') . ' ' . esc_html(($source['enable_triggers'] ?? null) === true ? __('enabled', 'dzen-chat') : __('disabled', 'dzen-chat')) . '</p>';
-        if (self::text($source, 'last_reindexed_at') !== '') echo '<p>' . esc_html__('Last reindexed:', 'dzen-chat') . ' ' . esc_html(self::text($source, 'last_reindexed_at')) . '</p>';
+        if (self::text($source, 'last_reindexed_at') !== '') echo '<p>' . esc_html__('Last reindexed:', 'dzen-chat') . ' ' . esc_html(Dates::format($source['last_reindexed_at'])) . '</p>';
     }
 
     private static function indexLabels(): array
@@ -220,6 +220,7 @@ final class Admin
         echo '<h4 id="' . esc_attr($heading) . '"><a href="' . esc_url($status['details_url']) . '" target="_blank" rel="noopener noreferrer">' . esc_html($status['title']) . '</a></h4>';
         // Translators: %s is the total number of pages in this source.
         echo '<p>' . esc_html(sprintf(_n('%s page in this source.', '%s pages in this source.', $status['total'], 'dzen-chat'), number_format_i18n($status['total']))) . '</p>';
+        if (self::text($status, 'last_reindexed_at') !== '') echo '<p class="description">' . esc_html__('Last reindexed:', 'dzen-chat') . ' ' . esc_html(Dates::format($status['last_reindexed_at'])) . '</p>';
         if ($status['is_paused']) echo '<p>' . esc_html__('Updates paused', 'dzen-chat') . '</p>';
         if ($status['blocked_reason']) echo '<p>' . esc_html__('Indexing is restricted. Open Dzen Chat for details.', 'dzen-chat') . '</p>';
         $this->progressBar($status['counts']);
@@ -233,6 +234,7 @@ final class Admin
     {
         $status = Files::indexStatus($file);
         echo '<p><span class="dzen-index-dot dzen-index-' . esc_attr($status) . '" aria-hidden="true"></span> ' . esc_html(self::indexLabels()[$status]) . '</p>';
+        if (self::text($file, 'updated_at') !== '') echo '<p class="description">' . esc_html__('Updated:', 'dzen-chat') . ' ' . esc_html(Dates::format($file['updated_at'])) . '</p>';
         if ($file['status_error']) {
             echo '<p class="dzen-document-error">' . esc_html($file['status_error'] === 'too_big'
                 ? __('The document is too large for indexing. Shorten it in Dzen Chat or upload a smaller document.', 'dzen-chat')
@@ -349,9 +351,11 @@ final class Admin
         $items = $this->api->items('/chats', ['limit' => 100]);
         if (is_wp_error($items)) { $this->error($items); return; }
         echo '<p>' . esc_html__('Filters apply to the 100 most recent conversations. Full history text search and hiding conversations are not yet available.', 'dzen-chat') . '</p>';
+        // Translators: %s is the WordPress site timezone, such as Europe/Sofia or +03:00.
+        echo '<p class="description">' . esc_html(sprintf(__('Dates and times use the WordPress site timezone (%s).', 'dzen-chat'), wp_timezone_string())) . '</p>';
         echo '<form method="get" class="dzen-filters"><input type="hidden" name="page" value="dzen-chat-history">';
         echo '<label>' . esc_html__('Conversation or visitor ID', 'dzen-chat') . '<input name="q" value="' . esc_attr($filters['q'] ?? '') . '" maxlength="200"></label>';
-        foreach (['date_from' => __('From date (UTC)', 'dzen-chat'), 'date_to' => __('To date (UTC)', 'dzen-chat')] as $key => $label) {
+        foreach (['date_from' => __('From date', 'dzen-chat'), 'date_to' => __('To date', 'dzen-chat')] as $key => $label) {
             echo '<label>' . esc_html($label) . '<input type="date" name="' . esc_attr($key) . '" value="' . esc_attr($filters[$key] ?? '') . '"></label>';
         }
         echo '<label>' . esc_html__('Widget', 'dzen-chat') . '<select name="widget_code"><option value="">' . esc_html__('All widgets', 'dzen-chat') . '</option>';
@@ -361,16 +365,17 @@ final class Admin
         }
         echo '</select></label><button class="button">' . esc_html__('Apply', 'dzen-chat') . '</button></form>';
         $items = array_filter($items, static function ($item) use ($filters) {
-            $date = substr(self::text($item, 'created_at'), 0, 10);
+            $date = Dates::day($item['created_at'] ?? null);
+            if ($date === null && (isset($filters['date_from']) || isset($filters['date_to']))) return false;
             if (isset($filters['date_from']) && $date < $filters['date_from']) return false;
             if (isset($filters['date_to']) && $date > $filters['date_to']) return false;
             if (isset($filters['widget_code']) && ($item['widget_code'] ?? '') !== $filters['widget_code']) return false;
             return !isset($filters['q']) || stripos(self::text($item, 'id') . ' ' . self::text($item, 'visitor'), $filters['q']) !== false;
         });
         if (!$items) echo '<p>' . esc_html__('No results in the loaded set.', 'dzen-chat') . '</p>';
-        echo '<table class="widefat striped"><thead><tr><th>' . esc_html__('Conversation', 'dzen-chat') . '</th><th>' . esc_html__('Visitor', 'dzen-chat') . '</th><th>' . esc_html__('Created (UTC)', 'dzen-chat') . '</th></tr></thead><tbody>';
+        echo '<table class="widefat striped"><thead><tr><th>' . esc_html__('Conversation', 'dzen-chat') . '</th><th>' . esc_html__('Visitor', 'dzen-chat') . '</th><th>' . esc_html__('Created', 'dzen-chat') . '</th></tr></thead><tbody>';
         foreach ($items as $chat) {
-            echo '<tr><td><a href="' . esc_url(self::url('dzen-chat-history', ['chat' => $chat['id']])) . '">' . esc_html(self::text($chat, 'id')) . '</a></td><td>' . esc_html(self::text($chat, 'visitor')) . '</td><td>' . esc_html(self::text($chat, 'created_at')) . '</td></tr>';
+            echo '<tr><td><a href="' . esc_url(self::url('dzen-chat-history', ['chat' => $chat['id']])) . '">' . esc_html(self::text($chat, 'id')) . '</a></td><td>' . esc_html(self::text($chat, 'visitor')) . '</td><td>' . esc_html(Dates::format($chat['created_at'] ?? null)) . '</td></tr>';
         }
         echo '</tbody></table>';
     }
@@ -388,7 +393,7 @@ final class Admin
         if (count($items) === 100) echo '<p>' . esc_html__('The first 100 messages have been loaded. Open Dzen Chat to view the rest.', 'dzen-chat') . '</p>';
         foreach ($items as $message) {
             if (!in_array($message['role'] ?? '', ['user', 'assistant'], true)) continue;
-            echo '<article class="dzen-message"><h3>' . esc_html($message['role'] === 'user' ? __('Visitor', 'dzen-chat') : __('Dzen Chat', 'dzen-chat')) . '</h3><p class="description">' . esc_html(self::text($message, 'created_at')) . '</p><div class="dzen-text">' . esc_html(self::text($message, 'text')) . '</div>';
+            echo '<article class="dzen-message"><h3>' . esc_html($message['role'] === 'user' ? __('Visitor', 'dzen-chat') : __('Dzen Chat', 'dzen-chat')) . '</h3><p class="description">' . esc_html(Dates::format($message['created_at'] ?? null)) . '</p><div class="dzen-text">' . esc_html(self::text($message, 'text')) . '</div>';
             if (is_bool($message['vote'] ?? null)) echo '<p>' . esc_html($message['vote'] ? __('Helpful answer', 'dzen-chat') : __('Unhelpful answer', 'dzen-chat')) . '</p>';
             if ($message['role'] === 'assistant') {
                 echo '<div class="dzen-suggestions"><h4>' . esc_html__('Suggestions', 'dzen-chat') . '</h4>';

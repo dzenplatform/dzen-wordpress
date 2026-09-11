@@ -66,6 +66,11 @@ server search, date or widget filters. The plugin
 applies conversation filters to the received 100 conversations and explains this
 limit. The Index screen uses aggregate source counts instead of a document list. It does not claim a long conversation is fully loaded after 100 messages.
 
+Displayed timestamps use the WordPress date/time formats, current locale and site
+timezone. Conversation date filters apply to those same local calendar days,
+not the UTC date substring. The API and stored timestamps are unchanged. Missing
+or malformed dates show a dash and cannot match an active calendar filter.
+
 Widgets use the real `/widget/{code}` loader. WordPress prints one
 `<div id="chat-chat"></div>` before the footer script. The loader creates a
 button and iframe; the iframe does not have to be inside the mount element.

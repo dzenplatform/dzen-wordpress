@@ -2,10 +2,10 @@
 # This file is distributed under the GPL-2.0-or-later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Dzen Chat 0.13.0\n"
+"Project-Id-Version: Dzen Chat 0.13.1\n"
 "Report-Msgid-Bugs-To: https://github.com/dzenplatform/dzen-wordpress/issues\n"
-"POT-Creation-Date: 2026-09-11T05:49:32+00:00\n"
-"PO-Revision-Date: 2026-09-11 05:17+0000\n"
+"POT-Creation-Date: 2026-09-11T05:59:06+00:00\n"
+"PO-Revision-Date: 2026-09-11 05:59+0000\n"
 "Last-Translator: Dzen Platform\n"
 "Language-Team: Russian\n"
 "Language: ru_RU\n"
@@ -18,7 +18,7 @@ msgstr ""
 "X-Domain: dzen-chat\n"
 
 #. Plugin Name of the plugin
-#: dzen-chat.php src/Admin.php:391
+#: dzen-chat.php src/Admin.php:396
 msgid "Dzen Chat"
 msgstr "Dzen Chat"
 
@@ -40,15 +40,15 @@ msgstr "Dzen Platform"
 msgid "Overview"
 msgstr "Обзор"
 
-#: src/Admin.php:32 src/Admin.php:423
+#: src/Admin.php:32 src/Admin.php:428
 msgid "Widgets"
 msgstr "Виджеты"
 
-#: src/Admin.php:33 src/Admin.php:265
+#: src/Admin.php:33 src/Admin.php:267
 msgid "Index"
 msgstr "Индекс"
 
-#: src/Admin.php:33 src/Admin.php:344
+#: src/Admin.php:33 src/Admin.php:346
 msgid "Conversations"
 msgstr "Диалоги"
 
@@ -145,7 +145,7 @@ msgstr "Источник сайта больше не доступен этом�
 msgid "Manage widgets"
 msgstr "Настроить виджеты"
 
-#: src/Admin.php:156 src/Admin.php:457
+#: src/Admin.php:156 src/Admin.php:462
 msgid "Open Dzen Chat ↗"
 msgstr "Открыть Dzen Chat ↗"
 
@@ -225,7 +225,7 @@ msgstr "Сервис вернул некорректное состояние и
 msgid "Processing restricted:"
 msgstr "Обработка ограничена:"
 
-#: src/Admin.php:187 src/Admin.php:223
+#: src/Admin.php:187 src/Admin.php:224
 msgid "Updates paused"
 msgstr "Обновление приостановлено"
 
@@ -245,7 +245,7 @@ msgstr "включены"
 msgid "disabled"
 msgstr "выключены"
 
-#: src/Admin.php:190
+#: src/Admin.php:190 src/Admin.php:223
 msgid "Last reindexed:"
 msgstr "Последняя переиндексация:"
 
@@ -278,27 +278,31 @@ msgstr[0] "В этом источнике %s страница."
 msgstr[1] "В этом источнике %s страницы."
 msgstr[2] "В этом источнике %s страниц."
 
-#: src/Admin.php:224
+#: src/Admin.php:225
 msgid "Indexing is restricted. Open Dzen Chat for details."
 msgstr "Индексация ограничена. Подробности доступны в Dzen Chat."
 
-#: src/Admin.php:226
+#: src/Admin.php:227
 msgid "No pages have been discovered yet."
 msgstr "Страницы пока не обнаружены."
 
-#: src/Admin.php:227
+#: src/Admin.php:228
 msgid "All discovered pages are excluded from indexing."
 msgstr "Все обнаруженные страницы исключены из индексации."
 
-#: src/Admin.php:228
+#: src/Admin.php:229
 msgid "Excluded pages are counted separately from the progress bar."
 msgstr "Исключённые страницы учитываются отдельно от индикатора прогресса."
 
-#: src/Admin.php:229
+#: src/Admin.php:230
 msgid "Source settings in Dzen Chat ↗"
 msgstr "Настройки источника в Dzen Chat ↗"
 
-#: src/Admin.php:238
+#: src/Admin.php:237
+msgid "Updated:"
+msgstr "Обновлён:"
+
+#: src/Admin.php:240
 msgid ""
 "The document is too large for indexing. Shorten it in Dzen Chat or upload a "
 "smaller document."
@@ -306,85 +310,85 @@ msgstr ""
 "Документ слишком большой для индексации. Сократите его в Dzen Chat или "
 "загрузите документ меньшего размера."
 
-#: src/Admin.php:245 src/Admin.php:283
+#: src/Admin.php:247 src/Admin.php:285
 msgid "Add a document"
 msgstr "Добавить документ"
 
-#: src/Admin.php:251
+#: src/Admin.php:253
 msgid "Document"
 msgstr "Документ"
 
 #. Translators: %s is the maximum upload size, such as 256 KB.
-#: src/Admin.php:254
+#: src/Admin.php:256
 #, php-format
 msgid "TXT or Markdown (.txt, .md, .markdown), UTF-8. Maximum file size: %s."
 msgstr ""
 "TXT или Markdown (.txt, .md, .markdown), UTF-8. Максимальный размер файла: "
 "%s."
 
-#: src/Admin.php:255
+#: src/Admin.php:257
 msgid ""
 "Uploads go to Dzen Chat without being added to the WordPress media library."
 msgstr ""
 "Документы отправляются в Dzen Chat и не добавляются в медиатеку WordPress."
 
-#: src/Admin.php:256
+#: src/Admin.php:258
 msgid "Upload for indexing"
 msgstr "Загрузить для индексации"
 
-#: src/Admin.php:258 src/Admin.php:500
+#: src/Admin.php:260 src/Admin.php:505
 msgid "You do not have permission to upload documents."
 msgstr "У вас нет прав для загрузки документов."
 
-#: src/Admin.php:273
+#: src/Admin.php:275
 msgid "Back to Index"
 msgstr "Вернуться к индексу"
 
-#: src/Admin.php:278 src/Admin.php:334
+#: src/Admin.php:280 src/Admin.php:336
 msgid "Edit document in Dzen Chat ↗"
 msgstr "Редактировать документ в Dzen Chat ↗"
 
-#: src/Admin.php:282
+#: src/Admin.php:284
 msgid ""
 "Track this website, additional sources and uploaded documents in one place."
 msgstr ""
 "Следите за индексацией сайта, дополнительных источников и загруженных "
 "документов на одной странице."
 
-#: src/Admin.php:283 src/PageIndex.php:29
+#: src/Admin.php:285 src/PageIndex.php:29
 msgid "Refresh status"
 msgstr "Обновить статус"
 
-#: src/Admin.php:284
+#: src/Admin.php:286
 msgid "This WordPress site"
 msgstr "Этот сайт WordPress"
 
-#: src/Admin.php:286
+#: src/Admin.php:288
 msgid "Additional website sources"
 msgstr "Дополнительные сайты"
 
-#: src/Admin.php:294
+#: src/Admin.php:296
 msgid "The service returned an invalid source list."
 msgstr "Сервис вернул некорректный список источников."
 
-#: src/Admin.php:303
+#: src/Admin.php:305
 msgid "No additional website sources are available to this connection."
 msgstr "Для этого подключения нет доступных дополнительных сайтов."
 
-#: src/Admin.php:314
+#: src/Admin.php:316
 msgid "Manage sources in Dzen Chat ↗"
 msgstr "Управление источниками в Dzen Chat ↗"
 
-#: src/Admin.php:317
+#: src/Admin.php:319
 msgid "Uploaded documents"
 msgstr "Загруженные документы"
 
-#: src/Admin.php:322
+#: src/Admin.php:324
 msgid "No files have been added."
 msgstr "Файлы не добавлены."
 
 #. Translators: %s is the total number of uploaded documents.
-#: src/Admin.php:328
+#: src/Admin.php:330
 #, php-format
 msgid "%s uploaded document."
 msgid_plural "%s uploaded documents."
@@ -392,11 +396,11 @@ msgstr[0] "%s загруженный документ."
 msgstr[1] "%s загруженных документа."
 msgstr[2] "%s загруженных документов."
 
-#: src/Admin.php:344
+#: src/Admin.php:346
 msgid "Conversations are stored in Dzen Chat."
 msgstr "Переписка хранится в Dzen Chat."
 
-#: src/Admin.php:351
+#: src/Admin.php:353
 msgid ""
 "Filters apply to the 100 most recent conversations. Full history text search "
 "and hiding conversations are not yet available."
@@ -404,77 +408,83 @@ msgstr ""
 "Фильтры применяются к 100 последним диалогам. Поиск по тексту всей истории и "
 "скрытие пока недоступны."
 
-#: src/Admin.php:353
+#. Translators: %s is the WordPress site timezone, such as Europe/Sofia or +03:00.
+#: src/Admin.php:355
+#, php-format
+msgid "Dates and times use the WordPress site timezone (%s)."
+msgstr "Дата и время указаны в часовом поясе сайта WordPress (%s)."
+
+#: src/Admin.php:357
 msgid "Conversation or visitor ID"
 msgstr "ID диалога или посетителя"
 
-#: src/Admin.php:354
-msgid "From date (UTC)"
-msgstr "С даты (UTC)"
+#: src/Admin.php:358
+msgid "From date"
+msgstr "С даты"
 
-#: src/Admin.php:354
-msgid "To date (UTC)"
-msgstr "По дату (UTC)"
+#: src/Admin.php:358
+msgid "To date"
+msgstr "По дату"
 
-#: src/Admin.php:357 src/Admin.php:442 src/Plugin.php:142
+#: src/Admin.php:361 src/Admin.php:447 src/Plugin.php:142
 msgid "Widget"
 msgstr "Виджет"
 
-#: src/Admin.php:357
+#: src/Admin.php:361
 msgid "All widgets"
 msgstr "Все виджеты"
 
-#: src/Admin.php:362
+#: src/Admin.php:366
 msgid "Apply"
 msgstr "Применить"
 
-#: src/Admin.php:370
+#: src/Admin.php:375
 msgid "No results in the loaded set."
 msgstr "В загруженном наборе ничего не найдено."
 
-#: src/Admin.php:371
+#: src/Admin.php:376
 msgid "Conversation"
 msgstr "Диалог"
 
-#: src/Admin.php:371 src/Admin.php:391
+#: src/Admin.php:376 src/Admin.php:396
 msgid "Visitor"
 msgstr "Посетитель"
 
-#: src/Admin.php:371
-msgid "Created (UTC)"
-msgstr "Создан (UTC)"
+#: src/Admin.php:376
+msgid "Created"
+msgstr "Создан"
 
-#: src/Admin.php:380
+#: src/Admin.php:385
 msgid "All conversations"
 msgstr "Все диалоги"
 
-#: src/Admin.php:384
+#: src/Admin.php:389
 msgid "Open conversation in Dzen Chat ↗"
 msgstr "Открыть диалог в Dzen Chat ↗"
 
-#: src/Admin.php:388
+#: src/Admin.php:393
 msgid ""
 "The first 100 messages have been loaded. Open Dzen Chat to view the rest."
 msgstr ""
 "Получены первые 100 сообщений. Продолжение пока доступно только в Dzen Chat."
 
-#: src/Admin.php:392
+#: src/Admin.php:397
 msgid "Helpful answer"
 msgstr "Полезный ответ"
 
-#: src/Admin.php:392
+#: src/Admin.php:397
 msgid "Unhelpful answer"
 msgstr "Ответ не помог"
 
-#: src/Admin.php:394
+#: src/Admin.php:399
 msgid "Suggestions"
 msgstr "Подсказки"
 
-#: src/Admin.php:400
+#: src/Admin.php:405
 msgid "Selected by visitor"
 msgstr "Выбрано посетителем"
 
-#: src/Admin.php:405
+#: src/Admin.php:410
 msgid ""
 "Suggestions could not be generated for this answer. Open this conversation "
 "in Dzen Chat for details."
@@ -482,23 +492,23 @@ msgstr ""
 "Не удалось создать подсказки для этого ответа. Подробности доступны в этом "
 "диалоге в Dzen Chat."
 
-#: src/Admin.php:407
+#: src/Admin.php:412
 msgid "No suggestions were saved for this answer."
 msgstr "Для этого ответа нет сохранённых подсказок."
 
-#: src/Admin.php:418
+#: src/Admin.php:423
 msgid "Open original ↗"
 msgstr "Открыть оригинал ↗"
 
-#: src/Admin.php:427 src/Admin.php:434
+#: src/Admin.php:432 src/Admin.php:439
 msgid "Refresh list"
 msgstr "Обновить список"
 
-#: src/Admin.php:428
+#: src/Admin.php:433
 msgid "Connection settings"
 msgstr "Настройки подключения"
 
-#: src/Admin.php:432
+#: src/Admin.php:437
 msgid ""
 "Choose the widget to display across this site. Edit its appearance, messages "
 "and other settings in Dzen Chat."
@@ -506,58 +516,58 @@ msgstr ""
 "Выберите виджет для показа на сайте. Оформление, сообщения и другие "
 "настройки редактируются в Dzen Chat."
 
-#: src/Admin.php:433
+#: src/Admin.php:438
 msgid "Add widget"
 msgstr "Добавить виджет"
 
-#: src/Admin.php:436
+#: src/Admin.php:441
 msgid ""
 "The previously selected widget is no longer available. Select another widget "
 "for this site."
 msgstr ""
 "Выбранный ранее виджет больше недоступен. Выберите другой виджет для сайта."
 
-#: src/Admin.php:441
+#: src/Admin.php:446
 msgid "Available project widgets"
 msgstr "Доступные виджеты проекта"
 
-#: src/Admin.php:442
+#: src/Admin.php:447
 msgid "On site"
 msgstr "На сайте"
 
-#: src/Admin.php:442
+#: src/Admin.php:447
 msgid "Status"
 msgstr "Статус"
 
-#: src/Admin.php:444
+#: src/Admin.php:449
 msgid "No widgets yet. Add your first widget below."
 msgstr "Виджетов пока нет. Добавьте первый виджет ниже."
 
-#: src/Admin.php:452
+#: src/Admin.php:457
 msgid "Selected for this site"
 msgstr "Выбран для этого сайта"
 
-#: src/Admin.php:455
+#: src/Admin.php:460
 msgid "Edit in Dzen Chat ↗"
 msgstr "Настроить в Dzen Chat ↗"
 
-#: src/Admin.php:459
+#: src/Admin.php:464
 msgid "Enabled in Dzen Chat"
 msgstr "Включён в Dzen Chat"
 
-#: src/Admin.php:459
+#: src/Admin.php:464
 msgid "Disabled in Dzen Chat — hidden on the site"
 msgstr "Выключен в Dzen Chat — не показывается на сайте"
 
-#: src/Admin.php:460
+#: src/Admin.php:465
 msgid "Enable it in Dzen Chat before selecting it."
 msgstr "Перед выбором включите виджет в Dzen Chat."
 
-#: src/Admin.php:463
+#: src/Admin.php:468
 msgid "No site-wide widget"
 msgstr "Не показывать общий виджет на сайте"
 
-#: src/Admin.php:464
+#: src/Admin.php:469
 msgid ""
 "In the page or post editor, you can select another widget or hide it on that "
 "page."
@@ -565,23 +575,23 @@ msgstr ""
 "В редакторе страницы или записи можно выбрать другой виджет либо скрыть его "
 "на этой странице."
 
-#: src/Admin.php:465
+#: src/Admin.php:470
 msgid "Save selection"
 msgstr "Сохранить выбор"
 
-#: src/Admin.php:466
+#: src/Admin.php:471
 msgid "Open site to check the widget"
 msgstr "Открыть сайт и проверить виджет"
 
-#: src/Admin.php:467
+#: src/Admin.php:472
 msgid "Help on 404 pages"
 msgstr "Помощь на страницах 404"
 
-#: src/Admin.php:471
+#: src/Admin.php:476
 msgid "Show chat on 404 pages"
 msgstr "Показывать чат на страницах 404"
 
-#: src/Admin.php:472
+#: src/Admin.php:477
 msgid ""
 "Use the selected site-wide widget to invite visitors to ask for help when a "
 "page is not found. The chat opens when they choose Start a conversation. Off "
@@ -591,30 +601,30 @@ msgstr ""
 "сайта виджет. Чат откроется по кнопке «Начать диалог». По умолчанию "
 "выключено."
 
-#: src/Admin.php:474
+#: src/Admin.php:479
 msgid ""
 "Select an enabled site-wide widget above to make chat available on 404 pages."
 msgstr ""
 "Выберите выше включённый виджет для сайта, чтобы чат был доступен на "
 "страницах 404."
 
-#: src/Admin.php:476
+#: src/Admin.php:481
 msgid "Save 404 settings"
 msgstr "Сохранить настройки 404"
 
-#: src/Admin.php:477
+#: src/Admin.php:482
 msgid "Create widget"
 msgstr "Создать виджет"
 
-#: src/Admin.php:479
+#: src/Admin.php:484
 msgid "Name"
 msgstr "Название"
 
-#: src/Admin.php:479
+#: src/Admin.php:484
 msgid "Create"
 msgstr "Создать"
 
-#: src/Admin.php:480
+#: src/Admin.php:485
 msgid ""
 "The new widget is added to this project. Configure it in Dzen Chat, then "
 "select it for this site."
@@ -622,7 +632,7 @@ msgstr ""
 "Новый виджет появится в этом проекте. Настройте его в Dzen Chat, затем "
 "выберите для показа на сайте."
 
-#: src/Admin.php:481
+#: src/Admin.php:486
 msgid ""
 "Before enabling the widget, remove any manually added Dzen Chat script to "
 "prevent it from loading twice."
@@ -630,27 +640,27 @@ msgstr ""
 "Перед включением уберите ранее вставленный вручную скрипт Dzen Chat, чтобы "
 "виджет не загружался дважды."
 
-#: src/Admin.php:490 src/PageIndex.php:85 src/Plugin.php:136 src/Sync.php:126
+#: src/Admin.php:495 src/PageIndex.php:85 src/Plugin.php:136 src/Sync.php:126
 msgid "Reconnect the site in the Dzen Chat section."
 msgstr "Подключите сайт заново в разделе Dzen Chat."
 
-#: src/Admin.php:520
+#: src/Admin.php:525
 msgid "This page does not belong to this site's source."
 msgstr "Страница не относится к источнику этого сайта."
 
-#: src/Admin.php:528
+#: src/Admin.php:533
 msgid "Select a widget or choose no site-wide widget."
 msgstr "Выберите виджет или вариант без общего виджета на сайте."
 
-#: src/Admin.php:534
+#: src/Admin.php:539
 msgid "Enable the widget before placing it on the site."
 msgstr "Сначала включите виджет, затем разместите его на сайте."
 
-#: src/Admin.php:546
+#: src/Admin.php:551
 msgid "Enter a widget name."
 msgstr "Укажите название виджета."
 
-#: src/Admin.php:553
+#: src/Admin.php:558
 msgid "Unknown action."
 msgstr "Неизвестное действие."
 

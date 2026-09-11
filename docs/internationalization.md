@@ -27,6 +27,20 @@ User content and service responses such as widget names, source titles, chat
 messages and diagnostic details retain their original text. The service controls
 the language of its own pages and embedded widget.
 
+## Dates and timezones
+
+Service timestamps are formatted with `wp_date()`, using the site's `date_format`,
+`time_format` and `wp_timezone()` settings. The current WordPress locale supplies
+month names and AM/PM text. Change these preferences under **Settings → General**;
+the plugin does not infer a timezone from the browser or administrator's language.
+
+Conversation creation dates, message times, source reindexing dates and document
+update dates share this formatter. Missing or malformed timestamps display a dash,
+never today's date or a guessed timezone. Service values must include `Z` or an
+explicit UTC offset. Stored data and dates appearing within user content stay intact.
+Conversation date filters use the same local calendar day shown in the table,
+including daylight-saving transitions and fractional UTC offsets.
+
 ## Update an existing translation
 
 Docker Compose and its WordPress CLI image provide extraction and compilation;

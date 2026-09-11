@@ -3,7 +3,7 @@
 Connect your WordPress site to [Dzen Chat](https://chat.dzen.dev), manage chat
 widgets and keep public content available to your AI assistant.
 
-**Version 0.13.0 uses the implemented public API and includes English and Russian
+**Version 0.13.1 uses the implemented public API and includes English and Russian
 interfaces.** Authorize a site, manage real widgets, check source indexing progress,
 inspect sources and knowledge files, and read conversations directly in WordPress.
 Public pages and posts are submitted for reindexing after connection, publication
@@ -39,6 +39,8 @@ background queue → Dzen Chat index → assistant answer using the new informat
   on the service.
 - Use the English interface or the bundled Russian translation, following the
   administrator's WordPress language preference.
+- Read dates and times in the site's WordPress format and timezone. Conversation
+  date filters use the same local calendar day shown in the list.
 
 Changes made through the plugin refresh its widget cache immediately. Changes
 made directly in Dzen Chat are refreshed within five minutes.
@@ -71,6 +73,7 @@ See the [current API contract](docs/contracts/dzen-chat-api.md),
 [0.11.0 exclusion verification](docs/verification/2026-09-11-page-exclusion.md),
 [0.12.0 404 verification](docs/verification/2026-09-11-404-help.md),
 [0.13.0 sources and upload verification](docs/verification/2026-09-11-index-documents.md),
+[0.13.1 date verification](docs/verification/2026-09-11-date-formatting.md),
 [0.4.0 live verification](docs/verification/2026-09-11-full-integration.md),
 [implementation brief](docs/specs/2026-09-11-full-integration.md),
 [authorization verification](docs/verification/2026-09-11-registration.md) and
@@ -190,11 +193,11 @@ To release:
    `Stable tag` and the changelog in `readme.txt`. Use `X.Y.Z`.
 2. Update and compile the [translation catalogs](docs/internationalization.md).
 3. Commit and push the changes; wait for a successful workflow.
-4. Create and push the matching tag, for example `v0.13.0`.
+4. Create and push the matching tag, for example `v0.13.1`.
 5. Download the checked ZIP and checksum from Releases.
 
 Build locally with `make package-test && make package` (Python 3 and Git).
-Version 0.13.0 produces `dist/dzen-chat-0.13.0.zip`. Only Git-tracked runtime files
+Version 0.13.1 produces `dist/dzen-chat-0.13.1.zip`. Only Git-tracked runtime files
 and `src/`, `assets/` and `languages/` are packaged. Stage new runtime and
 language files before building. Fixtures, Docker configuration, local
 certificates and development documentation are excluded.

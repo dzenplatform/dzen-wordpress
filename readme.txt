@@ -3,7 +3,7 @@ Contributors: dzenplatform
 Requires at least: 6.8
 Tested up to: 6.8.2
 Requires PHP: 8.2
-Stable tag: 0.13.0
+Stable tag: 0.13.1
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -79,6 +79,10 @@ language pack if it is not listed. Other languages fall back to English.
 Widget names, site content and conversations retain their original language;
 the Dzen Chat service controls the language of the embedded widget.
 
+Dates and times use the WordPress date format, time format and timezone from
+Settings > General. Month names follow the current interface language. Conversation
+date filters use the same local calendar days as the displayed timestamps.
+
 == Installation ==
 
 1. Upload the ZIP through Plugins > Add New > Upload Plugin and activate it.
@@ -116,6 +120,12 @@ service. Removing keys in WordPress does not revoke the remote API client.
 No. Products require a separate integration.
 
 == Changelog ==
+
+= 0.13.1 =
+Display service timestamps using WordPress date/time settings, locale and site
+timezone. Apply conversation date filters to the displayed local calendar day.
+Show readable reindexing and document update dates on Index. Use a dash for missing
+or invalid timestamps. Preserve stored timestamps and user-written content.
 
 = 0.13.0 =
 Merge Sources into Index. Show progress for the connected site, additional
