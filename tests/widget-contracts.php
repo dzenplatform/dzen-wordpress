@@ -73,7 +73,8 @@ try {
     $check($credentials->get()['auth_type'] === 'external_registration' && !get_option('dzen_chat_verified')
         && !isset($credentials->get()['integration_id']), 'widget tests use real registration-shaped credentials');
     $widget = ['id' => 'widget-one', 'code' => 'fixture-widget', 'name' => 'Widget regression',
-        'is_enabled' => true, 'suggestions_enabled' => true, 'trigger_templates' => [], 'appearance' => (object) []];
+        'is_enabled' => true, 'suggestions_enabled' => true, 'trigger_templates' => [], 'appearance' => (object) [],
+        'edit_url' => 'https://chat.dzen.dev/projects/project-one/widgets/widget-one'];
     update_option('dzen_fixture_widgets', ['widget-one' => $widget], false);
     update_option('dzen_fixture_scenario', 'normal');
     update_option('dzen_chat_widget', 'widget-one', false);
@@ -120,12 +121,21 @@ try {
     update_post_meta($post, '_dzen_chat_widget_disabled', '1');
     $check($render($post) === ['script' => null, 'html' => ''], 'page exclusion suppresses the widget');
     delete_post_meta($post, '_dzen_chat_widget_disabled');
-    $override = array_replace($widget, ['id' => 'override-widget', 'code' => 'override-code']);
+    $override = array_replace($widget, ['id' => 'override-widget', 'code' => 'override-code',
+        'edit_url' => 'https://chat.dzen.dev/projects/project-one/widgets/override-widget']);
     update_option('dzen_fixture_widgets', ['widget-one' => $widget, 'override-widget' => $override], false);
     update_post_meta($post, '_dzen_chat_widget', 'override-widget');
     $check($render($post)['script']?->src === 'https://chat.dzen.dev/widget/override-code', 'page selection overrides the site widget');
     $all = $widgets->all();
     $check(count($all) === 2 && end($requests)['url'] === 'https://chat.dzen.dev/api/widgets', 'list uses complete non-paginated API');
+    $check($all['widget-one']['edit_url'] === $widget['edit_url'], 'project editor URL is retained for browser navigation');
+    foreach (['https://elsewhere.example/projects/project-one/widgets/widget-one',
+        'https://chat.dzen.dev/projects/project-one/widgets/foreign-widget',
+        $widget['edit_url'] . '?client_secret=unexpected', 'javascript:alert(1)'] as $unsafe) {
+        update_option('dzen_fixture_widgets', ['widget-one' => array_replace($widget, ['edit_url' => $unsafe])], false);
+        $check(!isset($widgets->get('widget-one')['edit_url']), 'unsafe or mismatched editor URL is omitted');
+    }
+    update_option('dzen_fixture_widgets', ['widget-one' => $widget, 'override-widget' => $override], false);
     $result = $submit(['operation' => 'widget_toggle', 'id' => 'widget-one', 'enabled' => '0', 'version' => '123']);
     $check(isset($result['redirect']) && json_decode(end($requests)['args']['body'], true) === ['is_enabled' => false], 'toggle sends only supported boolean');
     $check($render()['script'] === null, 'confirmed toggle immediately invalidates public enablement');
@@ -144,6 +154,9 @@ try {
     $check(count($widgets->all()) === 3, 'created widget appears in fresh list');
     $result = $submit(['operation' => 'widget_select', 'id' => 'override-widget']);
     $check(isset($result['redirect']) && get_option('dzen_chat_widget') === 'override-widget', 'selection verifies the widget with server');
+    $result = $submit(['operation' => 'widget_select']);
+    $check(($result['status'] ?? 0) === 400 && get_option('dzen_chat_widget') === 'override-widget',
+        'missing radio choice does not silently remove the selected widget');
     $result = $submit(['operation' => 'widget_select', 'id' => 'foreign-widget']);
     $check(isset($result['error']) && get_option('dzen_chat_widget') === 'override-widget', 'failed selection preserves previous widget');
     update_option('dzen_fixture_scenario', 'unconfirmed');
@@ -163,8 +176,10 @@ try {
     ob_start();
     $admin->page();
     $html = ob_get_clean();
-    $check(str_contains($html, 'name="suggestions_enabled"') && !str_contains($html, 'name="welcome"')
-        && !str_contains($html, 'name="version"'), 'admin exposes supported widget fields only');
+    $check(substr_count($html, 'type="radio"') === 4 && substr_count($html, 'class="dzen-widget-selected"') === 1
+        && str_contains($html, 'value="override-widget" required checked='), 'all widgets and an explicit none option are shown with the saved choice');
+    $check(str_contains($html, 'href="' . $override['edit_url'] . '" target="_blank" rel="noopener noreferrer"')
+        && !str_contains($html, 'name="suggestions_enabled"'), 'widget settings open their project editor instead of an inline settings form');
     $check(!str_contains($html, 'fixture-secret') && !str_contains($html, 'Bearer '), 'admin does not expose credentials');
     ob_start();
     $plugin->metaBox(get_post($post));

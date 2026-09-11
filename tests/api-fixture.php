@@ -10,7 +10,8 @@ function dzen_fixture_widgets(): array
     return get_option('dzen_fixture_widgets', ['widget-one' => ['id' => 'widget-one',
         'code' => 'fixture-widget', 'name' => 'Помощник сайта',
         'is_enabled' => true, 'suggestions_enabled' => true,
-        'trigger_templates' => [], 'appearance' => (object) []]]);
+        'trigger_templates' => [], 'appearance' => (object) [],
+        'edit_url' => 'https://chat.dzen.dev/projects/project-one/widgets/widget-one']]);
 }
 
 // Only this local MU plugin substitutes the public embed transport.
@@ -78,7 +79,8 @@ add_filter('pre_http_request', static function ($pre, $args, $url) {
         if (array_keys($body) !== ['name']) throw new RuntimeException('Create accepts name only');
         $id = 'widget-' . wp_generate_uuid4();
         $widgets[$id] = ['id' => $id, 'code' => 'fixture-' . wp_generate_uuid4(), 'name' => $body['name'],
-            'is_enabled' => true, 'suggestions_enabled' => true, 'trigger_templates' => [], 'appearance' => (object) []];
+            'is_enabled' => true, 'suggestions_enabled' => true, 'trigger_templates' => [], 'appearance' => (object) [],
+            'edit_url' => 'https://chat.dzen.dev/projects/project-one/widgets/' . $id];
         update_option('dzen_fixture_widgets', $widgets, false);
         return $reply($widgets[$id], 201);
     }

@@ -8,6 +8,12 @@ This contract replaces the Integration API v1 proposal from version 0.1.
 Routes have no version number, scopes or HMAC signature. Version 0.5 adds
 localization without changing this API contract.
 
+Version 0.6 adds the widget selection list and accepts an optional `edit_url`
+on widget responses. The current local server does not supply that field yet;
+the required addition is described in [widget editor links](widget-editor-links.md).
+Without it, the plugin opens the service dashboard instead of inventing a
+project identifier or editor URL.
+
 ## Registration and transport
 
 `GET /auth/add` receives `type=wordpress`, HTTPS `site_url`,

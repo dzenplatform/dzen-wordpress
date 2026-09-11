@@ -26,7 +26,14 @@ final class Widgets
             || ($id !== null && $data['id'] !== $id)) {
             return new \WP_Error('dzen_widget_protocol', __('The service returned invalid widget data. Refresh the list.', 'dzen-chat'));
         }
-        return array_intersect_key($data, array_flip(['id', 'code', 'name', 'is_enabled', 'suggestions_enabled']));
+        $widget = array_intersect_key($data, array_flip(['id', 'code', 'name', 'is_enabled', 'suggestions_enabled']));
+        // Editor links are browser navigation only. Never accept credentials or another origin.
+        if (is_string($data['edit_url'] ?? null)
+            && preg_match('~^' . preg_quote(Api::origin(), '~') . '/projects/[A-Za-z0-9_-]+/widgets/'
+                . preg_quote($widget['id'], '~') . '$~D', $data['edit_url'])) {
+            $widget['edit_url'] = $data['edit_url'];
+        }
+        return $widget;
     }
 
     private function remember(array $widget): void

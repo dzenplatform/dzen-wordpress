@@ -3,7 +3,7 @@ Contributors: dzenplatform
 Requires at least: 6.8
 Tested up to: 6.8.2
 Requires PHP: 8.2
-Stable tag: 0.5.1
+Stable tag: 0.6.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -16,10 +16,11 @@ opens its consent page to choose or create a project. WordPress exchanges the
 one-time code server-to-server and stores encrypted credentials and the site
 source identifier. Credentials are never exposed in page HTML or JavaScript.
 
-Create, rename, enable or disable widgets and configure follow-up suggestions
-from WordPress. Choose a widget for the site, select a different widget for a
-page or post, or hide it on that page. Widget settings apply to the Dzen Chat
-project; placement settings apply to this WordPress site.
+View all project widgets and create new ones from WordPress. Choose a widget
+for the site, select a different widget for a page or post, or hide it on that
+page. Open widget settings in Dzen Chat; direct editor links require the service
+to supply editor URLs. Widget settings apply to the Dzen Chat project; placement
+settings apply to this WordPress site.
 
 Public pages and posts are submitted for reindexing on connection, publication
 and changes. A background queue retries temporary failures. WordPress sends
@@ -54,7 +55,7 @@ the Dzen Chat service controls the language of the embedded widget.
 2. Open Dzen Chat and connect your site. HTTPS and PHP sodium are required.
 3. Choose or create a project at chat.dzen.dev and return to WordPress.
 4. WordPress confirms authorization after exchanging the returned code.
-5. Open Dzen Chat > Widgets, enable a widget and choose Place on site.
+5. Open Dzen Chat > Widgets, select an enabled widget and click Save selection.
 6. Open a public page to check the widget. Page/post overrides are in the editor.
 7. Check Index, Sources and Conversations. Scheduled synchronization needs
    working WP-Cron or a system scheduler running WordPress due events.
@@ -62,8 +63,8 @@ the Dzen Chat service controls the language of the embedded widget.
 == Frequently Asked Questions ==
 
 = Why did enabling a widget not place it on my site? =
-Enabling controls the widget for the whole Dzen Chat project. Choose Place on
-site to select it for WordPress. Page-level exclusions can hide the widget.
+Enabling controls the widget for the whole Dzen Chat project. Select it in
+WordPress and click Save selection. Page-level exclusions can hide the widget.
 Changes made directly in Dzen Chat are refreshed by WordPress within five minutes.
 
 = Can I hide or delete conversations? =
@@ -84,6 +85,12 @@ service. Removing keys in WordPress does not revoke the remote API client.
 No. Products require a separate integration.
 
 == Changelog ==
+
+= 0.6.0 =
+List project widgets in a compact table with an explicit site-wide selection.
+Add widgets without leaving WordPress. Open widget settings in Dzen Chat using
+editor URLs supplied by the service; older responses open the service dashboard.
+Keep page and post overrides and include English and Russian interface strings.
 
 = 0.5.1 =
 Keep the chat window below the WordPress toolbar so its close button stays

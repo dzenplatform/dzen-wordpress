@@ -9,3 +9,20 @@
 .dzen-chat table { margin-top: 20px; }
 .dzen-chat td { vertical-align: top; }
 .dzen-chat a:focus-visible { outline: 2px solid #2271b1; outline-offset: 2px; }
+.dzen-widget-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 16px 0; }
+.dzen-widgets { table-layout: fixed; }
+.dzen-widgets th, .dzen-widgets td { padding: 14px 12px; vertical-align: top; overflow-wrap: anywhere; }
+.dzen-widgets .dzen-widget-choice { width: 60px; }
+.dzen-widgets .dzen-widget-status { width: 170px; }
+.dzen-widget-name { display: block; font-weight: 600; }
+.dzen-widgets .dzen-widget-selected { background: #f0f6fc; }
+.dzen-widgets .dzen-widget-current { color: #135e96; font-weight: 600; margin: 6px 0; }
+.dzen-widgets .dzen-widget-settings { font-weight: 400; margin: 8px 0 0; }
+.dzen-widget-create { display: flex; align-items: end; gap: 12px; flex-wrap: wrap; }
+.dzen-widget-create label { display: grid; gap: 6px; }
+.dzen-widget-create input { max-width: 100%; }
+@media (max-width: 782px) {
+    .dzen-widgets .dzen-widget-choice { width: 44px; }
+    .dzen-widgets .dzen-widget-status { width: 110px; }
+    .dzen-widgets th, .dzen-widgets td { padding: 12px 8px; }
+}
