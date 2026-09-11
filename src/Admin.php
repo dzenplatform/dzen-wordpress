@@ -69,6 +69,7 @@ final class Admin
         if (isset($result['date_from'], $result['date_to']) && $result['date_from'] > $result['date_to']) {
             return new \WP_Error('filter', __('The start date must be on or before the end date.', 'dzen-chat'));
         }
+        if (self::input('hide_empty', $input) === '1') $result['hide_empty'] = '1';
         return $result;
     }
 
@@ -370,9 +371,11 @@ final class Admin
         if ($id !== '') { $this->chat($id); return; }
         $filters = self::filters($_GET);
         if (is_wp_error($filters)) { $this->error($filters); return; }
-        $items = $this->api->items('/chats', ['limit' => 100]);
+        $query = ['limit' => 100];
+        if (isset($filters['hide_empty'])) $query['hide_empty'] = '1';
+        $items = $this->api->items('/chats', $query);
         if (is_wp_error($items)) { $this->error($items); return; }
-        echo '<p>' . esc_html__('Filters apply to the 100 most recent conversations. Full history text search and hiding conversations are not yet available.', 'dzen-chat') . '</p>';
+        echo '<p>' . esc_html__('Showing up to 100 recent conversations. ID, date and widget filters apply to this list.', 'dzen-chat') . '</p>';
         // Translators: %s is the WordPress site timezone, such as Europe/Sofia or +03:00.
         echo '<p class="description">' . esc_html(sprintf(__('Dates and times use the WordPress site timezone (%s).', 'dzen-chat'), wp_timezone_string())) . '</p>';
         echo '<form method="get" class="dzen-filters"><input type="hidden" name="page" value="dzen-chat-history">';
@@ -385,7 +388,9 @@ final class Admin
         if (!is_wp_error($widgets)) foreach ($widgets as $widget) {
             echo '<option value="' . esc_attr(self::text($widget, 'code')) . '"' . selected($filters['widget_code'] ?? '', self::text($widget, 'code'), false) . '>' . esc_html(self::text($widget, 'name')) . '</option>';
         }
-        echo '</select></label><button class="button">' . esc_html__('Apply', 'dzen-chat') . '</button></form>';
+        echo '</select></label>';
+        echo '<label class="dzen-filter-checkbox"><input type="checkbox" name="hide_empty" value="1"' . checked(isset($filters['hide_empty']), true, false) . '> ' . esc_html__('Hide empty conversations', 'dzen-chat') . '</label>';
+        echo '<button class="button">' . esc_html__('Apply', 'dzen-chat') . '</button></form>';
         $items = array_filter($items, static function ($item) use ($filters) {
             $date = Dates::day($item['created_at'] ?? null);
             if ($date === null && (isset($filters['date_from']) || isset($filters['date_to']))) return false;

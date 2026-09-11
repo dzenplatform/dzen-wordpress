@@ -180,7 +180,7 @@ add_filter('pre_http_request', static function ($pre, $args, $url) {
         foreach ($files as $item) if ($path === '/api/files/' . $item['id']) return $reply($item);
     }
     if ($path === '/api/chats') {
-        if (array_diff(array_keys($query), ['limit'])) throw new RuntimeException('Chat query does not support these fields');
+        if (array_diff(array_keys($query), ['limit', 'hide_empty'])) throw new RuntimeException('Chat query does not support these fields');
         return $reply(['items' => [$chat]]);
     }
     if ($path === '/api/chats/chat-one') return $reply($chat);

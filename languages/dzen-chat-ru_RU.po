@@ -405,11 +405,9 @@ msgstr "Переписка хранится в Dzen Chat."
 
 #: src/Admin.php:353
 msgid ""
-"Filters apply to the 100 most recent conversations. Full history text search "
-"and hiding conversations are not yet available."
+"Showing up to 100 recent conversations. ID, date and widget filters apply to this list."
 msgstr ""
-"Фильтры применяются к 100 последним диалогам. Поиск по тексту всей истории и "
-"скрытие пока недоступны."
+"Показаны до 100 последних диалогов. Фильтры по ID, дате и виджету применяются к этому списку."
 
 #. Translators: %s is the WordPress site timezone, such as Europe/Sofia or +03:00.
 #: src/Admin.php:355
@@ -436,6 +434,9 @@ msgstr "Виджет"
 #: src/Admin.php:361
 msgid "All widgets"
 msgstr "Все виджеты"
+
+msgid "Hide empty conversations"
+msgstr "Скрывать пустые диалоги"
 
 #: src/Admin.php:366
 msgid "Apply"

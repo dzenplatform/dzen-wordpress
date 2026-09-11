@@ -62,7 +62,7 @@ try {
         'dzen-chat' => ['This site is connected to Dzen Chat', 'Сайт авторизован в Dzen Chat'],
         'dzen-chat-widgets' => ['Create widget', 'Создать виджет'],
         'dzen-chat-documents' => ['Refresh status', 'Обновить статус'],
-        'dzen-chat-history' => ['Conversation or visitor ID', 'ID диалога или посетителя'],
+        'dzen-chat-history' => ['Hide empty conversations', 'Скрывать пустые диалоги'],
     ];
     foreach (['en_US' => 0, 'ru_RU' => 1] as $locale => $index) {
         $switched = $switcher->switch_to_locale($locale);

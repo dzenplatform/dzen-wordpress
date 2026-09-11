@@ -17,18 +17,50 @@ $render = static function () use ($admin) {
     $admin->page();
     return ob_get_clean();
 };
+$renderList = static function (array $query = []) use ($admin) {
+    $_GET = ['page' => 'dzen-chat-history'] + $query;
+    ob_start();
+    try { $admin->page(); return ob_get_contents(); }
+    finally { ob_end_clean(); }
+};
 $chat = $api->conversation('chat-one');
 $messages = $api->conversationMessages('chat-one');
-$overrideChat = $overrideMessages = null;
+$overrideChat = $overrideMessages = $overrideList = null;
 $requests = [];
-$modify = static function ($pre, $args, $url) use (&$overrideChat, &$overrideMessages, &$requests) {
+$modify = static function ($pre, $args, $url) use (&$overrideChat, &$overrideMessages, &$overrideList, &$requests) {
     $requests[] = ['url' => $url, 'method' => $args['method']];
+    if ($overrideList !== null && wp_parse_url($url, PHP_URL_PATH) === '/api/chats') $pre['body'] = wp_json_encode(['items' => $overrideList]);
     if ($overrideChat !== null && str_ends_with($url, '/chats/chat-one')) $pre['body'] = wp_json_encode($overrideChat);
     if ($overrideMessages !== null && str_contains($url, '/chats/chat-one/messages')) $pre['body'] = wp_json_encode(['items' => $overrideMessages]);
     return $pre;
 };
 add_filter('pre_http_request', $modify, 11, 3);
 try {
+    $empty = array_replace($chat, ['id' => 'empty-chat']);
+    $overrideList = [$chat, $empty];
+    $requests = [];
+    $html = $renderList();
+    $check(str_contains($html, 'chat=empty-chat') && str_contains($html, 'chat=chat-one')
+        && !str_contains($requests[0]['url'], 'hide_empty'), 'empty conversations remain visible until the filter is selected');
+    $overrideList = [$chat];
+    $requests = [];
+    $html = $renderList(['hide_empty' => '1', 'q' => $chat['visitor'], 'widget_code' => $chat['widget_code'],
+        'date_from' => '2026-09-11', 'date_to' => '2026-09-11']);
+    $check($requests[0]['url'] === 'https://chat.dzen.dev/api/chats?hide_empty=1&limit=100'
+        && str_contains($html, 'chat=chat-one') && !str_contains($html, 'chat=empty-chat'),
+        'server-side empty filter combines with ID, date and widget filters');
+    $check(str_contains($html, 'name="hide_empty" value="1" checked=') && str_contains($html, 'Hide empty conversations'),
+        'empty filter stays checked after Apply');
+    $check(count($requests) === 2 && !array_filter($requests, static fn ($request) => str_contains($request['url'], '/messages')),
+        'filtering does not fetch every conversation history');
+    $overrideList = [$chat, $empty];
+    $requests = [];
+    $check(str_contains($renderList(['hide_empty' => '0']), 'chat=empty-chat')
+        && !str_contains($requests[0]['url'], 'hide_empty'), 'turning the filter off restores empty conversations');
+    $overrideList = [];
+    $check(str_contains($renderList(['hide_empty' => '1']), 'No results in the loaded set.'),
+        'a list with no non-empty conversations shows the empty result state');
+    $overrideList = null;
     $html = $render();
     $check(str_contains($html, 'class="dzen-conversation-heading"')
         && str_contains($html, 'href="https://chat.dzen.dev/projects/project-one/history/chat-one"')
