@@ -191,8 +191,10 @@ try {
     $check(!get_option('dzen_chat_verified') && !array_filter($requests, static fn ($r) => str_contains($r['url'], '/api/v1/')),
         'widgets do not activate future APIs or query invented project status');
     delete_option('dzen_chat_404_enabled');
-    $check($render(0, true) === ['script' => null, 'html' => '']
-        && !wp_style_is('dzen-chat-not-found', 'enqueued'), '404 widget and invitation are opt-in');
+    $output = $render(0, true);
+    $check($output['script'] !== null && str_contains($output['html'], 'id="dzen-chat-not-found"')
+        && wp_style_is('dzen-chat-not-found', 'enqueued'), '404 widget and invitation are enabled when no preference is saved');
+    update_option('dzen_chat_404_enabled', false);
     $check($render()['script'] !== null, 'disabling 404 help does not hide the widget on ordinary pages');
     $before = count($requests);
     $result = $submit(['operation' => 'widget_404', 'enabled' => '1', '_wpnonce' => 'wrong']);

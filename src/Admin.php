@@ -489,8 +489,8 @@ final class Admin
         echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
         wp_nonce_field('dzen_chat_action');
         echo '<input type="hidden" name="action" value="dzen_chat_action"><input type="hidden" name="operation" value="widget_404">';
-        echo '<p><label><input type="checkbox" name="enabled" value="1"' . checked((bool) get_option('dzen_chat_404_enabled', false), true, false) . '> ' . esc_html__('Show chat on 404 pages', 'dzen-chat') . '</label></p>';
-        echo '<p class="description">' . esc_html__('Use the selected site-wide widget to invite visitors to ask for help when a page is not found. The chat opens when they choose Start a conversation. Off by default.', 'dzen-chat') . '</p>';
+        echo '<p><label><input type="checkbox" name="enabled" value="1"' . checked((bool) get_option('dzen_chat_404_enabled', true), true, false) . '> ' . esc_html__('Show chat on 404 pages', 'dzen-chat') . '</label></p>';
+        echo '<p class="description">' . esc_html__('Use the selected site-wide widget to invite visitors to ask for help when a page is not found. The chat opens when they choose Start a conversation. Enabled by default.', 'dzen-chat') . '</p>';
         if ($selected === '' || empty($widgets[$selected]['is_enabled'])) {
             echo '<p>' . esc_html__('Select an enabled site-wide widget above to make chat available on 404 pages.', 'dzen-chat') . '</p>';
         }

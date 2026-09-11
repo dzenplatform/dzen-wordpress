@@ -22,10 +22,10 @@ page. Open each widget's settings directly in Dzen Chat. Widget settings apply t
 the Dzen Chat project; placement
 settings apply to this WordPress site.
 
-In Dzen Chat > Widgets, enable Show chat on 404 pages and save the 404 settings
-to offer help when a page is not found. This uses the selected site-wide widget.
+The selected site-wide widget offers help on 404 pages by default.
 Visitors can dismiss the invitation or choose Start a conversation to open chat.
-The setting is off by default. The page keeps its HTTP 404 status and theme layout.
+To disable it, clear Show chat on 404 pages in Dzen Chat > Widgets and save the
+404 settings. The page keeps its HTTP 404 status and theme layout.
 
 Public pages and posts are submitted for reindexing on connection, publication
 and changes. A background queue retries temporary failures. WordPress sends

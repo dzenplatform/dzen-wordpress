@@ -62,7 +62,7 @@ final class Plugin
 
     public function widget(): void
     {
-        if (is_404() && !get_option('dzen_chat_404_enabled', false)) {
+        if (is_404() && !get_option('dzen_chat_404_enabled', true)) {
             return;
         }
         $credentials = new Credentials();
@@ -104,7 +104,7 @@ final class Plugin
         if (!is_admin() && wp_script_is('dzen-chat-widget', 'enqueued')) {
             // The Dzen loader requires this mount point before its script runs.
             echo '<div id="chat-chat"></div>';
-            if (is_404() && get_option('dzen_chat_404_enabled', false)) {
+            if (is_404() && get_option('dzen_chat_404_enabled', true)) {
                 self::notFoundInvitation();
             }
         }

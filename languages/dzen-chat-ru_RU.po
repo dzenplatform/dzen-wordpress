@@ -597,12 +597,12 @@ msgstr "Показывать чат на страницах 404"
 #: src/Admin.php:477
 msgid ""
 "Use the selected site-wide widget to invite visitors to ask for help when a "
-"page is not found. The chat opens when they choose Start a conversation. Off "
+"page is not found. The chat opens when they choose Start a conversation. Enabled "
 "by default."
 msgstr ""
 "Если страница не найдена, предложить посетителю помощь через выбранный для "
 "сайта виджет. Чат откроется по кнопке «Начать диалог». По умолчанию "
-"выключено."
+"включено."
 
 #: src/Admin.php:479
 msgid ""
