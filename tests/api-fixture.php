@@ -179,6 +179,14 @@ add_filter('pre_http_request', static function ($pre, $args, $url) {
     if (str_starts_with($path, '/api/files/')) {
         foreach ($files as $item) if ($path === '/api/files/' . $item['id']) return $reply($item);
     }
+    if ($path === '/api/feedback' && $method === 'GET') {
+        if (array_diff(array_keys($query), ['limit'])) throw new RuntimeException('Feedback query only supports limit');
+        return $reply(['items' => [array_replace($chat, ['feedback' => [
+            'rating' => 4, 'selected' => ['solved_my_problem', 'quick_answer'],
+            'text' => "I found the delivery details I needed.\nA helpful explanation.",
+            'submitted_at' => '2026-09-11T01:05:00.123456Z',
+        ]])]]);
+    }
     if ($path === '/api/chats') {
         if (array_diff(array_keys($query), ['limit', 'hide_empty'])) throw new RuntimeException('Chat query does not support these fields');
         return $reply(['items' => [$chat]]);

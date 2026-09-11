@@ -63,6 +63,7 @@ try {
         'dzen-chat-widgets' => ['Create widget', 'Создать виджет'],
         'dzen-chat-documents' => ['Refresh status', 'Обновить статус'],
         'dzen-chat-history' => ['Hide empty conversations', 'Скрывать пустые диалоги'],
+        'dzen-chat-feedback' => ['Feedback', 'Отзывы'],
     ];
     foreach (['en_US' => 0, 'ru_RU' => 1] as $locale => $index) {
         $switched = $switcher->switch_to_locale($locale);
@@ -109,6 +110,12 @@ try {
             'conversation suggestions and details link use ' . $locale);
         $check(str_contains($html, 'Можно ли изменить адрес?') && str_contains($html, '&lt;script&gt;')
             && !str_contains($html, '<script>'), 'user content is preserved and escaped in ' . $locale);
+        $_GET = ['page' => 'dzen-chat-feedback'];
+        $feedbackHtml = $capture([$admin, 'page']);
+        $check(str_contains($feedbackHtml, $index ? 'Оценка: 4 из 5' : 'Rating: 4 out of 5')
+            && str_contains($feedbackHtml, $index ? 'Решил мою проблему' : 'Solved my problem')
+            && str_contains($feedbackHtml, $index ? 'Открыть диалог в WordPress' : 'Open conversation in WordPress'),
+            'feedback rating, reasons and navigation use ' . $locale);
         if ($switched) $switcher->restore_previous_locale();
     }
     $check($switcher->switch_to_locale('de_DE') && __('Widgets', 'dzen-chat') === 'Widgets',

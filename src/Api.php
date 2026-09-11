@@ -192,6 +192,29 @@ final class Api
         return $result;
     }
 
+    public function feedback(): array|\WP_Error
+    {
+        $items = $this->items('/feedback', ['limit' => 100]);
+        if (is_wp_error($items)) return $items;
+        $invalid = new \WP_Error('dzen_feedback_protocol', __('The service returned invalid feedback. Refresh the page.', 'dzen-chat'));
+        foreach ($items as $chat) {
+            $feedback = $chat['feedback'] ?? null;
+            if (!is_string($chat['id']) || !preg_match('/^[A-Za-z0-9_-]+$/D', $chat['id'])
+                || !is_string($chat['visitor'] ?? null) || !is_array($feedback)
+                || !is_int($feedback['rating'] ?? null) || $feedback['rating'] < 1 || $feedback['rating'] > 5
+                || !is_array($feedback['selected'] ?? []) || !array_is_list($feedback['selected'] ?? [])
+                || !is_string($feedback['text'] ?? '')
+                || (isset($feedback['submitted_at']) && !is_string($feedback['submitted_at']))
+                || !is_string($chat['details_url'] ?? null)
+                || !preg_match('~^' . preg_quote(self::origin(), '~') . '/projects/[A-Za-z0-9_-]+/history/'
+                    . preg_quote($chat['id'], '~') . '$~D', $chat['details_url'])) return $invalid;
+            foreach ($feedback['selected'] ?? [] as $reason) {
+                if (!is_string($reason) || trim($reason) === '') return $invalid;
+            }
+        }
+        return $items;
+    }
+
     public function conversation(string $id): array|\WP_Error
     {
         $chat = $this->request('GET', '/chats/' . self::segment($id));

@@ -35,7 +35,8 @@ final class Admin
     {
         add_menu_page('Dzen Chat', 'Dzen Chat', 'manage_options', 'dzen-chat', [$this, 'page'], 'dashicons-format-chat', 58);
         foreach (['dzen-chat' => __('Overview', 'dzen-chat'), 'dzen-chat-widgets' => __('Widgets', 'dzen-chat'),
-            'dzen-chat-documents' => __('Index', 'dzen-chat'), 'dzen-chat-history' => __('Conversations', 'dzen-chat')] as $slug => $title) {
+            'dzen-chat-documents' => __('Index', 'dzen-chat'), 'dzen-chat-history' => __('Conversations', 'dzen-chat'),
+            'dzen-chat-feedback' => __('Feedback', 'dzen-chat')] as $slug => $title) {
             add_submenu_page('dzen-chat', $title, $title, 'manage_options', $slug, [$this, 'page']);
         }
     }
@@ -131,6 +132,7 @@ final class Admin
                     'dzen-chat-widgets' => $this->widgets(),
                     'dzen-chat-documents' => $this->documents(),
                     'dzen-chat-history' => $this->history(),
+                    'dzen-chat-feedback' => $this->feedback(),
                     default => $this->overview(),
                 };
             } catch (\RuntimeException | \JsonException $error) {
@@ -405,6 +407,50 @@ final class Admin
             echo '<tr><td><a href="' . esc_url(self::url('dzen-chat-history', ['chat' => $chat['id']])) . '">' . esc_html(self::text($chat, 'id')) . '</a></td><td>' . esc_html(self::text($chat, 'visitor')) . '</td><td>' . esc_html(Dates::format($chat['created_at'] ?? null)) . '</td></tr>';
         }
         echo '</tbody></table>';
+    }
+
+    private function feedback(): void
+    {
+        echo '<div class="dzen-feedback-heading"><h2>' . esc_html__('Feedback', 'dzen-chat') . '</h2>';
+        echo '<a class="button" href="' . esc_url(self::url('dzen-chat-feedback')) . '"><span class="dashicons dashicons-update" aria-hidden="true"></span>' . esc_html__('Refresh list', 'dzen-chat') . '</a></div>';
+        echo '<p>' . esc_html__('Review ratings and comments submitted by visitors in Dzen Chat.', 'dzen-chat') . '</p>';
+        $items = $this->api->feedback();
+        if (is_wp_error($items)) { $this->error($items); return; }
+        if (!$items) {
+            echo '<p>' . esc_html__('No feedback yet.', 'dzen-chat') . '</p>';
+            return;
+        }
+        echo '<p>' . esc_html__('Showing up to 100 conversations with feedback.', 'dzen-chat') . '</p>';
+        // Translators: %s is the WordPress site timezone, such as Europe/Sofia or +03:00.
+        echo '<p class="description">' . esc_html(sprintf(__('Dates and times use the WordPress site timezone (%s).', 'dzen-chat'), wp_timezone_string())) . '</p>';
+        $reasons = [
+            'solved_my_problem' => __('Solved my problem', 'dzen-chat'),
+            'detailed_answer' => __('Detailed answer', 'dzen-chat'),
+            'quick_answer' => __('Quick answer', 'dzen-chat'),
+            'natural_tone' => __('Natural tone', 'dzen-chat'),
+            'other' => __('Other', 'dzen-chat'),
+        ];
+        foreach ($items as $chat) {
+            $feedback = $chat['feedback'];
+            $rating = $feedback['rating'];
+            echo '<article class="dzen-message dzen-feedback"><div class="dzen-feedback-heading"><h3>';
+            // Translators: %d is the visitor's rating, from 1 to 5.
+            echo '<span class="screen-reader-text">' . esc_html(sprintf(__('Rating: %d out of 5', 'dzen-chat'), $rating)) . '</span>';
+            echo '<span class="dzen-feedback-stars" aria-hidden="true">' . esc_html(str_repeat('★', $rating) . str_repeat('☆', 5 - $rating)) . '</span></h3>';
+            echo '<p class="description">' . esc_html__('Submitted:', 'dzen-chat') . ' ' . esc_html(Dates::format($feedback['submitted_at'] ?? null)) . '</p></div>';
+            if (!empty($feedback['selected'])) {
+                echo '<ul class="dzen-feedback-reasons">';
+                foreach ($feedback['selected'] as $reason) echo '<li>' . esc_html($reasons[$reason] ?? $reason) . '</li>';
+                echo '</ul>';
+            }
+            $comment = trim($feedback['text'] ?? '');
+            echo $comment !== '' ? '<p class="dzen-text">' . esc_html($comment) . '</p>'
+                : '<p class="description">' . esc_html__('No comment provided.', 'dzen-chat') . '</p>';
+            echo '<p class="description">' . esc_html__('Visitor', 'dzen-chat') . ': ' . esc_html($chat['visitor']) . '</p>';
+            echo '<div class="dzen-reference"><a href="' . esc_url(self::url('dzen-chat-history', ['chat' => $chat['id']])) . '">' . esc_html__('Open conversation in WordPress', 'dzen-chat') . '</a>';
+            $this->external($chat['details_url'], __('Open conversation in Dzen Chat ↗', 'dzen-chat'));
+            echo '</div></article>';
+        }
     }
 
     private function chat(string $id): void

@@ -8,6 +8,15 @@
 .dzen-message h3, .dzen-source h3 { margin-top: 0; }
 .dzen-text { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.7; max-width: 90ch; }
 .dzen-reference { margin-top: 16px; padding-top: 12px; border-top: 1px solid #dcdcde; display: flex; flex-wrap: wrap; gap: 12px; }
+.dzen-feedback { max-width: 780px; overflow-wrap: anywhere; }
+.dzen-feedback-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px 20px; margin-top: 16px; }
+.dzen-feedback-heading h2, .dzen-feedback-heading h3, .dzen-feedback-heading p { margin: 0; }
+.dzen-feedback-heading .button { display: inline-flex; align-items: center; gap: 4px; }
+.dzen-feedback-heading .dashicons { width: 16px; height: 16px; font-size: 16px; }
+.dzen-feedback .dzen-feedback-heading { margin-top: 0; }
+.dzen-feedback-stars { color: #996800; font-size: 22px; letter-spacing: 2px; }
+.dzen-feedback-reasons { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; }
+.dzen-feedback-reasons li { margin: 0; padding: 4px 10px; border-radius: 4px; background: #f0f6fc; color: #135e96; }
 .dzen-conversation-heading { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 12px 24px; margin: 20px 0; }
 .dzen-conversation-heading h3 { margin: 0; overflow-wrap: anywhere; }
 .dzen-conversation-heading > a { margin-left: auto; }
