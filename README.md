@@ -1,264 +1,45 @@
 # Dzen Chat for WordPress
 
-Connect your WordPress site to [Dzen Chat](https://chat.dzen.dev), manage chat
-widgets and keep public content available to your AI assistant.
-
-**Version 0.13.1 uses the implemented public API and includes English and Russian
-interfaces.** Authorize a site, manage real widgets, check source indexing progress,
-inspect sources and knowledge files, and read conversations directly in WordPress.
-Public pages and posts are submitted for reindexing after connection, publication
-and changes. The complete update flow has been verified locally: edited content →
-background queue → Dzen Chat index → assistant answer using the new information.
+Add an AI assistant to your WordPress site with Dzen Chat. Help visitors find
+answers in your website content and knowledge base, and manage the integration
+from WordPress.
 
 ## Features
 
-- View all project widgets in one list and create new widgets in WordPress.
-- Open the settings of each widget directly in Dzen Chat.
-- Select a widget for the whole site, choose another for a page or post, or hide
-  it on that page. Widget settings apply to the Dzen Chat project; placement
-  applies to this WordPress site.
-- Offer chat help on 404 pages through an optional setting. Visitors can start
-  a conversation with the selected widget or dismiss the invitation.
-- Synchronize public pages and posts through a persistent background queue.
-- Check indexing progress for the connected site and additional sources on one
-  **Index** screen, with counts of pending,
-  processing, ready, failed and excluded pages. Open detailed source settings in
-  Dzen Chat or refresh the status in WordPress.
-- See each page's indexing status above widget settings in the editor. The status
-  refreshes after saving or on demand, and distinguishes WordPress submission
-  from Dzen Chat processing. Draft and protected content is identified separately.
-- View saved page triggers in the editor, with source/rule status and a link to
-  page details in Dzen Chat. Refresh them with indexing status.
-- Remove a page from the Dzen Chat index and block future content updates directly
-  in the editor. The page remains published on your website.
-- Upload TXT and Markdown documents for indexing. See document processing status
-  and errors, read their contents in WordPress and open their editor in Dzen Chat.
-- Read conversations, messages and feedback; filter by conversation or visitor
-  ID, date and widget. See saved follow-up suggestions and visitor selections,
-  or open the same conversation directly in Dzen Chat. Conversation text stays
-  on the service.
-- Use the English interface or the bundled Russian translation, following the
-  administrator's WordPress language preference.
-- Read dates and times in the site's WordPress format and timezone. Conversation
-  date filters use the same local calendar day shown in the list.
-
-Changes made through the plugin refresh its widget cache immediately. Changes
-made directly in Dzen Chat are refreshed within five minutes.
-When the WordPress toolbar is visible, the chat window reserves space below it
-so the close button and message composer remain accessible.
-
-## Current API limits
-
-- Conversation lists contain at most the latest 100 records. Filters apply to
-  that set. A conversation displays its first 100 messages. Source indexing
-  counts cover all pages and are refreshed when the Index screen loads.
-- Hiding/restoring conversations, full-history text search, individual answer
-  sources, page trigger controls and billing status are not yet available.
-- Deleting, unpublishing or changing the URL of a previously public post submits
-  its old URL for another check. This **does not guarantee removal from
-  retrieval**; an explicit server operation is still required.
-- Products need a separate integration. The plugin submits only public
-  `page`/`post` content. General crawling and additional sources are managed
-  by the service.
-- Additional website sources appear when they are assigned to this API client.
-  Document uploads accept UTF-8 text only; PDF and Office uploads are not supported
-  by the current file API. File lists include contents and are subject to the
-  plugin's 2 MiB response limit.
-
-See the [current API contract](docs/contracts/dzen-chat-api.md),
-[0.7.0 indexing verification](docs/verification/2026-09-11-source-index-status.md),
-[0.8.0 editor verification](docs/verification/2026-09-11-page-index-status.md),
-[0.9.0 conversation verification](docs/verification/2026-09-11-conversation-suggestions.md),
-[0.10.0 trigger verification](docs/verification/2026-09-11-page-triggers.md),
-[0.11.0 exclusion verification](docs/verification/2026-09-11-page-exclusion.md),
-[0.12.0 404 verification](docs/verification/2026-09-11-404-help.md),
-[0.13.0 sources and upload verification](docs/verification/2026-09-11-index-documents.md),
-[0.13.1 date verification](docs/verification/2026-09-11-date-formatting.md),
-[0.4.0 live verification](docs/verification/2026-09-11-full-integration.md),
-[implementation brief](docs/specs/2026-09-11-full-integration.md),
-[authorization verification](docs/verification/2026-09-11-registration.md) and
-[server conversation-visibility issue](https://github.com/xen/dzen.chat/issues/14).
+- Create and choose chat widgets for your site, with individual settings for
+  pages and posts.
+- Automatically submit public pages and posts for indexing when content changes.
+- Monitor indexing progress for your website, additional sources and uploaded
+  documents.
+- View each page's indexing status and saved triggers in the editor, or exclude
+  it from indexing and future updates.
+- Upload TXT and Markdown documents to your knowledge base.
+- Review conversation history, feedback and saved follow-up suggestions in
+  WordPress, with links to the same conversations in Dzen Chat.
+- Offer visitors a chat invitation on 404 pages.
+- Use English or Russian, with dates and times following your WordPress settings.
 
 ## Installation
 
-Download `dzen-chat-X.Y.Z.zip` from
-[GitHub Releases](https://github.com/dzenplatform/dzen-wordpress/releases), then
-open **Plugins → Add New → Upload Plugin** in WordPress and activate it.
-For a manual update, upload the new ZIP and confirm replacement.
+Requirements: WordPress 6.8+, PHP 8.2+ with sodium, and an HTTPS website.
+Automatic content synchronization requires working WordPress scheduled tasks
+(WP-Cron).
 
-1. Open **Dzen Chat** and click **Connect Dzen Chat**.
-2. Choose an existing project or create one at `chat.dzen.dev`.
-3. Return to WordPress after authorization.
-4. Open **Dzen Chat → Widgets**, select an enabled widget and click **Save selection**.
-   Use **Add widget** to create one. Enable disabled widgets in Dzen Chat first.
-5. Open a public page to check the widget. Page and post overrides are in the editor.
-6. Inspect **Index** and **Conversations** as content and chats arrive.
+1. Download `dzen-chat-X.Y.Z.zip` from the
+   [latest release](https://github.com/dzenplatform/dzen-wordpress/releases/latest).
+2. In WordPress, open **Plugins → Add New → Upload Plugin**, upload the ZIP and
+   activate **Dzen Chat**.
+3. Open **Dzen Chat** in the admin menu and click **Connect Dzen Chat**.
+4. Choose an existing project or create a new one in Dzen Chat, then return to
+   WordPress.
+5. Open **Dzen Chat → Widgets**, select an enabled widget and click
+   **Save selection**.
+6. Visit a public page to check the chat widget.
 
-To add a document, open **Dzen Chat → Index → Add a document**, choose a `.txt`,
-`.md` or `.markdown` file in UTF-8, and click **Upload for indexing**. The maximum
-is 256 KiB, or the WordPress upload limit if lower. The document is sent to Dzen
-Chat without being copied to the WordPress media library. Refresh its status to
-check processing; an uploaded document is not necessarily indexed. The service
-may reject content above its indexing limit, which appears as an error. Open
-**Edit document in Dzen Chat** to inspect or shorten it.
+To update the plugin, upload the new release ZIP and confirm replacement.
 
-The **Index** screen includes this site, additional assigned website sources and
-uploaded documents. Source titles and settings links open the corresponding
-source in Dzen Chat. Existing links to the former **Sources** screen redirect here.
+## Links
 
-To help visitors who reach a missing page, enable **Show chat on 404 pages** in
-**Dzen Chat → Widgets** and click **Save 404 settings**. The selected site-wide
-widget must be enabled. This setting is off by default; when off, no widget is
-inserted on 404 pages. When on, a dismissible invitation offers **Start a
-conversation** once the widget loads. It does not open chat automatically or send
-a message. The theme's error page and HTTP 404 status are preserved. Ordinary
-pages keep their existing widget behavior. Check an actual missing URL: a page
-named `/404/` is not an error page if WordPress serves it successfully.
-
-Requirements: WordPress 6.8+, PHP 8.2+, HTTPS, PHP sodium and strong WordPress
-security keys. Synchronization needs working WP-Cron or a system scheduler.
-
-## Language
-
-Plugin source strings and repository documentation are in English. Russian
-(`ru_RU`) is included in every installation ZIP.
-
-In **Users → Profile → Language**, choose **Русский** for a Russian admin
-interface or **English (United States)** for English. Install the WordPress
-language pack through **Settings → General → Site Language** if Russian is not
-yet available. A user who selects **Site Default** follows the site's language.
-Languages without a bundled translation fall back to English.
-
-Widget names, source titles, indexed content and conversation messages keep their
-original language. The embedded widget and Dzen Chat website are rendered by the
-service; this plugin's translation covers the WordPress interface and the public
-404 invitation. The invitation follows the site's language.
-
-See [translation maintenance](docs/internationalization.md) to add a language or
-update the catalogs, and the [0.5.0 verification report](docs/verification/2026-09-11-internationalization.md)
-for the English/Russian checks.
-
-## Connection and data
-
-Connection uses PKCE S256 and a one-time code:
-`/auth/add` → WordPress callback → `/auth/exchange/`.
-WordPress stores `client_id`, `client_secret` and `site_source_id` in an
-encrypted option with autoload disabled. Server requests to `/api/` use the
-Bearer token `client_id.client_secret` with HTTPS verification. Only the public
-widget code reaches the visitor's browser. Plugin logs do not include exchange
-codes, secrets or conversation text.
-
-Connection schedules reconciliation of existing public pages and posts. This
-also runs when upgrading from 0.3 or reactivating the plugin. Saving content
-writes an event to a local queue without waiting for HTTP. The scheduler submits
-URLs through `POST /api/update`; temporary failures are retried with a delay,
-up to six attempts. HTTP 202 confirms acceptance; **Index** shows processing
-separately. The overview provides a reconciliation and retry button.
-
-**Remove from index and block updates** immediately stores a per-post exclusion
-and cancels queued content updates. It calls `POST /api/pages/exclude` for the
-current and previously submitted URLs; Dzen Chat removes search chunks and keeps
-a manual exclusion so future crawls cannot restore the URL. Drafts with no public
-URL are blocked locally without a remote request. Saving or publishing an excluded
-post never submits content updates; a changed public URL is submitted only for
-exclusion. Widget visibility is independent. If removal fails or a worker is busy,
-the panel shows that updates are blocked and removal is not confirmed. Refresh
-the status or use **Retry removal** after restoring service access. This button
-does not restore indexing; changing an exclusion requires an explicit separate action.
-
-The queue requires WP-Cron or an external scheduler. Local Compose includes a
-`cron` profile that runs only plugin jobs. A successful API response does not
-confirm the project's billing status. Removing credentials in WordPress is a
-local action; revoke the API client in Dzen Chat. The plugin does not delete
-chats or messages or store conversation text and source excerpts in its database.
-
-## Builds and releases
-
-The repository and its releases are public. Install the versioned ZIP attachment;
-GitHub's automatic **Source code** archives contain development files and are
-not installation packages. Each release ZIP has a SHA-256 checksum.
-
-GitHub Releases do not enable automatic updates inside WordPress. That requires
-a future updater or a WordPress.org listing. The `Update URI` header prevents
-replacement by an unrelated directory plugin with the same name.
-
-Pushes to `main`, pull requests and manual Actions runs check packaging, PHP
-lint and WordPress contracts, then keep a ZIP artifact for 14 days. Pushing a
-`vX.Y.Z` tag additionally creates a GitHub Release after the checks pass.
-Existing releases are not overwritten.
-
-To release:
-
-1. Update `Version` and `DZEN_CHAT_VERSION` in `dzen-chat.php`, plus
-   `Stable tag` and the changelog in `readme.txt`. Use `X.Y.Z`.
-2. Update and compile the [translation catalogs](docs/internationalization.md).
-3. Commit and push the changes; wait for a successful workflow.
-4. Create and push the matching tag, for example `v0.13.1`.
-5. Download the checked ZIP and checksum from Releases.
-
-Build locally with `make package-test && make package` (Python 3 and Git).
-Version 0.13.1 produces `dist/dzen-chat-0.13.1.zip`. Only Git-tracked runtime files
-and `src/`, `assets/` and `languages/` are packaged. Stage new runtime and
-language files before building. Fixtures, Docker configuration, local
-certificates and development documentation are excluded.
-
-## Local verification
-
-Synthetic checks and the real connection use **separate volumes**. Never run
-fixture setup or contract tests against the real connection; the scripts check
-the local environment and isolated MU API.
-
-For manual testing with the real local Dzen Chat service, run:
-
-~~~sh
-make local
-~~~
-
-This starts the existing `dzen-wordpress-registration` environment: the database,
-WordPress on HTTP port 8868, the synchronization worker and HTTPS on port 8869.
-The first run installs WordPress and activates the plugin. Later runs preserve
-the database, administrator account, selected widget and saved authorization.
-Fixture project/port environment variables do not redirect this command to the
-synthetic environment.
-
-Requirements: Docker Desktop with Compose, Caddy and curl. Start the local Dzen
-Chat service at `https://local.dzenchat.com` first. The command uses its already
-trusted certificates under `/opt/homebrew/var/lib/caddy`, matching the macOS
-development setup described in the
-[authorization report](docs/verification/2026-09-11-registration.md).
-
-Open [WordPress](https://local.dzenchat.com:8869/) or the
-[plugin admin](https://local.dzenchat.com:8869/wp-admin/admin.php?page=dzen-chat).
-For a newly created site, the local login is `dzen_test` / `local-dzen-test-8868`.
-Connect Dzen Chat through the plugin admin once; the command never substitutes
-test credentials or API responses. Existing WordPress passwords are unchanged.
-
-When the HTTPS proxy needs to start, `make local` keeps it in the foreground.
-Leave that terminal open while testing. Ctrl+C stops the proxy; the containers
-and site data remain available. If HTTPS is already running, the command reuses
-it and returns. To stop this environment's containers without deleting data:
-
-~~~sh
-docker compose -p dzen-wordpress-registration -f compose.yaml -f compose.registration.yaml --profile cron stop
-~~~
-
-The fixture uses WordPress 6.8.2 / PHP 8.3 on port 8870:
-
-~~~sh
-COMPOSE_PROJECT_NAME=dzen-wordpress-widget-tests DZEN_WORDPRESS_PORT=8870 make up
-COMPOSE_PROJECT_NAME=dzen-wordpress-widget-tests DZEN_WORDPRESS_PORT=8870 docker compose run --rm cli core install --url=http://127.0.0.1:8870 --title='Dzen Chat contract tests' --admin_user=dzen_test --admin_password=local-dzen-test-8870 --admin_email=wordpress-fixture@example.org --skip-email
-COMPOSE_PROJECT_NAME=dzen-wordpress-widget-tests DZEN_WORDPRESS_PORT=8870 docker compose run --rm cli plugin activate dzen-chat
-COMPOSE_PROJECT_NAME=dzen-wordpress-widget-tests DZEN_WORDPRESS_PORT=8870 make test
-~~~
-
-Core installation and plugin activation are needed only for a new volume.
-In this environment, **Dzen Chat · test** opens a demonstration panel without AI
-answers. The fixture is excluded from the installation ZIP and does not prove
-service behavior.
-
-The real connection overlay changes only the development address and trusted CA; it does not
-substitute API responses. Regular installations use `https://chat.dzen.dev`.
-This version has not been deployed to production.
-
-Repository: `git@github.com:dzenplatform/dzen-wordpress.git`.
-Development checkout: `/Users/xen/Dev/dzen/wordpress`.
+- [Dzen Chat product website](https://dzen.dev/)
+- [Dzen Chat dashboard](https://chat.dzen.dev/)
+- [Documentation](https://dzen.dev/docs/)

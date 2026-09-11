@@ -6,7 +6,7 @@ cd "$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
 
 for dzen_command in docker caddy curl; do
     if ! command -v "$dzen_command" >/dev/null 2>&1; then
-        printf 'Missing requirement: %s. See README > Local verification.\n' "$dzen_command" >&2
+        printf 'Missing requirement: %s. Install Docker Desktop with Compose, Caddy and curl to run make local.\n' "$dzen_command" >&2
         exit 1
     fi
 done
