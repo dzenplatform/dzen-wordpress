@@ -179,6 +179,40 @@ final class Api
         return $result;
     }
 
+    public function conversation(string $id): array|\WP_Error
+    {
+        $chat = $this->request('GET', '/chats/' . self::segment($id));
+        if (is_wp_error($chat)) return $chat;
+        if (($chat['id'] ?? null) !== $id || !is_string($chat['details_url'] ?? null)
+            || !preg_match('~^' . preg_quote(self::origin(), '~') . '/projects/[A-Za-z0-9_-]+/history/'
+                . preg_quote($id, '~') . '$~D', $chat['details_url'])) {
+            return new \WP_Error('dzen_chat_protocol', __('The service returned invalid conversation details. Refresh the page.', 'dzen-chat'));
+        }
+        return $chat;
+    }
+
+    public function conversationMessages(string $id): array|\WP_Error
+    {
+        $messages = $this->items('/chats/' . self::segment($id) . '/messages', ['limit' => 100]);
+        if (is_wp_error($messages)) return $messages;
+        $invalid = new \WP_Error('dzen_chat_protocol', __('The service returned invalid conversation messages. Refresh the page.', 'dzen-chat'));
+        foreach ($messages as $message) {
+            if (!in_array($message['role'] ?? '', ['user', 'assistant'], true)) continue;
+            $actions = $message['suggested_actions'] ?? null;
+            $status = $message['suggestions_status'] ?? null;
+            if (!is_string($message['text'] ?? null) || !is_array($actions) || !array_is_list($actions)
+                || !in_array($status, ['available', 'failed', 'none'], true)
+                || ($status === 'available') !== (count($actions) > 0)
+                || !array_key_exists('selected_suggested_action', $message)) return $invalid;
+            foreach ($actions as $action) {
+                if (!is_string($action) || trim($action) === '') return $invalid;
+            }
+            $selected = $message['selected_suggested_action'];
+            if ($selected !== null && (!is_string($selected) || !in_array($selected, $actions, true))) return $invalid;
+        }
+        return $messages;
+    }
+
     public static function segment(string $value): string
     {
         return rawurlencode($value);

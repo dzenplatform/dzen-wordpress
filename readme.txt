@@ -3,7 +3,7 @@ Contributors: dzenplatform
 Requires at least: 6.8
 Tested up to: 6.8.2
 Requires PHP: 8.2
-Stable tag: 0.8.0
+Stable tag: 0.9.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -32,6 +32,8 @@ change. Rechecking does not guarantee removal from the service index.
 View indexing progress for the connected source, with counts covering all pages
 and a link to detailed status in Dzen Chat. Refresh the Index screen to get current
 counts. View sources, knowledge files and conversation messages inside WordPress.
+View saved suggestions, visitor selections and suggestion failures under assistant
+answers. Open the same conversation in Dzen Chat from its heading.
 Chat filters cover the latest 100 records; conversation details display up to the
 first 100 messages. Conversation hiding, answer-source references, full-history
 search, per-page trigger controls and
@@ -91,6 +93,12 @@ service. Removing keys in WordPress does not revoke the remote API client.
 No. Products require a separate integration.
 
 == Changelog ==
+
+= 0.9.0 =
+Display saved follow-up suggestions and visitor selections in conversation history.
+Distinguish generation failures from answers without saved suggestions. Add a direct
+link to the same conversation in Dzen Chat. Validate service data and browser links,
+keep history read-only, and include English and Russian interface strings.
 
 = 0.8.0 =
 Show per-page indexing status in the editor with manual refresh and automatic

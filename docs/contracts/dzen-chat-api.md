@@ -1,4 +1,4 @@
-# Dzen Chat public API: WordPress 0.8 contract
+# Dzen Chat public API: WordPress 0.9 contract
 
 Verified on September 11, 2026 against the running local service,
 Swagger at `https://local.dzenchat.com/api-docs/` and `chat/api/` handlers.
@@ -55,8 +55,8 @@ unvalidated response does not confirm a change.
 | GET /api/files | Knowledge base files; no query parameters |
 | GET /api/files/{id} | id, name, content, status, status_error, size_bytes, updated_at |
 | GET /api/chats?limit=100 | Most recently created conversations; limit 1–100 only |
-| GET /api/chats/{id} | id, created_at, updated_at, visitor, widget_code, feedback |
-| GET /api/chats/{id}/messages?limit=100 | First messages; id, role, text, created_at, vote, guardrail_triggered, guardrail_stage |
+| GET /api/chats/{id} | id, created_at, updated_at, visitor, widget_code, feedback, details_url |
+| GET /api/chats/{id}/messages?limit=100 | First messages; id, role, text, created_at, vote, guardrail_triggered, guardrail_stage, suggested_actions, selected_suggested_action, suggestions_status |
 
 Page, conversation and message lists currently have no cursor/offset.
 Page lists support exact URL and source filters. Conversation lists have no
@@ -74,6 +74,30 @@ Render only user/assistant messages with escaped text. Internal prompts are not
 shown. The client blocks history deletion/modification before HTTP. Source
 metadata, file content and original links are available inside WordPress, but
 the messages API has no references for individual answers.
+
+## Conversation suggestions and web navigation
+
+Conversation list/detail and feedback responses include `details_url` pointing to
+`{service_origin}/projects/{project_short_id}/history/{chat_id}`. It is browser
+navigation using the normal Dzen Chat session, with no API credentials. WordPress
+requires the configured HTTPS service origin and the same chat ID, without query
+parameters, fragments or embedded credentials. The link appears to the right of
+the conversation heading and remains available if message loading fails.
+
+Message responses include only user/assistant messages, with these saved fields:
+
+- `suggested_actions`: an array of follow-up suggestion strings.
+- `selected_suggested_action`: the saved selected text, only if it belongs to
+  that answer's suggestion list; otherwise `null`.
+- `suggestions_status`: `available` for saved suggestions, `failed` for a saved
+  generation error, or `none` when no suggestions were saved. `none` does not
+  establish whether the feature was disabled at the time.
+
+WordPress renders suggestions as escaped, read-only list items, marks the stored
+visitor selection, and distinguishes generation failures from absent suggestions.
+Opening history never generates new suggestions or modifies the conversation.
+The API exposes neither `full_context`, internal system messages, nor raw provider
+error details. Generation diagnostics are available in the Dzen Chat web admin.
 
 ## Source indexing status
 

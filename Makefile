@@ -10,6 +10,7 @@ lint:
 
 test: lint
 	docker compose run --rm cli eval-file wp-content/plugins/dzen-chat/tests/contracts.php
+	docker compose run --rm cli eval-file wp-content/plugins/dzen-chat/tests/history-contracts.php
 	docker compose run --rm cli eval-file wp-content/plugins/dzen-chat/tests/widget-contracts.php
 	docker compose run --rm cli eval-file wp-content/plugins/dzen-chat/tests/index-contracts.php
 	docker compose run --rm cli eval-file wp-content/plugins/dzen-chat/tests/page-index-contracts.php

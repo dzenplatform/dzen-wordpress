@@ -6,6 +6,16 @@
 .dzen-message h3, .dzen-source h3 { margin-top: 0; }
 .dzen-text { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.7; max-width: 90ch; }
 .dzen-reference { margin-top: 16px; padding-top: 12px; border-top: 1px solid #dcdcde; display: flex; flex-wrap: wrap; gap: 12px; }
+.dzen-conversation-heading { display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 12px 24px; margin: 20px 0; }
+.dzen-conversation-heading h3 { margin: 0; overflow-wrap: anywhere; }
+.dzen-conversation-heading > a { margin-left: auto; }
+.dzen-suggestions { margin-top: 18px; padding-top: 14px; border-top: 1px solid #dcdcde; }
+.dzen-suggestions h4 { margin: 0 0 10px; font-size: 14px; }
+.dzen-suggestion-list { display: grid; gap: 8px; max-width: 90ch; margin: 0; }
+.dzen-suggestion-list li { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; margin: 0; padding: 10px 12px; background: #f6f7f7; border-radius: 4px; overflow-wrap: anywhere; }
+.dzen-suggestion-list .dzen-suggestion-selected { background: #f0f6fc; border-left: 3px solid #2271b1; }
+.dzen-suggestion-label { color: #135e96; font-weight: 600; }
+.dzen-suggestions-failed { padding-left: 12px; border-left: 3px solid #dba617; }
 .dzen-chat table { margin-top: 20px; }
 .dzen-chat td { vertical-align: top; }
 .dzen-chat a:focus-visible { outline: 2px solid #2271b1; outline-offset: 2px; }

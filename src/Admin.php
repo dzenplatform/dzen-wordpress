@@ -308,17 +308,36 @@ final class Admin
     private function chat(string $id): void
     {
         echo '<p><a href="' . esc_url(self::url('dzen-chat-history')) . '">← ' . esc_html__('All conversations', 'dzen-chat') . '</a></p>';
-        $chat = $this->api->request('GET', '/chats/' . Api::segment($id));
+        $chat = $this->api->conversation($id);
         if (is_wp_error($chat)) { $this->error($chat); return; }
-        if (($chat['id'] ?? null) !== $id) { $this->error(new \WP_Error('protocol', __('The service returned a different conversation.', 'dzen-chat'))); return; }
-        $items = $this->api->items('/chats/' . Api::segment($id) . '/messages', ['limit' => 100]);
+        echo '<div class="dzen-conversation-heading"><h3>' . esc_html($id) . '</h3>';
+        $this->external($chat['details_url'], __('Open conversation in Dzen Chat ↗', 'dzen-chat'));
+        echo '</div>';
+        $items = $this->api->conversationMessages($id);
         if (is_wp_error($items)) { $this->error($items); return; }
-        echo '<h3>' . esc_html($id) . '</h3>';
         if (count($items) === 100) echo '<p>' . esc_html__('The first 100 messages have been loaded. Open Dzen Chat to view the rest.', 'dzen-chat') . '</p>';
         foreach ($items as $message) {
             if (!in_array($message['role'] ?? '', ['user', 'assistant'], true)) continue;
             echo '<article class="dzen-message"><h3>' . esc_html($message['role'] === 'user' ? __('Visitor', 'dzen-chat') : __('Dzen Chat', 'dzen-chat')) . '</h3><p class="description">' . esc_html(self::text($message, 'created_at')) . '</p><div class="dzen-text">' . esc_html(self::text($message, 'text')) . '</div>';
             if (is_bool($message['vote'] ?? null)) echo '<p>' . esc_html($message['vote'] ? __('Helpful answer', 'dzen-chat') : __('Unhelpful answer', 'dzen-chat')) . '</p>';
+            if ($message['role'] === 'assistant') {
+                echo '<div class="dzen-suggestions"><h4>' . esc_html__('Suggestions', 'dzen-chat') . '</h4>';
+                if ($message['suggestions_status'] === 'available') {
+                    echo '<ul class="dzen-suggestion-list">';
+                    foreach ($message['suggested_actions'] as $action) {
+                        $selected = $action === $message['selected_suggested_action'];
+                        echo '<li' . ($selected ? ' class="dzen-suggestion-selected"' : '') . '><span>' . esc_html($action) . '</span>';
+                        if ($selected) echo '<span class="dzen-suggestion-label">' . esc_html__('Selected by visitor', 'dzen-chat') . '</span>';
+                        echo '</li>';
+                    }
+                    echo '</ul>';
+                } elseif ($message['suggestions_status'] === 'failed') {
+                    echo '<p class="dzen-suggestions-failed">' . esc_html__('Suggestions could not be generated for this answer. Open this conversation in Dzen Chat for details.', 'dzen-chat') . '</p>';
+                } else {
+                    echo '<p class="description">' . esc_html__('No suggestions were saved for this answer.', 'dzen-chat') . '</p>';
+                }
+                echo '</div>';
+            }
             echo '</article>';
         }
     }

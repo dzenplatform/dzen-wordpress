@@ -89,6 +89,10 @@ try {
         update_option('dzen_fixture_scenario', 'normal', false);
         $_GET = ['page' => 'dzen-chat-history', 'chat' => 'chat-one'];
         $html = $capture([$admin, 'page']);
+        $check(str_contains($html, $index ? 'Подсказки' : 'Suggestions')
+            && str_contains($html, $index ? 'Выбрано посетителем' : 'Selected by visitor')
+            && str_contains($html, $index ? 'Открыть диалог в Dzen Chat' : 'Open conversation in Dzen Chat'),
+            'conversation suggestions and details link use ' . $locale);
         $check(str_contains($html, 'Можно ли изменить адрес?') && str_contains($html, '&lt;script&gt;')
             && !str_contains($html, '<script>'), 'user content is preserved and escaped in ' . $locale);
         if ($switched) $switcher->restore_previous_locale();

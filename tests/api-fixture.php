@@ -126,7 +126,8 @@ add_filter('pre_http_request', static function ($pre, $args, $url) {
     $file = ['id' => 'file-one', 'name' => 'Инструкция', 'content' => 'Тестовый текст файла <script>alert(1)</script>',
         'status' => 'ready', 'status_error' => null, 'size_bytes' => 100, 'updated_at' => '2026-09-11T01:00:00Z'];
     $chat = ['id' => 'chat-one', 'created_at' => '2026-09-11T01:00:00Z', 'updated_at' => '2026-09-11T01:01:00Z',
-        'visitor' => 'visitor1234567890', 'widget_code' => 'fixture-widget', 'feedback' => null];
+        'visitor' => 'visitor1234567890', 'widget_code' => 'fixture-widget', 'feedback' => null,
+        'details_url' => 'https://chat.dzen.dev/projects/project-one/history/chat-one'];
     if ($path === '/api/update' && $method === 'POST') {
         if (array_keys($body) !== ['url'] || !is_string($body['url'])) throw new RuntimeException('Update accepts URL only');
         if (!str_starts_with($body['url'], trailingslashit(home_url()))) return $reply(['error' => 'outside source'], 403);
@@ -159,9 +160,12 @@ add_filter('pre_http_request', static function ($pre, $args, $url) {
     if ($path === '/api/chats/chat-one') return $reply($chat);
     if ($path === '/api/chats/chat-one/messages') return $reply(['items' => [
         ['id' => 1, 'role' => 'user', 'text' => 'Можно ли изменить адрес?', 'created_at' => '2026-09-11T01:00:00Z',
-            'vote' => null, 'guardrail_triggered' => false, 'guardrail_stage' => null],
+            'vote' => null, 'guardrail_triggered' => false, 'guardrail_stage' => null,
+            'suggested_actions' => [], 'selected_suggested_action' => null, 'suggestions_status' => 'none'],
         ['id' => 2, 'role' => 'assistant', 'text' => 'Изменить адрес можно. <script>alert(1)</script>', 'created_at' => '2026-09-11T01:00:01Z',
-            'vote' => true, 'guardrail_triggered' => false, 'guardrail_stage' => null],
+            'vote' => true, 'guardrail_triggered' => false, 'guardrail_stage' => null,
+            'suggested_actions' => ['Как изменить адрес?', 'Как проверить заказ?', 'Можно отменить заказ?'],
+            'selected_suggested_action' => 'Как проверить заказ?', 'suggestions_status' => 'available'],
     ]]);
     return $reply(['error' => 'Object or API method not found'], 404);
 }, 10, 3);
