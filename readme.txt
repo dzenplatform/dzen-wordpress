@@ -3,7 +3,7 @@ Contributors: dzenplatform
 Requires at least: 6.8
 Tested up to: 6.8.2
 Requires PHP: 8.2
-Stable tag: 0.5.0
+Stable tag: 0.5.1
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -84,6 +84,11 @@ service. Removing keys in WordPress does not revoke the remote API client.
 No. Products require a separate integration.
 
 == Changelog ==
+
+= 0.5.1 =
+Keep the chat window below the WordPress toolbar so its close button stays
+accessible. Reduce the full-screen chat height to keep the composer in view,
+and reserve toolbar space for floating windows on short desktop screens.
 
 = 0.5.0 =
 Use English source strings throughout the WordPress interface. Add standard

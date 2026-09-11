@@ -1,0 +1,23 @@
+/* The service loader styles the dialog after page load; keep this more specific. */
+body.admin-bar #chat-widget-iframe-container {
+    --dzen-chat-toolbar-height: var(--wp-admin--admin-bar--height, 32px);
+    max-height: calc(100vh - 110px - var(--dzen-chat-toolbar-height));
+    max-height: calc(100dvh - 110px - var(--dzen-chat-toolbar-height));
+}
+
+@media (max-width: 782px) {
+    body.admin-bar #chat-widget-iframe-container {
+        --dzen-chat-toolbar-height: var(--wp-admin--admin-bar--height, 46px);
+    }
+}
+
+/* Match the service's full-screen breakpoint and keep the composer in view. */
+@media (max-width: 640px) {
+    body.admin-bar #chat-widget-iframe-container {
+        top: var(--dzen-chat-toolbar-height);
+        height: calc(100vh - var(--dzen-chat-toolbar-height));
+        height: calc(100dvh - var(--dzen-chat-toolbar-height));
+        max-height: calc(100vh - var(--dzen-chat-toolbar-height));
+        max-height: calc(100dvh - var(--dzen-chat-toolbar-height));
+    }
+}

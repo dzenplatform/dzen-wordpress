@@ -3,7 +3,7 @@
 Connect your WordPress site to [Dzen Chat](https://chat.dzen.dev), manage chat
 widgets and keep public content available to your AI assistant.
 
-**Version 0.5.0 uses the implemented public API and includes English and Russian
+**Version 0.5.1 uses the implemented public API and includes English and Russian
 interfaces.** Authorize a site, manage real widgets, inspect indexed documents,
 sources and knowledge files, and read conversations directly in WordPress.
 Public pages and posts are submitted for reindexing after connection, publication
@@ -27,6 +27,8 @@ background queue → Dzen Chat index → assistant answer using the new informat
 
 Changes made through the plugin refresh its widget cache immediately. Changes
 made directly in Dzen Chat are refreshed within five minutes.
+When the WordPress toolbar is visible, the chat window reserves space below it
+so the close button and message composer remain accessible.
 
 ## Current API limits
 
@@ -127,11 +129,11 @@ To release:
    `Stable tag` and the changelog in `readme.txt`. Use `X.Y.Z`.
 2. Update and compile the [translation catalogs](docs/internationalization.md).
 3. Commit and push the changes; wait for a successful workflow.
-4. Create and push the matching tag, for example `v0.5.0`.
+4. Create and push the matching tag, for example `v0.5.1`.
 5. Download the checked ZIP and checksum from Releases.
 
 Build locally with `make package-test && make package` (Python 3 and Git).
-Version 0.5.0 produces `dist/dzen-chat-0.5.0.zip`. Only Git-tracked runtime files
+Version 0.5.1 produces `dist/dzen-chat-0.5.1.zip`. Only Git-tracked runtime files
 and `src/`, `assets/` and `languages/` are packaged. Stage new runtime and
 language files before building. Fixtures, Docker configuration, local
 certificates and development documentation are excluded.

@@ -83,6 +83,9 @@ final class Plugin
         if (is_wp_error($widget) || !$widget['is_enabled']) {
             return;
         }
+        if (is_admin_bar_showing()) {
+            wp_enqueue_style('dzen-chat-toolbar', plugins_url('assets/toolbar.css', DZEN_CHAT_FILE), [], DZEN_CHAT_VERSION);
+        }
         wp_enqueue_script('dzen-chat-widget', Api::origin() . '/widget/' . rawurlencode($widget['code']), [], null,
             ['strategy' => 'defer', 'in_footer' => true]);
     }
