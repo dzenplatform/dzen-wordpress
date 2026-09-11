@@ -385,13 +385,13 @@ final class Admin
         // Translators: %s is the WordPress site timezone, such as Europe/Sofia or +03:00.
         echo '<p class="description">' . esc_html(sprintf(__('Dates and times use the WordPress site timezone (%s).', 'dzen-chat'), wp_timezone_string())) . '</p>';
         echo '<form method="get" class="dzen-filters"><input type="hidden" name="page" value="dzen-chat-history">';
-        echo '<label>' . esc_html__('Conversation or visitor ID', 'dzen-chat') . '<input name="q" value="' . esc_attr($filters['q'] ?? '') . '" maxlength="200"></label>';
+        echo '<label>' . esc_html__('Conversation or visitor ID', 'dzen-chat') . '<input type="text" name="q" value="' . esc_attr($filters['q'] ?? '') . '" maxlength="200"></label>';
         foreach (['date_from' => __('From date', 'dzen-chat'), 'date_to' => __('To date', 'dzen-chat')] as $key => $label) {
             echo '<label>' . esc_html($label) . '<input type="date" name="' . esc_attr($key) . '" value="' . esc_attr($filters[$key] ?? '') . '"></label>';
         }
-        echo '<label class="dzen-filter-checkbox"><input type="checkbox" name="guardrail" value="1"' . checked(isset($filters['guardrail']), true, false) . '> ' . esc_html__('Guardrail violations only', 'dzen-chat') . '</label>';
+        echo '<div class="dzen-filter-actions"><label class="dzen-filter-checkbox"><input type="checkbox" name="guardrail" value="1"' . checked(isset($filters['guardrail']), true, false) . '> ' . esc_html__('Guardrail violations only', 'dzen-chat') . '</label>';
         echo '<label class="dzen-filter-checkbox"><input type="checkbox" name="hide_empty" value="1"' . checked(isset($filters['hide_empty']), true, false) . '> ' . esc_html__('Hide empty conversations', 'dzen-chat') . '</label>';
-        echo '<button class="button">' . esc_html__('Apply', 'dzen-chat') . '</button></form>';
+        echo '<button class="button">' . esc_html__('Apply', 'dzen-chat') . '</button></div></form>';
         $items = array_filter($items, static function ($item) use ($filters) {
             $date = Dates::day($item['created_at'] ?? null);
             if ($date === null && (isset($filters['date_from']) || isset($filters['date_to']))) return false;

@@ -1,7 +1,10 @@
 .dzen-chat { max-width: 1160px; }
-.dzen-filters { display: flex; align-items: end; gap: 12px; flex-wrap: wrap; margin: 24px 0; }
-.dzen-filters label { display: grid; gap: 6px; }
-.dzen-filters .dzen-filter-checkbox { display: flex; align-items: center; gap: 6px; min-height: 30px; }
+.dzen-filters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: end; gap: 16px 12px; margin: 24px 0; }
+.dzen-filters label { display: grid; gap: 6px; min-width: 0; }
+.dzen-filters input[type="text"], .dzen-filters input[type="date"] { box-sizing: border-box; width: 100%; min-width: 0; height: 40px; min-height: 40px; margin: 0; padding: 6px 10px; font-size: 16px; line-height: 1.5; }
+.dzen-filter-actions { grid-column: 1 / -1; display: flex; align-items: center; flex-wrap: wrap; gap: 12px 20px; }
+.dzen-filter-actions .button { box-sizing: border-box; height: 40px; min-height: 40px; margin-inline-start: auto; padding: 0 16px; font-size: 16px; line-height: 38px; }
+.dzen-filters .dzen-filter-checkbox { display: flex; align-items: center; gap: 6px; min-height: 40px; }
 .dzen-filter-checkbox input { margin: 0; }
 .dzen-inline { display: inline-block; margin: 4px 8px 4px 0; }
 .dzen-message, .dzen-source { background: #fff; border: 1px solid #c3c4c7; border-radius: 4px; padding: 20px; margin: 18px 0; }
@@ -72,4 +75,7 @@
     .dzen-widgets .dzen-widget-choice { width: 44px; }
     .dzen-widgets .dzen-widget-status { width: 110px; }
     .dzen-widgets th, .dzen-widgets td { padding: 12px 8px; }
+}
+@media (max-width: 600px) {
+    .dzen-filters { grid-template-columns: minmax(0, 1fr); }
 }
