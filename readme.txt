@@ -3,7 +3,7 @@ Contributors: dzenplatform
 Requires at least: 6.8
 Tested up to: 6.8.2
 Requires PHP: 8.2
-Stable tag: 0.7.0
+Stable tag: 0.8.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -42,6 +42,11 @@ store conversation text or source excerpts. The service must support /auth/add
 and /auth/exchange/, plus the public /api/ widget, page, source, file, chat and
 URL-update methods. API requests use the saved client credentials as a server-side Bearer
 token over HTTPS. Only the public widget code is sent to the visitor's browser.
+
+The page/post editor shows indexing status above widget settings. Refresh it
+manually or save the page to update it. Saved changes awaiting submission are
+shown separately from the server's last processed page. Drafts, private content
+and password-protected pages are not submitted as public content.
 
 The interface is English by default and includes a Russian (ru_RU) translation.
 It follows the administrator's Users > Profile > Language preference. Site
@@ -86,6 +91,13 @@ service. Removing keys in WordPress does not revoke the remote API client.
 No. Products require a separate integration.
 
 == Changelog ==
+
+= 0.8.0 =
+Show per-page indexing status in the editor with manual refresh and automatic
+refresh after saving. Look up the exact public URL within the connected source.
+Distinguish local submission from remote indexing, and explain draft/protected
+content. Add English and Russian messages and protect status requests with
+per-page nonces and administrator/edit permissions.
 
 = 0.7.0 =
 Replace the Index document table with a progress bar for the connected site source.

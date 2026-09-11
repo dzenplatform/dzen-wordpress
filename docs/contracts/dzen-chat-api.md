@@ -1,4 +1,4 @@
-# Dzen Chat public API: WordPress 0.7 contract
+# Dzen Chat public API: WordPress 0.8 contract
 
 Verified on September 11, 2026 against the running local service,
 Swagger at `https://local.dzenchat.com/api-docs/` and `chat/api/` handlers.
@@ -47,7 +47,8 @@ unvalidated response does not confirm a change.
 | GET /api/widgets/{id} | id, name, code, is_enabled, suggestions_enabled, trigger_templates, appearance, edit_url |
 | PATCH /api/widgets/{id} | name, is_enabled, suggestions_enabled; confirmed fields in response |
 | POST /api/update | JSON url only; HTTP 202 means crawling was queued |
-| GET /api/pages/{id} | id, url, title, source_id, status, status_error, has_triggers, updated_at |
+| GET /api/pages?url={url}&source_id={id}&limit=1 | Exact URL lookup within an assigned source; filters apply before limit |
+| GET /api/pages/{id} | id, url, title, source_id, status, status_error, index_status, has_triggers, updated_at |
 | GET /api/sources | Sources assigned to the client; no query parameters |
 | GET /api/sources/{id} | id, title, url, is_paused, enable_triggers, blocked_reason, last_reindexed_at |
 | GET /api/sources/{id}/status | Source metadata, counts, total and details_url; all pages, no list limit |
@@ -58,7 +59,8 @@ unvalidated response does not confirm a change.
 | GET /api/chats/{id}/messages?limit=100 | First messages; id, role, text, created_at, vote, guardrail_triggered, guardrail_stage |
 
 Page, conversation and message lists currently have no cursor/offset.
-There are no server filters for search, date, source or widget. The plugin
+Page lists support exact URL and source filters. Conversation lists have no
+server search, date or widget filters. The plugin
 applies conversation filters to the received 100 conversations and explains this
 limit. The Index screen uses aggregate source counts instead of a document list. It does not claim a long conversation is fully loaded after 100 messages.
 
@@ -111,6 +113,32 @@ and transport errors display an error instead of progress. Counts are fetched
 on every Index load or **Refresh status** action and are not persisted.
 Pause and restriction states remain visible alongside the counts. The details
 link opens the actual source's settings under normal Dzen Chat web login.
+
+## Per-page status in the editor
+
+The editor loads `GET /api/pages?url={saved_permalink}&source_id={site_source_id}&limit=1`
+through an authenticated WordPress AJAX handler. Filtering happens before the
+limit, so an older page is still found. An empty list means that exact URL is
+absent from the assigned source; a mismatched URL/source or malformed response
+is an error. URL normalization matches `POST /api/update`.
+
+Page list and detail responses include `index_status`: `pending`, `processing`,
+`ready`, `errors` or `excluded`. Error and exclusion categories take precedence
+over the raw processing stage, consistently with the source progress bar.
+
+The WordPress handler accepts only a post ID, checks administrator and post-edit
+permissions and a post-bound nonce, then reads the saved permalink and source
+from WordPress. It never accepts an arbitrary API URL or sends credentials to
+the browser. Drafts, private/password-protected content and local indexing
+exclusions do not make a public page lookup. Previously public pages are not
+reported as removed merely because their current WordPress state changed.
+
+The panel loads asynchronously, refreshes on demand and after successful
+Gutenberg saves, and keeps local queue status separate from remote indexing.
+Only events for the current client and post are considered. Network/authorization
+errors clear the prior display instead of reporting a page as absent or ready.
+There is no background polling and no change to content submission or widget
+placement. Unsaved edits are outside the status reported by the server.
 
 ## Content updates
 

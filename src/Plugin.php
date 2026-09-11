@@ -13,6 +13,7 @@ final class Plugin
         $sync = new Sync($credentials, $api);
         (new Connection($credentials, $api))->register();
         (new Admin($credentials, $api, $sync))->register();
+        (new PageIndex($credentials, $api))->register();
         $sync->register();
         add_filter('cron_schedules', [self::class, 'schedules']);
         add_action('dzen_chat_clean_claim', static function ($key) {
@@ -107,6 +108,7 @@ final class Plugin
 
     public function metaBox(\WP_Post $post): void
     {
+        if (!current_user_can('manage_options') || !current_user_can('edit_post', $post->ID)) return;
         try {
             (new Credentials())->get();
         } catch (\RuntimeException | \JsonException $error) {
@@ -114,6 +116,7 @@ final class Plugin
             return;
         }
         wp_nonce_field('dzen_chat_post_' . $post->ID, 'dzen_chat_post_nonce');
+        PageIndex::render($post);
         echo '<p><label><input type="checkbox" name="_dzen_chat_widget_disabled" value="1"' . checked((bool) get_post_meta($post->ID, '_dzen_chat_widget_disabled', true), true, false) . '> ' . esc_html__('Hide widget', 'dzen-chat') . '</label></p>';
         echo '<p><label>' . esc_html__('Widget', 'dzen-chat') . '<br><select name="_dzen_chat_widget"><option value="">' . esc_html__('Use the site-wide widget', 'dzen-chat') . '</option>';
         foreach (get_option('dzen_chat_widgets', []) as $id => $widget) {

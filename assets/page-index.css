@@ -1,0 +1,12 @@
+#dzen-chat-page .dzen-page-index { border-bottom: 1px solid #dcdcde; padding-bottom: 10px; margin-bottom: 16px; overflow-wrap: anywhere; }
+#dzen-chat-page .dzen-page-index h3 { font-size: 13px; margin: 16px 0 10px; }
+#dzen-chat-page .dzen-page-index-label::before { content: ''; display: inline-block; width: 8px; height: 8px; margin-right: 6px; background: #787c82; border-radius: 50%; }
+#dzen-chat-page .dzen-page-index[data-state="ready"] .dzen-page-index-label::before { background: #a63de0; }
+#dzen-chat-page .dzen-page-index[data-state="pending"] .dzen-page-index-label::before { background: #dba617; }
+#dzen-chat-page .dzen-page-index[data-state="processing"] .dzen-page-index-label::before { background: #00a32a; }
+#dzen-chat-page .dzen-page-index[data-state="errors"] .dzen-page-index-label::before,
+#dzen-chat-page .dzen-page-index[data-state="unavailable"] .dzen-page-index-label::before { background: #d63638; }
+#dzen-chat-page .dzen-page-index-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+#dzen-chat-page .dzen-page-index-sync { font-size: 12px; color: #50575e; }
+#dzen-chat-page .dzen-page-index-result p:empty { display: none; }
+#dzen-chat-page select { max-width: 100%; }

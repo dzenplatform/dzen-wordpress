@@ -122,7 +122,7 @@ add_filter('pre_http_request', static function ($pre, $args, $url) {
     $source = ['id' => 'source-one', 'title' => 'Сайт WordPress', 'url' => trailingslashit(home_url()),
         'is_paused' => false, 'enable_triggers' => true, 'blocked_reason' => null, 'last_reindexed_at' => '2026-09-11T01:00:00Z'];
     $page = ['id' => 'page-one', 'title' => 'Доставка', 'url' => home_url('/delivery/'),
-        'source_id' => 'source-one', 'status' => 'ready', 'status_error' => null, 'has_triggers' => true, 'updated_at' => '2026-09-11T01:00:00Z'];
+        'source_id' => 'source-one', 'status' => 'ready', 'status_error' => null, 'index_status' => 'ready', 'has_triggers' => true, 'updated_at' => '2026-09-11T01:00:00Z'];
     $file = ['id' => 'file-one', 'name' => 'Инструкция', 'content' => 'Тестовый текст файла <script>alert(1)</script>',
         'status' => 'ready', 'status_error' => null, 'size_bytes' => 100, 'updated_at' => '2026-09-11T01:00:00Z'];
     $chat = ['id' => 'chat-one', 'created_at' => '2026-09-11T01:00:00Z', 'updated_at' => '2026-09-11T01:01:00Z',
@@ -144,7 +144,9 @@ add_filter('pre_http_request', static function ($pre, $args, $url) {
         'total' => 115, 'details_url' => 'https://chat.dzen.dev/projects/project-one/sources/source-one',
     ]);
     if ($path === '/api/pages') {
-        if (array_diff(array_keys($query), ['limit'])) throw new RuntimeException('Page query does not support these fields');
+        if (array_diff(array_keys($query), ['limit', 'url', 'source_id'])) throw new RuntimeException('Page query does not support these fields');
+        if ((isset($query['url']) && $query['url'] !== $page['url'])
+            || (isset($query['source_id']) && $query['source_id'] !== $page['source_id'])) return $reply(['items' => []]);
         return $reply(['items' => [$page]]);
     }
     if ($path === '/api/pages/page-one') return $reply($page);

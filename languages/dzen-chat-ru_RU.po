@@ -2,9 +2,9 @@
 # This file is distributed under the GPL-2.0-or-later.
 msgid ""
 msgstr ""
-"Project-Id-Version: Dzen Chat 0.7.0\n"
+"Project-Id-Version: Dzen Chat 0.8.0\n"
 "Report-Msgid-Bugs-To: https://github.com/dzenplatform/dzen-wordpress/issues\n"
-"POT-Creation-Date: 2026-09-11T03:30:14+00:00\n"
+"POT-Creation-Date: 2026-09-11T03:46:52+00:00\n"
 "PO-Revision-Date: 2026-09-11 03:20+0000\n"
 "Last-Translator: Dzen Platform\n"
 "Language-Team: Russian\n"
@@ -63,11 +63,11 @@ msgstr "Укажите дату в формате ГГГГ-ММ-ДД."
 msgid "The start date must be on or before the end date."
 msgstr "Начальная дата должна быть не позже конечной."
 
-#: src/Admin.php:80
+#: src/Admin.php:80 src/PageIndex.php:83
 msgid "Waiting to be crawled"
 msgstr "Ожидает обхода"
 
-#: src/Admin.php:81 src/Admin.php:245
+#: src/Admin.php:81 src/Admin.php:245 src/PageIndex.php:83
 msgid "Processing"
 msgstr "Обрабатывается"
 
@@ -239,7 +239,7 @@ msgstr "Все источники"
 msgid "The service returned a different source."
 msgstr "Сервис вернул другой источник."
 
-#: src/Admin.php:216
+#: src/Admin.php:216 src/PageIndex.php:26
 msgid "Indexing status"
 msgstr "Статус индексации"
 
@@ -300,7 +300,7 @@ msgstr "Исключённые страницы учитываются отде�
 msgid "View details in Dzen Chat ↗"
 msgstr "Подробнее в Dzen Chat ↗"
 
-#: src/Admin.php:269
+#: src/Admin.php:269 src/PageIndex.php:28
 msgid "Refresh status"
 msgstr "Обновить статус"
 
@@ -324,7 +324,7 @@ msgstr "С даты (UTC)"
 msgid "To date (UTC)"
 msgstr "По дату (UTC)"
 
-#: src/Admin.php:287 src/Admin.php:353 src/Plugin.php:118
+#: src/Admin.php:287 src/Admin.php:353 src/Plugin.php:121
 msgid "Widget"
 msgstr "Виджет"
 
@@ -468,7 +468,7 @@ msgstr "Новый виджет появится в этом проекте. Н�
 msgid "Before enabling the widget, remove any manually added Dzen Chat script to prevent it from loading twice."
 msgstr "Перед включением уберите ранее вставленный вручную скрипт Dzen Chat, чтобы виджет не загружался дважды."
 
-#: src/Admin.php:391 src/Plugin.php:113
+#: src/Admin.php:391 src/PageIndex.php:58 src/Plugin.php:115
 msgid "Reconnect the site in the Dzen Chat section."
 msgstr "Подключите сайт заново в разделе Dzen Chat."
 
@@ -544,7 +544,7 @@ msgstr "Сервис не подтвердил операцию. Попробу�
 msgid "Dzen Chat returned an invalid response. The operation is not confirmed."
 msgstr "Dzen Chat вернул некорректный ответ. Операция не подтверждена."
 
-#: src/Api.php:119
+#: src/Api.php:119 src/Api.php:146
 msgid "Invalid public page URL."
 msgstr "Некорректный публичный адрес страницы."
 
@@ -556,7 +556,11 @@ msgstr "Сервис не подтвердил запрос переиндекс
 msgid "The service returned an invalid list."
 msgstr "Сервис вернул некорректный список."
 
-#: src/Api.php:147
+#: src/Api.php:154
+msgid "The service returned an invalid page status."
+msgstr "Сервис вернул некорректный статус страницы."
+
+#: src/Api.php:164
 msgid "The service returned an invalid indexing status."
 msgstr "Сервис вернул некорректный статус индексации."
 
@@ -568,23 +572,107 @@ msgstr "Для подключения нужны HTTPS сайта и админ�
 msgid "Start the connection again from the WordPress admin."
 msgstr "Повторите подключение из админки WordPress."
 
-#: src/Plugin.php:37
+#: src/PageIndex.php:25 src/PageIndex.php:27
+msgid "Checking indexing status…"
+msgstr "Проверяем статус индексации…"
+
+#: src/PageIndex.php:25
+msgid "Could not load indexing status. Try again."
+msgstr "Не удалось загрузить статус индексации. Попробуйте ещё раз."
+
+#: src/PageIndex.php:28
+msgid "Source status ↗"
+msgstr "Статус источника ↗"
+
+#: src/PageIndex.php:29
+msgid "Status applies to the saved page. Unsaved changes are not indexed."
+msgstr "Показан статус сохранённой страницы. Несохранённые изменения не индексируются."
+
+#: src/PageIndex.php:36
+msgid "You cannot view this page status."
+msgstr "У вас нет доступа к статусу этой страницы."
+
+#: src/PageIndex.php:40
+msgid "The status request expired. Reload the editor."
+msgstr "Срок действия запроса истёк. Перезагрузите редактор."
+
+#: src/PageIndex.php:44
+msgid "This content type is not supported."
+msgstr "Этот тип содержимого не поддерживается."
+
+#: src/PageIndex.php:64
+msgid "Saved changes are waiting to be sent to Dzen Chat."
+msgstr "Сохранённые изменения ожидают отправки в Dzen Chat."
+
+#: src/PageIndex.php:65
+msgid "The last saved change was submitted. This does not confirm indexing is complete."
+msgstr "Последнее сохранённое изменение отправлено. Это ещё не подтверждает завершение индексации."
+
+#: src/PageIndex.php:66
+msgid "Sending saved changes is waiting for service access."
+msgstr "Для отправки сохранённых изменений ожидается доступ к сервису."
+
+#: src/PageIndex.php:67
+msgid "The last saved change could not be sent. Check the Dzen Chat overview."
+msgstr "Не удалось отправить последнее изменение. Проверьте обзор Dzen Chat."
+
+#: src/PageIndex.php:69
+msgid "Not public"
+msgstr "Нет публичного доступа"
+
+#: src/PageIndex.php:72
+msgid "Only published pages and posts are sent for indexing."
+msgstr "На индексацию отправляются только опубликованные страницы и записи."
+
+#: src/PageIndex.php:73
+msgid "Password-protected content is not sent for indexing."
+msgstr "Содержимое, защищённое паролем, не отправляется на индексацию."
+
+#: src/PageIndex.php:74
+msgid "This page is excluded from automatic indexing."
+msgstr "Эта страница исключена из автоматической индексации."
+
+#: src/PageIndex.php:75
+msgid "Previously public URLs are rechecked; removal from the index is not immediate."
+msgstr "Ранее публичные URL проверяются повторно; удаление из индекса происходит не сразу."
+
+#: src/PageIndex.php:80
+msgid "Not found in the index"
+msgstr "Не найдена в индексе"
+
+#: src/PageIndex.php:81
+msgid "Dzen Chat has no page at this URL in the connected source yet."
+msgstr "В подключённом источнике Dzen Chat пока нет страницы с этим URL."
+
+#: src/PageIndex.php:84
+msgid "Ready in Dzen Chat"
+msgstr "Готово в Dzen Chat"
+
+#: src/PageIndex.php:84
+msgid "Indexing error"
+msgstr "Ошибка индексации"
+
+#: src/PageIndex.php:85
+msgid "Excluded from indexing"
+msgstr "Исключена из индексации"
+
+#: src/Plugin.php:38
 msgid "Dzen Chat: every minute"
 msgstr "Dzen Chat: каждую минуту"
 
-#: src/Plugin.php:44
+#: src/Plugin.php:45
 msgid "Connect Dzen Chat separately for each site. Network activation is not supported yet."
 msgstr "Подключайте Dzen Chat отдельно для каждого сайта. Сетевая активация пока не поддерживается."
 
-#: src/Plugin.php:117
+#: src/Plugin.php:120
 msgid "Hide widget"
 msgstr "Не показывать виджет"
 
-#: src/Plugin.php:118
+#: src/Plugin.php:121
 msgid "Use the site-wide widget"
 msgstr "Как на всём сайте"
 
-#: src/Plugin.php:122
+#: src/Plugin.php:125
 msgid "These widget settings apply only to this page."
 msgstr "Эти настройки виджета относятся только к этой странице."
 

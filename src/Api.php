@@ -139,6 +139,23 @@ final class Api
         return $result['items'];
     }
 
+    /** Exact server-side lookup; absence from a recent-document list is not proof of absence. */
+    public function pageForUrl(string $sourceId, string $url): array|null|\WP_Error
+    {
+        $expected = self::canonicalUrl($url);
+        if ($expected === null) return new \WP_Error('dzen_url', __('Invalid public page URL.', 'dzen-chat'));
+        $items = $this->items('/pages', ['url' => $expected, 'source_id' => $sourceId, 'limit' => 1]);
+        if (is_wp_error($items)) return $items;
+        if (!$items) return null;
+        $page = $items[0];
+        if (count($items) !== 1 || ($page['source_id'] ?? null) !== $sourceId
+            || self::canonicalUrl($page['url'] ?? null) !== $expected
+            || !in_array($page['index_status'] ?? '', ['errors', 'pending', 'processing', 'ready', 'excluded'], true)) {
+            return new \WP_Error('dzen_protocol', __('The service returned an invalid page status.', 'dzen-chat'));
+        }
+        return $page;
+    }
+
     /** Aggregate status is always scoped to an explicitly requested, assigned source. */
     public function sourceStatus(string $sourceId): array|\WP_Error
     {

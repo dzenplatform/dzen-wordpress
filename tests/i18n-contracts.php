@@ -76,6 +76,9 @@ try {
         }
         $html = $capture(static fn () => (new DzenChat\Plugin())->metaBox(get_post($post)));
         $check(str_contains($html, $index ? 'Не показывать виджет' : 'Hide widget'), 'page settings use ' . $locale);
+        $check(str_contains($html, $index ? 'Статус индексации' : 'Indexing status'), 'editor indexing panel uses ' . $locale);
+        $pageStatus = (new DzenChat\PageIndex($credentials, $api))->status(get_post($post));
+        $check($pageStatus['label'] === ($index ? 'Нет публичного доступа' : 'Not public'), 'editor draft status uses ' . $locale);
         $error = DzenChat\Admin::filters(['date_from' => 'invalid']);
         $check($error->get_error_message() === ($index ? 'Укажите дату в формате ГГГГ-ММ-ДД.' : 'Enter a date in YYYY-MM-DD format.'),
             'validation errors use ' . $locale);
