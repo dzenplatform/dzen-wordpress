@@ -21,7 +21,8 @@ final class Admin
         }, 1);
         add_action('admin_enqueue_scripts', static function ($hook) {
             if (str_contains($hook, 'dzen-chat')) {
-                wp_enqueue_style('dzen-chat-admin', plugins_url('assets/admin.css', DZEN_CHAT_FILE), [], DZEN_CHAT_VERSION);
+                wp_enqueue_style('dzen-chat-admin', plugins_url('assets/admin.css', DZEN_CHAT_FILE), [],
+                    DZEN_CHAT_VERSION . '.' . filemtime(dirname(DZEN_CHAT_FILE) . '/assets/admin.css'));
             }
         });
     }
@@ -217,7 +218,9 @@ final class Admin
     {
         $heading = 'dzen-index-' . $status['id'];
         echo '<section class="dzen-source dzen-index" aria-labelledby="' . esc_attr($heading) . '">';
+        echo '<div class="dzen-index-heading">';
         echo '<h4 id="' . esc_attr($heading) . '"><a href="' . esc_url($status['details_url']) . '" target="_blank" rel="noopener noreferrer">' . esc_html($status['title']) . '</a></h4>';
+        echo '<a class="button" href="' . esc_url(self::url('dzen-chat-documents')) . '"><span class="dashicons dashicons-update" aria-hidden="true"></span>' . esc_html__('Refresh status', 'dzen-chat') . '</a></div>';
         // Translators: %s is the total number of pages in this source.
         echo '<p>' . esc_html(sprintf(_n('%s page in this source.', '%s pages in this source.', $status['total'], 'dzen-chat'), number_format_i18n($status['total']))) . '</p>';
         if (self::text($status, 'last_reindexed_at') !== '') echo '<p class="description">' . esc_html__('Last reindexed:', 'dzen-chat') . ' ' . esc_html(Dates::format($status['last_reindexed_at'])) . '</p>';
