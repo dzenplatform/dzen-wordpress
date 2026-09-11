@@ -1,6 +1,9 @@
-.PHONY: up setup test lint i18n-pot i18n-mo package package-test down
+.PHONY: local up setup test lint i18n-pot i18n-mo package package-test down
 up:
 	docker compose up -d db wordpress
+
+local:
+	./bin/local.sh
 
 setup:
 	docker compose run --rm cli eval-file wp-content/plugins/dzen-chat/tests/setup.php

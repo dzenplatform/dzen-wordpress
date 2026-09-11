@@ -208,6 +208,40 @@ Synthetic checks and the real connection use **separate volumes**. Never run
 fixture setup or contract tests against the real connection; the scripts check
 the local environment and isolated MU API.
 
+For manual testing with the real local Dzen Chat service, run:
+
+~~~sh
+make local
+~~~
+
+This starts the existing `dzen-wordpress-registration` environment: the database,
+WordPress on HTTP port 8868, the synchronization worker and HTTPS on port 8869.
+The first run installs WordPress and activates the plugin. Later runs preserve
+the database, administrator account, selected widget and saved authorization.
+Fixture project/port environment variables do not redirect this command to the
+synthetic environment.
+
+Requirements: Docker Desktop with Compose, Caddy and curl. Start the local Dzen
+Chat service at `https://local.dzenchat.com` first. The command uses its already
+trusted certificates under `/opt/homebrew/var/lib/caddy`, matching the macOS
+development setup described in the
+[authorization report](docs/verification/2026-09-11-registration.md).
+
+Open [WordPress](https://local.dzenchat.com:8869/) or the
+[plugin admin](https://local.dzenchat.com:8869/wp-admin/admin.php?page=dzen-chat).
+For a newly created site, the local login is `dzen_test` / `local-dzen-test-8868`.
+Connect Dzen Chat through the plugin admin once; the command never substitutes
+test credentials or API responses. Existing WordPress passwords are unchanged.
+
+When the HTTPS proxy needs to start, `make local` keeps it in the foreground.
+Leave that terminal open while testing. Ctrl+C stops the proxy; the containers
+and site data remain available. If HTTPS is already running, the command reuses
+it and returns. To stop this environment's containers without deleting data:
+
+~~~sh
+docker compose -p dzen-wordpress-registration -f compose.yaml -f compose.registration.yaml --profile cron stop
+~~~
+
 The fixture uses WordPress 6.8.2 / PHP 8.3 on port 8870:
 
 ~~~sh
@@ -222,18 +256,7 @@ In this environment, **Dzen Chat · test** opens a demonstration panel without A
 answers. The fixture is excluded from the installation ZIP and does not prove
 service behavior.
 
-The real local connection uses the `dzen-wordpress-registration` Compose
-project, HTTP port 8868 and an HTTPS proxy on 8869. The trusted local CA and first
-registration are described in the
-[authorization report](docs/verification/2026-09-11-registration.md).
-
-~~~sh
-docker compose -p dzen-wordpress-registration -f compose.yaml -f compose.registration.yaml --profile cron up -d db wordpress cron
-~~~
-
-Open the [local WordPress admin](https://local.dzenchat.com:8869/wp-admin/admin.php?page=dzen-chat)
-and [local Dzen Chat](https://local.dzenchat.com).
-The overlay changes only the development address and trusted CA; it does not
+The real connection overlay changes only the development address and trusted CA; it does not
 substitute API responses. Regular installations use `https://chat.dzen.dev`.
 This version has not been deployed to production.
 
