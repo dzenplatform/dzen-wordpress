@@ -122,10 +122,39 @@ No. Products require a separate integration.
 == Changelog ==
 
 = 0.13.1 =
-Display service timestamps using WordPress date/time settings, locale and site
-timezone. Apply conversation date filters to the displayed local calendar day.
-Show readable reindexing and document update dates on Index. Use a dash for missing
-or invalid timestamps. Preserve stored timestamps and user-written content.
+This release includes all plugin improvements since the published 0.2.1 release.
+
+* Connect widget, source, document and conversation screens to the implemented
+  Dzen Chat public API.
+* List and create project widgets in WordPress, select the site-wide widget,
+  override or hide it per page/post, and open widget settings in Dzen Chat.
+* Synchronize existing and newly published public pages and posts through a
+  persistent background queue with retries for temporary failures.
+* Combine the Index and Sources screens. Show indexing progress for the connected
+  site, additional assigned sources and uploaded documents, with direct links to
+  source settings in Dzen Chat.
+* Show indexing status and saved triggers in the page/post editor. Remove a page
+  from the index and block future updates, including after publishing a draft or
+  changing its permalink.
+* Upload UTF-8 TXT and Markdown documents (.txt, .md, .markdown), up to 256 KiB or
+  the WordPress upload limit if lower. Show processing status and errors, read
+  documents in WordPress, and open their editor in Dzen Chat.
+* Display conversation history, saved follow-up suggestions and visitor
+  selections, with filters and a direct link to each conversation in Dzen Chat.
+* Keep the chat window below the WordPress toolbar. Add an opt-in, dismissible
+  invitation to start a conversation on missing pages while preserving HTTP 404.
+* Use English interface strings and documentation, with standard WordPress
+  internationalization and a bundled Russian translation.
+* Format service dates using WordPress date/time settings, locale and site
+  timezone. Apply conversation filters to the displayed local calendar day.
+  Show readable reindexing and document update dates, and a dash for missing or
+  invalid timestamps. Preserve stored timestamps and user-written content.
+
+Conversation history remains read-only: filters cover the latest 100 conversations
+and details show up to the first 100 messages. Hiding conversations, answer-source
+references, full-history search, page trigger controls and billing status are not
+available through this integration. Products require a separate integration;
+PDF and Office uploads are not supported by the current file API.
 
 = 0.13.0 =
 Merge Sources into Index. Show progress for the connected site, additional
