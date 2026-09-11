@@ -37,8 +37,8 @@
 .dzen-index-heading h4 { min-width: 0; margin: 0; font-size: 16px; }
 .dzen-index-heading > p { margin: 0; }
 .dzen-index-controls { display: flex; gap: 8px; margin-inline-start: auto; flex-shrink: 0; }
-.dzen-index-heading .button { display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0; }
-.dzen-index-heading .dashicons { width: 16px; height: 16px; font-size: 16px; }
+.dzen-index-heading .button, .dzen-widget-settings .button { display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.dzen-index-heading .dashicons, .dzen-widget-settings .dashicons { width: 16px; height: 16px; font-size: 16px; }
 .dzen-document { padding: 16px 0; border-top: 1px solid #dcdcde; }
 .dzen-document h4 { margin: 0 0 10px; font-size: 14px; }
 .dzen-document-error { border-left: 3px solid #d63638; padding-left: 10px; }
@@ -52,7 +52,7 @@
 .dzen-widget-name { display: block; font-weight: 600; }
 .dzen-widgets .dzen-widget-selected { background: #f0f6fc; }
 .dzen-widgets .dzen-widget-current { color: #135e96; font-weight: 600; margin: 6px 0; }
-.dzen-widgets .dzen-widget-settings { font-weight: 400; margin: 8px 0 0; }
+.dzen-widgets .dzen-widget-settings { width: 44px; text-align: center; }
 .dzen-widget-create { display: flex; align-items: end; gap: 12px; flex-wrap: wrap; }
 .dzen-widget-create label { display: grid; gap: 6px; }
 .dzen-widget-create input { max-width: 100%; }

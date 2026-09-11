@@ -462,9 +462,10 @@ final class Admin
         wp_nonce_field('dzen_chat_action');
         echo '<input type="hidden" name="action" value="dzen_chat_action"><input type="hidden" name="operation" value="widget_select">';
         echo '<table class="widefat dzen-widgets"><caption class="screen-reader-text">' . esc_html__('Available project widgets', 'dzen-chat') . '</caption><thead><tr>';
-        echo '<th scope="col" class="dzen-widget-choice">' . esc_html__('On site', 'dzen-chat') . '</th><th scope="col">' . esc_html__('Widget', 'dzen-chat') . '</th><th scope="col" class="dzen-widget-status">' . esc_html__('Status', 'dzen-chat') . '</th></tr></thead><tbody>';
+        echo '<th scope="col" class="dzen-widget-choice">' . esc_html__('On site', 'dzen-chat') . '</th><th scope="col">' . esc_html__('Widget', 'dzen-chat') . '</th><th scope="col" class="dzen-widget-status">' . esc_html__('Status', 'dzen-chat') . '</th>';
+        echo '<th scope="col" class="dzen-widget-settings"><span class="screen-reader-text">' . esc_html__('Edit in Dzen Chat ↗', 'dzen-chat') . '</span></th></tr></thead><tbody>';
         if (!$widgets) {
-            echo '<tr><td colspan="3">' . esc_html__('No widgets yet. Add your first widget below.', 'dzen-chat') . '</td></tr>';
+            echo '<tr><td colspan="4">' . esc_html__('No widgets yet. Add your first widget below.', 'dzen-chat') . '</td></tr>';
         }
         foreach ($widgets as $widget) {
             $isSelected = $selected === $widget['id'];
@@ -473,14 +474,11 @@ final class Admin
             echo '<input type="radio" name="id" id="' . esc_attr($inputId) . '" value="' . esc_attr($widget['id']) . '" required' . checked($isSelected, true, false) . disabled(!$widget['is_enabled'], true, false) . '></td>';
             echo '<th scope="row"><label class="dzen-widget-name" for="' . esc_attr($inputId) . '">' . esc_html($widget['name']) . '</label>';
             if ($isSelected) echo '<p class="dzen-widget-current">' . esc_html__('Selected for this site', 'dzen-chat') . '</p>';
-            echo '<p class="dzen-widget-settings">';
-            if (!empty($widget['edit_url'])) {
-                $this->external($widget['edit_url'], __('Edit in Dzen Chat ↗', 'dzen-chat'));
-            } else {
-                $this->external(Api::origin(), __('Open Dzen Chat ↗', 'dzen-chat'));
-            }
-            echo '</p></th><td>' . esc_html($widget['is_enabled'] ? __('Enabled in Dzen Chat', 'dzen-chat') : __('Disabled in Dzen Chat — hidden on the site', 'dzen-chat'));
+            echo '</th><td>' . esc_html($widget['is_enabled'] ? __('Enabled in Dzen Chat', 'dzen-chat') : __('Disabled in Dzen Chat — hidden on the site', 'dzen-chat'));
             if (!$widget['is_enabled']) echo '<p class="description">' . esc_html__('Enable it in Dzen Chat before selecting it.', 'dzen-chat') . '</p>';
+            $editUrl = !empty($widget['edit_url']) ? $widget['edit_url'] : Api::origin();
+            $editLabel = (!empty($widget['edit_url']) ? __('Edit in Dzen Chat ↗', 'dzen-chat') : __('Open Dzen Chat ↗', 'dzen-chat')) . ': ' . $widget['name'];
+            echo '</td><td class="dzen-widget-settings"><a class="button" href="' . esc_url($editUrl) . '" target="_blank" rel="noopener noreferrer" title="' . esc_attr($editLabel) . '" aria-label="' . esc_attr($editLabel) . '"><span class="dashicons dashicons-admin-generic" aria-hidden="true"></span></a>';
             echo '</td></tr>';
         }
         echo '</tbody></table><p><label><input type="radio" name="id" value="" required' . checked($selected, '', false) . '> ' . esc_html__('No site-wide widget', 'dzen-chat') . '</label></p>';
