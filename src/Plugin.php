@@ -7,6 +7,7 @@ final class Plugin
 {
     public function register(): void
     {
+        add_action('init', [self::class, 'translations'], 0);
         $credentials = new Credentials();
         $api = new Api($credentials);
         $sync = new Sync($credentials, $api);
@@ -25,16 +26,22 @@ final class Plugin
         add_action('save_post', [$this, 'saveMeta'], 10, 2);
     }
 
+    public static function translations(): void
+    {
+        // Let WordPress select the current user's admin locale or the site locale.
+        load_plugin_textdomain('dzen-chat', false, dirname(plugin_basename(DZEN_CHAT_FILE)) . '/languages');
+    }
+
     public static function schedules(array $schedules): array
     {
-        $schedules['dzen_chat_minute'] = ['interval' => 60, 'display' => 'Dzen Chat: 1 minute'];
+        $schedules['dzen_chat_minute'] = ['interval' => 60, 'display' => __('Dzen Chat: every minute', 'dzen-chat')];
         return $schedules;
     }
 
     public static function activate(bool $networkWide = false): void
     {
         if ($networkWide) {
-            wp_die(esc_html__('Подключайте Dzen Chat отдельно для каждого сайта. Сетевая активация пока не поддерживается.', 'dzen-chat'));
+            wp_die(esc_html__('Connect Dzen Chat separately for each site. Network activation is not supported yet.', 'dzen-chat'));
         }
         Sync::install();
         delete_option('dzen_chat_sync_client');
@@ -100,16 +107,16 @@ final class Plugin
         try {
             (new Credentials())->get();
         } catch (\RuntimeException | \JsonException $error) {
-            echo '<p>' . esc_html__('Подключите сайт заново в разделе Dzen Chat.', 'dzen-chat') . '</p>';
+            echo '<p>' . esc_html__('Reconnect the site in the Dzen Chat section.', 'dzen-chat') . '</p>';
             return;
         }
         wp_nonce_field('dzen_chat_post_' . $post->ID, 'dzen_chat_post_nonce');
-        echo '<p><label><input type="checkbox" name="_dzen_chat_widget_disabled" value="1"' . checked((bool) get_post_meta($post->ID, '_dzen_chat_widget_disabled', true), true, false) . '> ' . esc_html__('Не показывать виджет', 'dzen-chat') . '</label></p>';
-        echo '<p><label>' . esc_html__('Виджет', 'dzen-chat') . '<br><select name="_dzen_chat_widget"><option value="">' . esc_html__('Как на всём сайте', 'dzen-chat') . '</option>';
+        echo '<p><label><input type="checkbox" name="_dzen_chat_widget_disabled" value="1"' . checked((bool) get_post_meta($post->ID, '_dzen_chat_widget_disabled', true), true, false) . '> ' . esc_html__('Hide widget', 'dzen-chat') . '</label></p>';
+        echo '<p><label>' . esc_html__('Widget', 'dzen-chat') . '<br><select name="_dzen_chat_widget"><option value="">' . esc_html__('Use the site-wide widget', 'dzen-chat') . '</option>';
         foreach (get_option('dzen_chat_widgets', []) as $id => $widget) {
             echo '<option value="' . esc_attr($id) . '"' . selected(get_post_meta($post->ID, '_dzen_chat_widget', true), $id, false) . '>' . esc_html($widget['name']) . '</option>';
         }
-        echo '</select></label></p><p class="description">' . esc_html__('Эти настройки виджета относятся только к этой странице.', 'dzen-chat') . '</p>';
+        echo '</select></label></p><p class="description">' . esc_html__('These widget settings apply only to this page.', 'dzen-chat') . '</p>';
     }
 
     public function saveMeta(int $id, \WP_Post $post): void

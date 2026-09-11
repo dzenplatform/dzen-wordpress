@@ -49,7 +49,7 @@ add_action('init', static function () {
 
 add_action('admin_notices', static function () {
     if (isset($_GET['page']) && is_string($_GET['page']) && str_starts_with($_GET['page'], 'dzen-chat')) {
-        echo '<div class="notice notice-warning"><p>Локальный тестовый стенд: API и виджет демонстрационные. Реальный Dzen Chat не подключён; запросы не отправляются в сервис.</p></div>';
+        echo '<div class="notice notice-warning"><p>Local test environment: the API and widget are demonstrations. The real Dzen Chat service is not connected; requests are not sent to it.</p></div>';
     }
 });
 

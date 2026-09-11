@@ -30,12 +30,12 @@ final class Api
             'limit_response_size' => 16385, 'cookies' => [],
         ]);
         if (is_wp_error($response)) {
-            return new \WP_Error('dzen_exchange_network', __('Не удалось обменять код. Начните подключение заново.', 'dzen-chat'));
+            return new \WP_Error('dzen_exchange_network', __('Could not exchange the code. Start the connection again.', 'dzen-chat'));
         }
         $raw = wp_remote_retrieve_body($response);
         $payload = json_decode($raw, true);
         if (wp_remote_retrieve_response_code($response) !== 200 || strlen($raw) > 16384 || !is_array($payload)) {
-            return new \WP_Error('dzen_exchange_failed', __('Dzen Chat не подтвердил обмен кода. Начните подключение заново.', 'dzen-chat'));
+            return new \WP_Error('dzen_exchange_failed', __('Dzen Chat did not confirm the code exchange. Start the connection again.', 'dzen-chat'));
         }
         return $payload;
     }
@@ -45,7 +45,7 @@ final class Api
         int $timeout = 15): array|\WP_Error
     {
         if (str_starts_with($path, '/chats') && $method !== 'GET') {
-            return new \WP_Error('dzen_history_immutable', __('В этой версии доступен только просмотр истории чатов.', 'dzen-chat'));
+            return new \WP_Error('dzen_history_immutable', __('Conversation history is read-only in this version.', 'dzen-chat'));
         }
         try {
             if (!preg_match('~^/[a-zA-Z0-9/_%.-]+$~D', $path) || str_contains($path, '..')
@@ -64,33 +64,33 @@ final class Api
                 'limit_response_size' => 2097153, 'cookies' => [],
             ]);
         } catch (\RuntimeException | \JsonException $error) {
-            return new \WP_Error('dzen_configuration', __('Проверьте подключение и ключи WordPress. При смене адреса сайта подключите его заново.', 'dzen-chat'));
+            return new \WP_Error('dzen_configuration', __('Check the connection and WordPress security keys. Reconnect if the site URL has changed.', 'dzen-chat'));
         }
         if (is_wp_error($response)) {
-            return new \WP_Error('dzen_network', __('Dzen Chat недоступен. Изменение не подтверждено сервисом.', 'dzen-chat'), ['retryable' => true]);
+            return new \WP_Error('dzen_network', __('Dzen Chat is unavailable. The service has not confirmed the change.', 'dzen-chat'), ['retryable' => true]);
         }
         $status = wp_remote_retrieve_response_code($response);
         $raw = wp_remote_retrieve_body($response);
         $payload = json_decode($raw, true);
         if ($status < 200 || $status >= 300) {
             $messages = [
-                400 => __('Проверьте введённые данные.', 'dzen-chat'),
-                401 => __('Нужно повторно подключить сайт к Dzen Chat.', 'dzen-chat'),
-                403 => __('Действие недоступно: проверьте права и состояние проекта в Dzen Chat.', 'dzen-chat'),
-                404 => __('Объект недоступен или API ещё не поддерживает эту операцию.', 'dzen-chat'),
-                409 => __('Состояние изменилось. Обновите страницу и повторите действие.', 'dzen-chat'),
-                422 => __('Проверьте введённые данные.', 'dzen-chat'),
-                429 => __('Слишком много запросов. Повторите позже.', 'dzen-chat'),
+                400 => __('Check the values you entered.', 'dzen-chat'),
+                401 => __('Reconnect the site to Dzen Chat.', 'dzen-chat'),
+                403 => __('This action is unavailable. Check permissions and the project status in Dzen Chat.', 'dzen-chat'),
+                404 => __('The item is unavailable or the API does not support this operation yet.', 'dzen-chat'),
+                409 => __('The state has changed. Refresh the page and try again.', 'dzen-chat'),
+                422 => __('Check the values you entered.', 'dzen-chat'),
+                429 => __('Too many requests. Try again later.', 'dzen-chat'),
             ];
             $retryAfter = wp_remote_retrieve_header($response, 'retry-after');
             $seconds = is_numeric($retryAfter) ? (int) $retryAfter : max(0, (int) strtotime((string) $retryAfter) - time());
             return new \WP_Error('dzen_http_' . $status,
-                $messages[$status] ?? __('Сервис не подтвердил операцию. Попробуйте позднее.', 'dzen-chat'),
+                $messages[$status] ?? __('The service did not confirm the operation. Try again later.', 'dzen-chat'),
                 ['status' => $status, 'retryable' => $status === 429 || $status >= 500, 'retry_after' => min(86400, $seconds)]);
         }
         if ($status === 204 && $raw === '') return [];
         if (strlen($raw) > 2097152 || !is_array($payload)) {
-            return new \WP_Error('dzen_protocol', __('Dzen Chat вернул некорректный ответ. Операция не подтверждена.', 'dzen-chat'));
+            return new \WP_Error('dzen_protocol', __('Dzen Chat returned an invalid response. The operation is not confirmed.', 'dzen-chat'));
         }
         return $payload;
     }
@@ -116,12 +116,12 @@ final class Api
     public function reindex(string $url): array|\WP_Error
     {
         $expected = self::canonicalUrl($url);
-        if ($expected === null) return new \WP_Error('dzen_url', __('Некорректный публичный адрес страницы.', 'dzen-chat'));
+        if ($expected === null) return new \WP_Error('dzen_url', __('Invalid public page URL.', 'dzen-chat'));
         $result = $this->request('POST', '/update', [], ['url' => $url]);
         if (is_wp_error($result)) return $result;
         if (($result['status'] ?? '') !== 'ok' || ($result['action'] ?? '') !== 'queued'
             || self::canonicalUrl($result['url'] ?? null) !== $expected) {
-            return new \WP_Error('dzen_protocol', __('Сервис не подтвердил запрос переиндексации.', 'dzen-chat'));
+            return new \WP_Error('dzen_protocol', __('The service did not confirm the reindexing request.', 'dzen-chat'));
         }
         return $result;
     }
@@ -134,7 +134,7 @@ final class Api
         if (!isset($result['items']) || !is_array($result['items']) || !array_is_list($result['items'])
             || array_filter($result['items'], static fn ($item) => !is_array($item)
                 || (!is_string($item['id'] ?? null) && !is_int($item['id'] ?? null)) || (string) $item['id'] === '')) {
-            return new \WP_Error('dzen_protocol', __('Сервис вернул некорректный список.', 'dzen-chat'));
+            return new \WP_Error('dzen_protocol', __('The service returned an invalid list.', 'dzen-chat'));
         }
         return $result['items'];
     }

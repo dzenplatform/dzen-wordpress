@@ -1,74 +1,74 @@
-# Проверка клиента WordPress 0.1.0
+# WordPress client 0.1.0 verification
 
-Дата: 2026-09-09. Серверная задача: [Dzen Chat #14](https://github.com/xen/dzen.chat/issues/14).
+Date: 2026-09-09. Server task:
+[Dzen Chat #14](https://github.com/xen/dzen.chat/issues/14).
+This historical report concerns the proposed API and synthetic responses.
+The current release uses the [implemented contract](../contracts/dzen-chat-api.md).
 
-## Что реализовано
+## Implemented at that date
 
-Плагин в `dzen-chat.php`, `src/` и `assets/` обращается к Integration API v1.
-История поддерживает просмотр, поиск, фильтры по датам/виджету/видимости,
-источники сообщения, их внутренний просмотр и внешние ссылки. Скрытие и
-восстановление используют PATCH с явным состоянием и expected_version.
-Удаление чатов и изменение сообщений запрещены до выполнения HTTP-запроса.
+The plugin in dzen-chat.php, src/ and assets/ calls Integration API v1.
+History supports viewing, search, date/widget/visibility filters, message sources,
+internal source viewing and external links. Hide/restore uses PATCH with an
+explicit state and expected_version. Chat deletion and message editing are
+blocked before HTTP.
 
-Также подготовлены подключение с PKCE и проверкой состояния, зашифрованное
-хранилище ключей, базовое управление виджетами, очередь публичных страниц и
-записей, настройки триггеров, список документов и статусы источников.
-Товары в синхронизацию не включаются.
+Also prepared: PKCE connection and status checking, encrypted credentials, basic
+widget management, a public page/post queue, trigger settings, document listing
+and source status. Products are excluded from synchronization.
 
-## Проверенное окружение
+## Verified environment
 
-- Отдельный Docker Compose: WordPress 6.8.2, PHP 8.3, MariaDB 11.7.
-- Админка: `http://127.0.0.1:8868/wp-admin/`.
-- Dzen API заменён только на этом стенде `tests/api-fixture.php` через
-  `pre_http_request`. Ключи, диалоги и источники — синтетические.
-- Браузерные действия выполнялись Playwright CLI в настоящем WordPress.
-- Стенд не изменяет Dzen Chat и его производственные данные.
+- Separate Docker Compose: WordPress 6.8.2, PHP 8.3, MariaDB 11.7.
+- Admin: `http://127.0.0.1:8868/wp-admin/`.
+- Only this environment replaces the Dzen API with tests/api-fixture.php through
+  pre_http_request. Credentials, conversations and sources are synthetic.
+- Browser actions used Playwright CLI against actual WordPress.
+- The environment does not change Dzen Chat or production data.
 
-## Выполненные проверки
+## Completed checks
 
-`make test` завершился успешно: PHP lint и **48 проверок** в WordPress.
-Проверяются шифрование/повреждение ciphertext/autoload, подписанный метод/путь/
-тело, даты и URL, GET истории, скрытие/восстановление/конфликт, запрет DELETE и
-редактирования сообщений, ошибки 403/429/сети, чтение и принадлежность источника,
-публикация/изменение/защита паролем/корзина, исключение товаров, версии событий,
-202 против завершённой операции, перенос сайта и отсутствие текстов истории
-и источников в options плагина.
+`make test` passed: PHP lint and **48 WordPress checks**. Coverage includes
+encryption, damaged ciphertext, autoload, signed method/path/body, dates/URLs,
+history GETs, hide/restore/conflicts, DELETE/message-edit rejection,
+403/429/network errors, source reading/ownership, publish/edit/password/trash,
+product exclusion, event versions, HTTP 202 versus completed operations, site
+moves and absence of history/source text in plugin options.
 
-`tests/browser-checks.js` успешно выполнен через Playwright CLI. Проверены:
+The then-current tests/browser-checks.js passed through Playwright CLI:
 
-- исчезновение скрытого чата из основного списка, поиск и фильтр виджета среди
-  скрытых, доступность сообщений скрытой карточки и восстановление;
-- текст источника внутри WP, сохранение экрана после reload, отсутствие
-  исполнения `<script>` и ссылок `javascript:`, отсутствие API-секрета в HTML;
-- URL оригинала и атрибуты `_blank`/`noopener`; содержимое внешнего сайта не
-  проверялось, ссылка fixture указывает на демонстрационный адрес;
-- понятное состояние недоступного источника без внешней ссылки;
-- отклонение POST без nonce и отказ subscriber в чтении/изменении видимости;
-- фильтр по дате и отсутствие кнопки удаления.
+- Hidden chats leave the main list; search and widget filters find them among
+  hidden chats; messages remain accessible and restoration works.
+- Source text displays in WordPress and survives reload. Script content and
+  javascript: links do not execute. API secrets are absent from HTML.
+- Original URLs use _blank/noopener. External site content was not checked;
+  fixture links point to demonstration addresses.
+- Unavailable sources have a clear state without an external link.
+- POST without a nonce and subscriber visibility reads/writes are rejected.
+- Date filtering works and no delete button is present.
 
-При проверке найден и исправлен дефект внутренних ссылок: WordPress очищает
-параметр `message` из адреса админки. Плагин использует `message_id` и
-`reference_id`; тест проверяет сохранение источника после перезагрузки.
+Verification found and fixed an internal-link defect: WordPress removes the
+message parameter from admin URLs. The plugin used message_id and reference_id,
+with a regression check for source persistence after reload.
 
-Скриншоты сохраняются локально, в Git не включены:
-`output/playwright/chat-history.png` и `output/playwright/source-in-wordpress.png`.
+Local screenshots, excluded from Git:
+`output/playwright/chat-history.png` and
+`output/playwright/source-in-wordpress.png`.
 
-ZIP собирается `make package` в `dist/dzen-chat-0.1.0.zip` с единственной корневой
-директорией `dzen-chat/`. Проверен состав архива: bootstrap, uninstall, readme,
-src и assets; тестовый API, учётные данные стенда и документы в него не входят.
-Плагин был активирован из подключённого каталога; отдельная установка ZIP
-на чистый production-подобный сайт ещё не выполнялась.
+`make package` builds `dist/dzen-chat-0.1.0.zip` with one dzen-chat/ root.
+The archive was inspected: bootstrap, uninstall, readme, src and assets, without
+the test API, fixture credentials or documents. The plugin was activated from
+a mounted directory. Installing the ZIP on a clean production-like site had
+not yet been tested.
 
-## Граница результата
+## Result boundary
 
-Это проверка клиента под будущий API, как просил пользователь. Не проверены
-реальная выдача/погашение кода на chat.dzen.dev, совместимость серверной подписи,
-реальный биллинг, работа crawler/индекса/ответа виджета и серверная реализация
-скрытия. Для них нужен выполненный серверный контракт и отдельная E2E-приёмка.
-Сохранение биллинговой истории на сервере — требование issue #14; локальный
-fixture не является доказательством серверной реализации.
+This verifies a client for a future API, as requested. It does not verify real
+code issuance/redemption at chat.dzen.dev, compatible server signatures,
+billing, crawler/index/widget answers or server-side hiding. Those require the
+implemented contract and separate E2E acceptance. Preserving server billing
+history is an issue #14 requirement; the local fixture does not prove it.
 
-Матрица других версий WP/PHP, полное редактирование оформления/источников
-виджета, network-wide multisite и отдельный домен WP-админки остаются вне
-проверенного объёма этой клиентской итерации. Публикация в WordPress.org и
-production-деплой не выполнялись.
+Other WordPress/PHP versions, complete widget appearance/source editing,
+network-wide multisite and a separate WordPress admin domain were outside this
+iteration's verified scope. No WordPress.org publication or production deployment.

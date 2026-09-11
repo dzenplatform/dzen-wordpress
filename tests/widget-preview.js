@@ -12,7 +12,7 @@
     var panel = document.createElement('section');
     panel.id = 'dzen-fixture-panel';
     panel.setAttribute('role', 'dialog');
-    panel.setAttribute('aria-label', 'Dzen Chat — локальный тест');
+    panel.setAttribute('aria-label', 'Dzen Chat — local test');
     panel.style.cssText = 'width:min(350px,calc(100vw - 48px));box-sizing:border-box;background:#fff;border:1px solid #a5cebf;border-radius:16px;padding:24px;margin-bottom:12px;box-shadow:0 12px 40px #173e432b;';
     panel.hidden = true;
     var title = document.createElement('strong');
@@ -24,7 +24,7 @@
         panel.appendChild(welcome);
     });
     var note = document.createElement('p');
-    note.textContent = 'Локальный тест интерфейса. Реальный Dzen Chat не подключён. Здесь можно проверить показ и настройки виджета; ответы ИИ недоступны.';
+    note.textContent = 'Local interface test. The real Dzen Chat service is not connected. Check widget display and settings here; AI answers are unavailable.';
     note.style.cssText = 'font-size:13px;color:#52676a;';
     panel.appendChild(note);
     var launcher = document.createElement('button');
@@ -32,7 +32,7 @@
     launcher.setAttribute('data-dzen-fixture-launcher', '');
     launcher.setAttribute('aria-controls', panel.id);
     launcher.setAttribute('aria-expanded', 'false');
-    launcher.textContent = 'Dzen Chat · тест';
+    launcher.textContent = 'Dzen Chat · test';
     launcher.style.cssText = 'display:block;margin-left:auto;background:#b4f078;color:#173e43;border:1px solid #a5cebf;border-radius:32px;padding:16px 22px;font:600 15px system-ui;cursor:pointer;box-shadow:0 8px 24px #173e4333;';
     function close() {
         panel.hidden = true;

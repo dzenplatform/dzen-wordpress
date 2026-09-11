@@ -1,106 +1,148 @@
 # Dzen Chat for WordPress
 
-Плагин для подключения WordPress к [Dzen Chat](https://chat.dzen.dev).
+Connect your WordPress site to [Dzen Chat](https://chat.dzen.dev), manage chat
+widgets and keep public content available to your AI assistant.
 
-**Версия 0.4.0 подключена к реализованному публичному API.**
-В WordPress работают авторизация, управление настоящими виджетами, просмотр
-индекса, источников, файлов базы знаний и переписки. Публичные страницы и записи
-отправляются на переиндексацию после подключения, публикации и изменения.
-На локальном сайте проверена вся цепочка: изменение текста → фоновая очередь →
-индекс Dzen Chat → ответ ассистента по новым данным.
+**Version 0.5.0 uses the implemented public API and includes English and Russian
+interfaces.** Authorize a site, manage real widgets, inspect indexed documents,
+sources and knowledge files, and read conversations directly in WordPress.
+Public pages and posts are submitted for reindexing after connection, publication
+and changes. The complete update flow has been verified locally: edited content →
+background queue → Dzen Chat index → assistant answer using the new information.
 
-Виджет можно создать, переименовать, включить, выключить и настроить подсказки.
-Выберите общий виджет для сайта; в редакторе страницы или записи можно выбрать
-другой либо скрыть виджет. Настройки виджета относятся ко всему проекту Dzen Chat,
-настройки размещения — к текущему сайту. Изменения через плагин обновляют кеш сразу;
-состояние из Dzen Chat перечитывается в течение пяти минут.
+## Features
 
-История хранится на сервере. В WordPress доступны список диалогов, фильтры по
-идентификатору, посетителю, дате и виджету, просмотр сообщений и оценок.
-Документы открываются внутри админки с состоянием обработки, ссылками на источник,
-оригинал и редактор соответствующей записи WordPress. Содержимое файлов базы
-знаний отображается экранированным текстом и не сохраняется в БД плагина.
+- Create, rename, enable or disable widgets and configure follow-up questions.
+- Select a widget for the whole site, choose another for a page or post, or hide
+  it on that page. Widget settings apply to the Dzen Chat project; placement
+  applies to this WordPress site.
+- Synchronize public pages and posts through a persistent background queue.
+- Inspect document processing, open the original source or edit the matching
+  WordPress post.
+- View source status and knowledge file contents as escaped text.
+- Read conversations, messages and feedback; filter by conversation or visitor
+  ID, date and widget. Conversation text stays on the service.
+- Use the English interface or the bundled Russian translation, following the
+  administrator's WordPress language preference.
 
-Текущие границы API:
+Changes made through the plugin refresh its widget cache immediately. Changes
+made directly in Dzen Chat are refreshed within five minutes.
 
-- Списки документов и диалогов ограничены последними 100 объектами; фильтры
-  действуют в этом наборе. Карточка диалога получает первые 100 сообщений.
-- Скрытие/восстановление диалогов, поиск по тексту всей истории, ссылки на источники
-  отдельных ответов, управление триггерами страниц и статус оплаты пока недоступны.
-- Удаление, закрытие или смена адреса ранее публичной записи отправляет URL
-  на повторную проверку. Это **не гарантирует удаление из выдачи**: для этого
-  требуется отдельное серверное действие.
-- Товары требуют отдельной интеграции. Плагин отправляет только публичные
-  `page`/`post`; общий обход сайта и дополнительные источники управляются сервисом.
+## Current API limits
 
-- [Актуальный контракт API и недостающие возможности](docs/contracts/dzen-chat-api.md)
-- [Живая проверка версии 0.4.0](docs/verification/2026-09-11-full-integration.md)
-- [Рабочая постановка](docs/specs/2026-09-11-full-integration.md)
-- [Проверка авторизации](docs/verification/2026-09-11-registration.md)
-- [Серверная задача скрытия истории](https://github.com/xen/dzen.chat/issues/14)
+- Document and conversation lists contain at most the latest 100 records.
+  Filters apply to that set. A conversation displays its first 100 messages.
+- Hiding/restoring conversations, full-history text search, individual answer
+  sources, page trigger controls and billing status are not yet available.
+- Deleting, unpublishing or changing the URL of a previously public post submits
+  its old URL for another check. This **does not guarantee removal from
+  retrieval**; an explicit server operation is still required.
+- Products need a separate integration. The plugin submits only public
+  `page`/`post` content. General crawling and additional sources are managed
+  by the service.
 
-## Подключение и данные
+See the [current API contract](docs/contracts/dzen-chat-api.md),
+[0.4.0 live verification](docs/verification/2026-09-11-full-integration.md),
+[implementation brief](docs/specs/2026-09-11-full-integration.md),
+[authorization verification](docs/verification/2026-09-11-registration.md) and
+[server conversation-visibility issue](https://github.com/xen/dzen.chat/issues/14).
 
-Подключение использует PKCE S256 и одноразовый код:
+## Installation
+
+Download `dzen-chat-X.Y.Z.zip` from
+[GitHub Releases](https://github.com/dzenplatform/dzen-wordpress/releases), then
+open **Plugins → Add New → Upload Plugin** in WordPress and activate it.
+For a manual update, upload the new ZIP and confirm replacement.
+
+1. Open **Dzen Chat** and click **Connect Dzen Chat**.
+2. Choose an existing project or create one at `chat.dzen.dev`.
+3. Return to WordPress after authorization.
+4. Open **Dzen Chat → Widgets**, enable a widget and click **Place on site**.
+5. Open a public page to check the widget. Page and post overrides are in the editor.
+6. Inspect **Index**, **Sources** and **Conversations** as content and chats arrive.
+
+Requirements: WordPress 6.8+, PHP 8.2+, HTTPS, PHP sodium and strong WordPress
+security keys. Synchronization needs working WP-Cron or a system scheduler.
+
+## Language
+
+Plugin source strings and repository documentation are in English. Russian
+(`ru_RU`) is included in every installation ZIP.
+
+In **Users → Profile → Language**, choose **Русский** for a Russian admin
+interface or **English (United States)** for English. Install the WordPress
+language pack through **Settings → General → Site Language** if Russian is not
+yet available. A user who selects **Site Default** follows the site's language.
+Languages without a bundled translation fall back to English.
+
+Widget names, source titles, indexed content and conversation messages keep their
+original language. The embedded widget and Dzen Chat website are rendered by the
+service; this plugin's translation covers the WordPress interface.
+
+See [translation maintenance](docs/internationalization.md) to add a language or
+update the catalogs, and the [0.5.0 verification report](docs/verification/2026-09-11-internationalization.md)
+for the English/Russian checks.
+
+## Connection and data
+
+Connection uses PKCE S256 and a one-time code:
 `/auth/add` → WordPress callback → `/auth/exchange/`.
-WordPress хранит `client_id`, `client_secret` и `site_source_id` в зашифрованной
-опции с выключенным autoload. Серверные запросы к `/api/` используют Bearer
-`client_id.client_secret` с проверкой HTTPS. В браузер передаётся публичный код
-виджета. Код обмена, секрет и переписка не выводятся в журналы плагина.
+WordPress stores `client_id`, `client_secret` and `site_source_id` in an
+encrypted option with autoload disabled. Server requests to `/api/` use the
+Bearer token `client_id.client_secret` with HTTPS verification. Only the public
+widget code reaches the visitor's browser. Plugin logs do not include exchange
+codes, secrets or conversation text.
 
-После подключения запускается сверка уже опубликованных страниц и записей.
-Она также запускается при обновлении с версии 0.3 и повторной активации.
-Сохранение страницы пишет событие в локальную очередь, без ожидания HTTP.
-Планировщик отправляет URL через `POST /api/update`; временные ошибки повторяются
-с задержкой, максимум шесть попыток. Ответ 202 означает принятие запроса.
-Фактическое состояние обработки отображается отдельно в разделе «Индекс».
-Для повторной сверки и ошибок есть кнопка в обзоре.
+Connection schedules reconciliation of existing public pages and posts. This
+also runs when upgrading from 0.3 or reactivating the plugin. Saving content
+writes an event to a local queue without waiting for HTTP. The scheduler submits
+URLs through `POST /api/update`; temporary failures are retried with a delay,
+up to six attempts. HTTP 202 confirms acceptance; **Index** shows processing
+separately. The overview provides a reconciliation and retry button.
 
-Работа очереди требует WP-Cron либо системного планировщика. Локальный Compose
-имеет отдельный профиль `cron`, который запускает только задания плагина.
-Успешный API-ответ не является подтверждением оплаты проекта. Удаление ключей
-в WordPress удаляет их локально; отзыв API-клиента выполняется в Dzen Chat.
-Удаления чатов или сообщений в плагине нет.
+The queue requires WP-Cron or an external scheduler. Local Compose includes a
+`cron` profile that runs only plugin jobs. A successful API response does not
+confirm the project's billing status. Removing credentials in WordPress is a
+local action; revoke the API client in Dzen Chat. The plugin does not delete
+chats or messages or store conversation text and source excerpts in its database.
 
-## Установка и релизы
+## Builds and releases
 
-Готовые пакеты: [GitHub Releases](https://github.com/dzenplatform/dzen-wordpress/releases).
-Скачайте вложение `dzen-chat-X.Y.Z.zip` и загрузите через WordPress:
-«Плагины → Добавить плагин → Загрузить плагин». Для ручного обновления загрузите
-новый ZIP и подтвердите замену. Нужны HTTPS, PHP sodium и сильные ключи WordPress.
+The repository and its releases are public. Install the versioned ZIP attachment;
+GitHub's automatic **Source code** archives contain development files and are
+not installation packages. Each release ZIP has a SHA-256 checksum.
 
-Автоматические архивы GitHub «Source code» содержат весь репозиторий и для
-установки не предназначены. Рядом с готовым ZIP публикуется SHA-256.
-Пока репозиторий закрытый, релизы доступны только его участникам; после открытия
-те же ссылки станут публичными. GitHub Releases не включают автоматические
-обновления в WordPress. Для этого позже нужен updater или каталог WordPress.org.
-Заголовок `Update URI` защищает от подмены одноимённым плагином каталога.
+GitHub Releases do not enable automatic updates inside WordPress. That requires
+a future updater or a WordPress.org listing. The `Update URI` header prevents
+replacement by an unrelated directory plugin with the same name.
 
-При push в main, pull request и ручном запуске Actions проверяет упаковку,
-PHP lint и контракты WordPress, затем сохраняет ZIP как artifact на 14 дней.
-Push тега `vX.Y.Z` дополнительно создаёт GitHub Release после успешных проверок.
-Существующие релизы не перезаписываются.
+Pushes to `main`, pull requests and manual Actions runs check packaging, PHP
+lint and WordPress contracts, then keep a ZIP artifact for 14 days. Pushing a
+`vX.Y.Z` tag additionally creates a GitHub Release after the checks pass.
+Existing releases are not overwritten.
 
-Для выпуска:
+To release:
 
-1. Обновите Version и DZEN_CHAT_VERSION в `dzen-chat.php`, Stable tag и changelog
-   в `readme.txt`. Версия имеет формат X.Y.Z.
-2. Закоммитьте и отправьте изменения; дождитесь успешного workflow.
-3. Создайте и отправьте тег соответствующей версии, например `v0.4.0`.
-4. Скачайте проверенный ZIP и checksum из Releases.
+1. Update `Version` and `DZEN_CHAT_VERSION` in `dzen-chat.php`, plus
+   `Stable tag` and the changelog in `readme.txt`. Use `X.Y.Z`.
+2. Update and compile the [translation catalogs](docs/internationalization.md).
+3. Commit and push the changes; wait for a successful workflow.
+4. Create and push the matching tag, for example `v0.5.0`.
+5. Download the checked ZIP and checksum from Releases.
 
-Локальная сборка: `make package-test && make package` (Python 3 и Git).
-Пакет версии 0.4.0: `dist/dzen-chat-0.4.0.zip`. В ZIP попадают только
-отслеживаемые Git файлы плагина, src/ и assets/. Тестовые данные, Docker,
-локальные сертификаты и документы разработки исключены.
+Build locally with `make package-test && make package` (Python 3 and Git).
+Version 0.5.0 produces `dist/dzen-chat-0.5.0.zip`. Only Git-tracked runtime files
+and `src/`, `assets/` and `languages/` are packaged. Stage new runtime and
+language files before building. Fixtures, Docker configuration, local
+certificates and development documentation are excluded.
 
-## Локальная проверка
+## Local verification
 
-Синтетические проверки и настоящее подключение используют **отдельные volumes**.
-Нельзя запускать fixture setup или контрактные тесты на живом подключении;
-тестовые скрипты проверяют режим и наличие изолированного MU API.
+Synthetic checks and the real connection use **separate volumes**. Never run
+fixture setup or contract tests against the real connection; the scripts check
+the local environment and isolated MU API.
 
-Fixture WordPress 6.8.2/PHP 8.3 запускается на порту 8870:
+The fixture uses WordPress 6.8.2 / PHP 8.3 on port 8870:
 
 ~~~sh
 COMPOSE_PROJECT_NAME=dzen-wordpress-widget-tests DZEN_WORDPRESS_PORT=8870 make up
@@ -109,24 +151,25 @@ COMPOSE_PROJECT_NAME=dzen-wordpress-widget-tests DZEN_WORDPRESS_PORT=8870 docker
 COMPOSE_PROJECT_NAME=dzen-wordpress-widget-tests DZEN_WORDPRESS_PORT=8870 make test
 ~~~
 
-Установка ядра и активация нужны только для нового volume. В этом окружении
-кнопка «Dzen Chat · тест» открывает демонстрационную панель без ответов ИИ.
-Fixture не входит в устанавливаемый пакет и не доказывает работу сервиса.
+Core installation and plugin activation are needed only for a new volume.
+In this environment, **Dzen Chat · test** opens a demonstration panel without AI
+answers. The fixture is excluded from the installation ZIP and does not prove
+service behavior.
 
-Настоящий локальный Dzen Chat использует отдельный Compose project
-`dzen-wordpress-registration`, HTTP-порт 8868 и HTTPS proxy на 8869.
-Доверенный локальный CA и первая регистрация описаны в
-[отчёте авторизации](docs/verification/2026-09-11-registration.md).
+The real local connection uses the `dzen-wordpress-registration` Compose
+project, HTTP port 8868 and an HTTPS proxy on 8869. The trusted local CA and first
+registration are described in the
+[authorization report](docs/verification/2026-09-11-registration.md).
 
 ~~~sh
 docker compose -p dzen-wordpress-registration -f compose.yaml -f compose.registration.yaml --profile cron up -d db wordpress cron
 ~~~
 
-Админка: [локальный WordPress](https://local.dzenchat.com:8869/wp-admin/admin.php?page=dzen-chat).
-Сервис: [локальный Dzen Chat](https://local.dzenchat.com).
-Overlay меняет только адрес разработки и доверенный CA, без подмены ответов.
-Обычная установка обращается к `https://chat.dzen.dev`.
-Production-деплой этой версии не выполнялся.
+Open the [local WordPress admin](https://local.dzenchat.com:8869/wp-admin/admin.php?page=dzen-chat)
+and [local Dzen Chat](https://local.dzenchat.com).
+The overlay changes only the development address and trusted CA; it does not
+substitute API responses. Regular installations use `https://chat.dzen.dev`.
+This version has not been deployed to production.
 
-Репозиторий: `git@github.com:dzenplatform/dzen-wordpress.git`.
-Локальный путь: `/Users/xen/Dev/dzen/wordpress`.
+Repository: `git@github.com:dzenplatform/dzen-wordpress.git`.
+Development checkout: `/Users/xen/Dev/dzen/wordpress`.

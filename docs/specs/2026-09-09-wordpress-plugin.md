@@ -1,362 +1,358 @@
-# Task: Плагин Dzen Chat для WordPress
+# Task: Dzen Chat plugin for WordPress
 
-Дата: 2026-09-09. Состояние: **клиент WordPress 0.1.0 реализован под контракт API**.
-Серверная реализация и совместная приёмка остаются отдельным этапом. История,
-источники и скрытие реализуются по уточнению пользователя без ожидания API.
+Date: 2026-09-09. Status at that date: **WordPress client 0.1.0 implemented against
+the proposed API contract**. Server implementation and joint acceptance remained
+a separate stage. History, sources and hiding were built against the user's
+clarifications without waiting for the server API.
+
+This is a historical specification. Some proposals below were superseded by the
+[current API contract](../contracts/dzen-chat-api.md), including versioned
+transport, scopes, project status and conversation mutations. It does not
+describe all capabilities available in the current release.
 
 ## Goal
 
-Администратор WordPress подключает сайт к проекту Dzen Chat через подтверждение
-на `chat.dzen.dev`, управляет виджетами и триггерами страниц, видит историю
-диалогов, состояние индекса и дополнительных источников. Изменения публичных
-материалов сайта автоматически доходят до индекса, а ограничения проекта
-отображаются в WordPress и соблюдаются сервисом.
+A WordPress administrator connects a site to a Dzen Chat project through consent
+at `chat.dzen.dev`, manages widgets and page triggers, and views conversation
+history, indexing status and additional sources. Changes to public site content
+reach the index automatically. WordPress displays project restrictions, and the
+service enforces them.
 
-Результат реализации — устанавливаемый ZIP плагина, код и проверки в
-`git@github.com:dzenplatform/dzen-wordpress.git`, локально в
+Deliver an installable plugin ZIP, code and checks in
+`git@github.com:dzenplatform/dzen-wordpress.git`, with the local checkout at
 `/Users/xen/Dev/dzen/wordpress`.
 
 ## Context
 
-Проверен код основного checkout `/Users/xen/Dev/dzen/chat` на 2026-09-09:
+The main checkout at `/Users/xen/Dev/dzen/chat` was inspected on 2026-09-09:
 
-- `chat/routes.py`: публичный `POST /api/update`, публичный виджет и маршруты
-  административного интерфейса проекта.
-- `chat/views/api/views.py`: подпись обновления, одноразовый nonce, ограничения
-  запросов, проверка источников клиента и постановка `crawl_page_task` в очередь.
-- `chat/models/data.py`: `ApiClient`, `Source`, `WidgetIntegration`, `Page`,
-  `Chat`, `ChatMsg`, привязки к проекту и источникам.
-- `chat/models/project.py`: проект и роли `owner`/`member`.
-- `chat/views/projects/workspaces.py`: создание проекта и источников.
-- `chat/views/projects/views.py`: создание API-клиента и настройки источников.
-- `chat/views/projects/chats.py`: списки и детали истории в интерфейсе Dzen Chat.
-- [Актуальный контракт интеграции и оставшиеся требования](../contracts/dzen-chat-api.md).
-- WordPress API: `admin_url()`, `home_url()`, Options API,
-  `wp_after_insert_post`, `transition_post_status`, `before_delete_post`, WP-Cron.
+- `chat/routes.py`: public `POST /api/update`, the public widget and project
+  administration routes.
+- `chat/views/api/views.py`: update signature, one-time nonce, request limits,
+  client source checks and queuing `crawl_page_task`.
+- `chat/models/data.py`: `ApiClient`, `Source`, `WidgetIntegration`,
+  `Page`, `Chat`, `ChatMsg`, and their project/source relationships.
+- `chat/models/project.py`: projects and `owner`/`member` roles.
+- `chat/views/projects/workspaces.py`: project and source creation.
+- `chat/views/projects/views.py`: API client creation and source settings.
+- `chat/views/projects/chats.py`: history lists and details in Dzen Chat.
+- [Current integration contract and remaining requirements](../contracts/dzen-chat-api.md).
+- WordPress APIs: `admin_url()`, `home_url()`, Options API,
+  `wp_after_insert_post`, `transition_post_status`, `before_delete_post`
+  and WP-Cron.
 
-## Current Behavior
+## Current behavior at specification time
 
-Ниже исходное состояние на момент постановки. Состояние клиента после реализации
-и выполненные проверки описаны в [отчёте](../verification/2026-09-09-wordpress-client.md).
+The table describes the starting point. The client implementation and completed
+checks are recorded in the [historical report](../verification/2026-09-09-wordpress-client.md).
 
-| Область | Что существует | Чего не хватает для плагина |
+| Area | Existing behavior | Missing for the plugin |
 | --- | --- | --- |
-| WordPress | Указанный репозиторий был пуст; `origin` настроен | Код, административные страницы, сборка и проверки |
-| Подключение | API-клиенты проекта с `client_id`, зашифрованным секретом и `is_active` | `/auth/add`, согласие, одноразовый обмен и отдельная запись интеграции |
-| Индекс | `POST /api/update` проверяет подпись и ставит URL на переобход | Явное удаление, версии событий, подтверждение результата, список документов |
-| Виджеты и история | Модели и административные HTML-маршруты | API для серверного клиента WordPress с ограниченными правами |
-| Триггеры | `Source.enable_triggers`, `Page.has_triggers`, настройки виджета | Отдельная политика включения триггеров конкретной страницы |
-| Оплата | В просмотренной модели и обработчике API нет статуса оплаты проекта | Авторитетный статус проекта и правила разрешённых операций |
+| WordPress | Empty repository with origin configured | Code, admin screens, packaging and checks |
+| Connection | Project API clients with client_id, encrypted secret and is_active | /auth/add, consent, one-time exchange and integration record |
+| Index | POST /api/update verifies a signature and queues a URL for recrawling | Explicit deletion, event versions, completion confirmation and document listing |
+| Widgets and history | Models and administrative HTML routes | A server-client API with restricted access |
+| Triggers | Source.enable_triggers, Page.has_triggers and widget settings | An explicit policy for enabling triggers on an individual page |
+| Billing | No project billing status in the inspected model or API handler | Authoritative project status and permitted-operation rules |
 
-`202 queued` подтверждает приём работы, а не завершённую индексацию.
-`ApiClient.is_active`, пауза источника и блокировка проекта — разные состояния.
-Текущий `/api/update` подписывает поля URL-запроса; эту подпись нельзя просто
-перенести на произвольные методы управления. Работа production и локального UI
-в этой постановке не проверялась.
+`202 queued` confirms acceptance, not completed indexing.
+`ApiClient.is_active`, a paused source and a blocked project are different states.
+The existing `/api/update` signs URL request fields; its signature cannot simply
+be reused for arbitrary management methods. Production and the local UI were
+not tested while preparing this specification.
 
-## Target Shape
+## Target shape
 
-### 1. Границы первой версии
+### 1. First-version scope
 
-Предлагается один проект Dzen Chat на один сайт WordPress; у проекта может быть
-несколько независимо отзываемых интеграций. Первая версия ориентирована на
-обычную установку WordPress. Поддержку multisite следует подтвердить отдельной
-матрицей проверок; сетевое подключение всех сайтов не включается автоматически.
+Propose one Dzen Chat project per WordPress site, with multiple independently
+revocable integrations per project. The first version targets a normal
+WordPress installation. Multisite requires its own verification matrix;
+connecting all network sites is not included automatically.
 
-Подтверждённый пользователем охват — только публичные `page` и `post`.
-Товары относятся к будущей отдельной интеграции. Черновики, приватные и защищённые
-паролем материалы, другие типы записей, ревизии и автосохранения не отправляются.
+The user confirmed public `page` and `post` content only. Products belong to
+a future integration. Drafts, private and password-protected content, other
+post types, revisions and autosaves are not submitted.
 
-### 2. Подключение
+### 2. Connection
 
-1. Администратор с `manage_options` нажимает «Подключить Dzen Chat».
-   POST защищён WordPress nonce. Сервер WP создаёт случайный `state` и PKCE
-   verifier, связывает их с текущим пользователем, сессией и установкой сайта.
-2. Браузер открывает `https://chat.dzen.dev/auth/add` с `host`,
-   `type=wordpress`, `site_url`, `redirect_uri`, `state`, `code_challenge`
-   и `code_challenge_method=S256`. `host` берётся из настроенного `home_url()`,
-   не из произвольного заголовка Host. Callback строится через `admin_url()`:
-   `admin-post.php?action=dzen_chat_authorize`.
-3. Dzen Chat сохраняет запрос на время входа. После входа показывает домен,
-   WordPress и область доступа; предлагает существующий доступный проект или
-   новый. Подтверждение выполняется POST с CSRF-защитой. Обычный GET не создаёт
-   проект, источник или API-клиента.
-4. Для нового проекта сервер создаёт название по `host`, владельца и источник
-   `site_url`. Для существующего — находит подходящий источник этого сайта или
-   добавляет его без дубликата. Эти технические действия не требуют отдельных
-   экранов. Начальная индексация запускается после успешного подключения.
-5. Сервер возвращает на точно проверенный callback `code` и `state`.
-   Код имеет короткий срок действия; предлагается 5 минут. Его хеш хранится на
-   сервере вместе с проектом, типом, сайтом, callback и PKCE challenge.
-6. WP проверяет `state`, сессию и право администратора, затем серверным POST
-   обменивает код с verifier на `client_id` и `client_secret`. Погашение кода
-   атомарно: из двух конкурентных запросов успешен максимум один.
-7. WP сохраняет учётные данные и запрашивает состояние интеграции. «Подключено»
-   появляется только после проверки проекта, сайта и прав в ответе. Если проект
-   ограничен, показываются факт подключения и отдельное ограничение.
+1. An administrator with `manage_options` clicks **Connect Dzen Chat**. The
+   POST uses a WordPress nonce. WordPress creates random `state` and PKCE
+   verifier values bound to the current user, session and site installation.
+2. The browser opens `https://chat.dzen.dev/auth/add` with `host`,
+   `type=wordpress`, `site_url`, `redirect_uri`, `state`,
+   `code_challenge` and `code_challenge_method=S256`. The host comes from
+   configured `home_url()`, never an arbitrary Host header. Build the callback
+   through `admin_url()`: `admin-post.php?action=dzen_chat_authorize`.
+3. Dzen Chat preserves the request during login. It then shows the domain,
+   WordPress and the access being granted, offering an accessible existing project
+   or a new one. Consent uses a CSRF-protected POST. A GET creates no project,
+   source or API client.
+4. For a new project, the server uses the host as its name and creates the owner
+   and `site_url` source. For an existing project, it finds the matching site
+   source or adds it without duplication. These technical steps need no separate
+   screens. Initial indexing starts after connection succeeds.
+5. The server returns `code` and `state` to the exactly validated callback.
+   Propose a five-minute code lifetime. Store its hash with the project,
+   integration type, site, callback and PKCE challenge.
+6. WordPress checks state, session and administrator permission, then exchanges
+   code plus verifier server-to-server for `client_id` and `client_secret`.
+   Redemption is atomic: at most one of two concurrent requests succeeds.
+7. WordPress stores credentials and requests integration status. Show
+   **Connected** only after checking project, site and access in the response.
+   For a restricted project, show connection and restrictions separately.
 
-```mermaid
+~~~mermaid
 sequenceDiagram
-    actor Admin as Администратор
+    actor Admin as Administrator
     participant WP as WordPress
     participant Chat as Dzen Chat
-    Admin->>WP: Подключить
-    WP-->>Admin: Переход с host, state и PKCE challenge
-    Admin->>Chat: /auth/add, вход и подтверждение проекта
-    Chat-->>Admin: Возврат с code и state
+    Admin->>WP: Connect
+    WP-->>Admin: Redirect with host, state and PKCE challenge
+    Admin->>Chat: /auth/add, login and project consent
+    Chat-->>Admin: Return code and state
     Admin->>WP: Callback
-    WP->>Chat: Обмен code + verifier
-    Chat-->>WP: client_id, client_secret, область доступа
-    WP->>Chat: Проверить интеграцию и статус проекта
-    Chat-->>WP: Подтверждённое состояние
-    WP-->>Admin: Подключение и доступные функции
-```
+    WP->>Chat: Exchange code and verifier
+    Chat-->>WP: client_id, client_secret and access
+    WP->>Chat: Check integration and project status
+    Chat-->>WP: Confirmed state
+    WP-->>Admin: Connection and available features
+~~~
 
-Callback разрешён только на HTTPS того же origin, что и зарегистрированный сайт,
-по ожидаемому пути WordPress; учитываются подпапки. Домен и порт нормализуются,
-wildcard и произвольное перенаправление запрещены. Раздельные домены публичного
-сайта и админки требуют отдельного решения. В production приватные адреса и
-опасные перенаправления crawler запрещены. Локальная тестовая конфигурация
-задаётся отдельно, с проверкой TLS. Основание для точного callback и PKCE —
-[RFC 9700](https://www.rfc-editor.org/rfc/rfc9700.html).
+Allow only HTTPS callbacks on the registered site's origin and expected
+WordPress path, including subdirectory installations. Normalize domains and
+ports; reject wildcards and arbitrary redirects. Separate public/admin domains
+need a distinct design. Production crawling must reject private addresses and
+unsafe redirects. Configure local testing separately with TLS verification.
+Exact callbacks and PKCE follow [RFC 9700](https://www.rfc-editor.org/rfc/rfc9700.html).
 
-Callback не подключает внешние ресурсы, имеет `Cache-Control: no-store` и
-`Referrer-Policy: no-referrer`; после обработки URL очищается редиректом.
-Code, verifier и секрет не попадают в журналы приложения и аналитику. Требование
-к маскированию query callback отдельно проверяется на тестовом веб-сервере.
-При отказе, истечении или потере ответа обмена показывается явный результат и
-действие повторного подключения. Повторной выдачи погашенного кода нет;
-незавершённый клиент отзывается при повторном подключении этой установки.
+The callback loads no external resources and uses `Cache-Control: no-store`
+and `Referrer-Policy: no-referrer`. Clear its query through a redirect after
+processing. Application logs and analytics must not receive the code, verifier
+or secret. Verify callback query redaction separately on the test web server.
+Cancellation, expiration or a lost exchange response gives an explicit result
+and reconnect action. Never reissue a redeemed code. Reconnecting the same
+installation revokes an unfinished client.
 
-### 3. Хранение в WordPress
+### 3. WordPress storage
 
-- Несекретные настройки и идентификаторы — отдельные per-site options.
-  `client_id` не является паролем, но доступен только серверному коду и экрану
-  администратора. Секрет не возвращается через REST, HTML или JavaScript.
-- `client_secret` — зашифрованная per-site option, созданная с `autoload=false`.
-  Предлагается authenticated encryption через `sodium_crypto_secretbox`, со
-  случайным nonce для каждой записи и версией формата шифротекста. Это решение
-  плагина; Options API сам не выполняет шифрование.
-- Ключ шифрования выводится через HKDF из сильных ключей `AUTH_KEY` и
-  `SECURE_AUTH_KEY` в конфигурации WP, с отдельным назначением Dzen Chat и UUID
-  установки. Проверяются доступность sodium и настоящие ключи конфигурации;
-  при нарушении подключение останавливается с понятной ошибкой. Самостоятельно
-  править `wp-config.php` или хранить ключ рядом с шифротекстом не нужно.
-- Использование только `wp_salt()` не гарантирует, что секретный материал
-  находится вне БД: WordPress допускает также ключи в базе. Предлагаемое
-  шифрование защищает отдельную копию БД при наличии ключей вне неё; оно не
-  защищает от плагина, выполняющего PHP в той же установке.
-- При смене ключей WP требуется повторное подключение. Смена адреса или
-  клонирование сайта останавливает отправку до повторного подтверждения нового
-  сайта; копия очереди не должна работать от имени исходной установки.
-- Короткоживущие данные подключения хранятся отдельно, с TTL и проверкой срока
-  при каждом чтении. Политика страницы — post meta; очередь — отдельная таблица.
-- «Отключить интеграцию» отзывает выделенного клиента и удаляет локальные
-  credentials. При недоступном сервисе отзыв помечается незавершённым, доступно
-  повторение или отзыв в Dzen Chat. Деактивация плагина прекращает вставку виджета
-  и фоновые задания, сохраняя настройки. Удаление плагина очищает его локальные
-  секреты и данные; удаление проекта и источников в Dzen Chat не выполняется.
+- Store non-secret settings and identifiers in per-site options. Although
+  `client_id` is not a password, expose it only to server code and the admin.
+  Never return the secret through REST, HTML or JavaScript.
+- Store `client_secret` in an encrypted per-site option with
+  `autoload=false`. Propose authenticated encryption using
+  `sodium_crypto_secretbox`, a random nonce for every write and a versioned
+  ciphertext format. The plugin provides encryption; Options API does not.
+- Derive the key through HKDF from strong `AUTH_KEY` and `SECURE_AUTH_KEY`
+  values in WordPress configuration, with a Dzen Chat purpose and installation
+  UUID. Validate sodium and real configuration keys; stop connection with a
+  clear error when missing. Do not edit `wp-config.php` automatically or
+  store the key beside the ciphertext.
+- `wp_salt()` alone does not guarantee secret material is outside the
+  database: WordPress also permits database-backed keys. Encryption protects a
+  standalone database copy when keys are elsewhere; it cannot protect against
+  a plugin executing PHP in the same installation.
+- Changing WordPress keys requires reconnection. Changing the URL or cloning
+  the site stops submission until the new site is authorized. A copied queue
+  must not operate as the original installation.
+- Store short-lived connection data separately with a TTL checked on every
+  read. Page policies use post meta; the queue uses a separate table.
+- **Disconnect integration** revokes the dedicated client and removes local
+  credentials. If the service is unavailable, mark revocation incomplete and
+  offer retry or revocation in Dzen Chat. Deactivation stops widget insertion
+  and background jobs but keeps settings. Uninstall removes local secrets and
+  data, without deleting the remote project or sources.
 
-Основания: [Options API](https://developer.wordpress.org/reference/functions/add_option/),
+References: [Options API](https://developer.wordpress.org/reference/functions/add_option/),
 [wp_salt](https://developer.wordpress.org/reference/functions/wp_salt/),
 [PHP sodium](https://www.php.net/manual/en/function.sodium-crypto-secretbox.php).
-Проверка роли обязательна вместе с nonce: [WordPress nonces](https://developer.wordpress.org/plugins/security/nonces/).
+Check roles as well as [WordPress nonces](https://developer.wordpress.org/plugins/security/nonces/).
 
-### 4. Административный интерфейс
+### 4. Administrative interface
 
-| Раздел Dzen Chat | Поведение |
+| Dzen Chat section | Behavior |
 | --- | --- |
-| Обзор | Проект, состояние подключения, ограничения, дата последней проверки, очередь и ошибки, кнопки проверки/повторного подключения/отключения |
-| Виджеты | Список доступных сайту виджетов, создание, выбор источников в разрешённой области, название/приветствие/оформление, включение, правила размещения |
-| Страницы и триггеры | Поиск страницы, статус индекса, наследование/включение/выключение триггеров и эффективное состояние с причиной |
-| Диалоги | Просмотр, поиск, даты, фильтр виджета и видимости, сообщения/оценки; источники внутри WP и по внешней ссылке; скрыть/вернуть в список |
-| Источники | Основной сайт и разрешённые дополнительные источники: состояние, ошибки, счётчики, последнее и следующее обновление, ссылка на настройки в Dzen Chat |
+| Overview | Project, connection, restrictions, last check, queue/errors, check/reconnect/disconnect actions |
+| Widgets | Available widgets, creation, source selection within access, name/welcome/appearance, enablement and placement |
+| Pages and triggers | Page search, index status, inherited/enabled/disabled policy and effective state with a reason |
+| Conversations | Viewing, search, date/widget/visibility filters, messages/feedback, sources inside WordPress and externally, hide/restore |
+| Sources | Main site and permitted additional sources, status/errors/counts, last/next update and Dzen Chat settings link |
 
-Это собственные экраны WP с серверным обращением к API, а не встраивание админки
-Dzen Chat через iframe. Настройки виджетов сохраняются в Dzen Chat; локально
-хранится выбор размещения и безопасная конфигурация для вставки. Предлагается
-один выбранный виджет на страницу с явным приоритетом правил; другие виджеты
-можно создать и назначить другим страницам. Существующий вставленный вручную
-код должен быть выявлен при установке, чтобы администратор убрал дубликат.
+Use native WordPress screens with server-side API requests, not an iframe of
+the Dzen Chat admin. Widget settings live in Dzen Chat; local storage contains
+placement choices and safe embed configuration. Propose one selected widget per
+page with explicit rule precedence; other widgets can be created and assigned
+to other pages. Identify manually embedded code during installation so the
+administrator can remove duplicate scripts.
 
-История остаётся на сервере Dzen Chat; удаление и правка сообщений запрещены,
-поскольку это биллинговая история. Скрытие — общее обратимое состояние проекта,
-не влияющее на переписку, токены и оплату. Скрытые чаты доступны по фильтру и
-прямой карточке. Серверная админка и API описаны в
-[тикете #14](https://github.com/xen/dzen.chat/issues/14).
+History stays on Dzen Chat. Deleting chats or editing messages is prohibited
+because they are billing history. Hiding is shared, reversible project state
+that does not change messages, tokens or charges. Hidden chats remain accessible
+by filter and direct detail URL. Server admin and API work is described in
+[issue #14](https://github.com/xen/dzen.chat/issues/14).
 
-Триггеры — существующие триггеры Dzen Chat, связанные со страницей. Выключение
-триггеров не отключает весь виджет и не меняет автоматически настройки
-предлагаемых вопросов (`suggestions_enabled`). Локальное изменение политики
-имеет состояния «ожидает применения»/«применено»/«ошибка». Она должна сохраняться
-до появления документа в индексе и соблюдаться публичным виджетом.
+Triggers are existing Dzen Chat page triggers. Disabling them does not disable
+the whole widget or automatically change `suggestions_enabled`. A local policy
+change has pending/applied/error states. The policy must persist before the
+document enters the index and be enforced by the public widget.
 
-### 5. Синхронизация контента
+### 5. Content synchronization
 
-Хуки фиксируют событие в устойчивой очереди, не выполняя HTTP-запрос во время
-сохранения редактором. Финальные данные берутся после сохранения материала,
-таксономий и метаданных; учитываются редактор блоков, Classic Editor, REST,
-WP-CLI и публикация по расписанию. Основа —
+Hooks record durable events without HTTP during editor saves. Read final content
+after posts, taxonomies and metadata are saved. Cover the block editor, Classic
+Editor, REST, WP-CLI and scheduled publication, using
 [wp_after_insert_post](https://developer.wordpress.org/reference/hooks/wp_after_insert_post/).
 
-| Событие | Действие |
+| Event | Action |
 | --- | --- |
-| Первая публикация или обновление публичного материала | `upsert` с текущим каноническим URL |
-| Смена slug, родительской страницы или структуры постоянных ссылок | Удаление прежнего URL и обработка нового; массовая смена запускает сверку |
-| Переход в draft/private/password-protected, корзина, окончательное удаление | Явное `delete` для ранее синхронизированного материала |
-| Восстановление из корзины | `upsert` только после проверки текущей публичности |
-| Исключение страницы или записи из настроек | Удаление уже синхронизированного документа и сохранение исключения |
-| Автосохранение или ревизия | События индекса не создаются |
-| Первое подключение | Пакетная сверка существующих публичных материалов с прогрессом |
+| First publication or public content update | upsert with the current canonical URL |
+| Slug, parent page or permalink structure change | Delete the old URL and process the new one; bulk changes schedule reconciliation |
+| Draft/private/password protection, trash or permanent deletion | Explicit delete for previously synchronized content |
+| Restore from trash | upsert only after checking current public visibility |
+| Exclude a page/post in settings | Remove its indexed document and retain the exclusion |
+| Autosave or revision | No index event |
+| First connection | Batched reconciliation of existing public content with progress |
 
-Сверка и события этой интеграции перечисляют только публичные `page`/`post`.
-Новый источник WordPress не должен обходить это ограничение через общий sitemap
-с товарами или переходы по ссылкам. Уже существующие отдельные источники проекта
-не очищаются и не перенастраиваются автоматически.
+Reconciliation and integration events enumerate only public `page`/`post`
+content. A new WordPress source must not bypass this rule through a product
+sitemap or followed links. Do not automatically clear or reconfigure existing
+independent project sources.
 
-Идентичность документа — `(integration_id, external_id)`, где `external_id`
-стабилен для записи WP. У события есть UUID, монотонная версия объекта, действие,
-URL и прежний URL. Одной даты `post_modified` недостаточно для порядка изменений.
-Задача учитывает последнее состояние записи; повтор и перестановка доставки
-не должны восстанавливать удалённый материал. Tombstone должен учитываться
-также обычным обходом источника, иначе crawler вернёт исключённую страницу.
+Document identity is `(integration_id, external_id)`, with a stable WordPress
+post identifier. Events have a UUID, monotonically increasing object version,
+action, current URL and previous URL. `post_modified` alone cannot order
+changes. Respect the latest post state: retries and reordered delivery must not
+restore deleted content. Normal source crawling must also respect tombstones.
 
-Таблица очереди хранит попытки, следующую дату, безопасную ошибку и
-`operation_id`; отдельное состояние объекта хранит последний подтверждённый URL
-и версию. Состояния: ожидает, отправляется, принято сервисом, завершено,
-ожидает восстановления доступа, ошибка. Ошибка записи в очередь видна
-администратору; сверка восстанавливает пропущенное событие.
+The queue stores attempts, next attempt, a safe error and `operation_id`.
+Separate object state stores the last confirmed URL and version. States are
+pending, sending, accepted, completed, waiting for access and failed. Queue
+write failures are visible; reconciliation recovers missed events.
 
-Предлагается WP-Cron с ограниченным размером пакета и блокировкой worker.
-Для timeout/429/временных 5xx — ограниченные повторные попытки с тем же UUID и
-телом, учётом `Retry-After`, журналом и конечной ошибкой. После приёма `202`
-проверяется операция, событие не создаётся заново. Для 401/403 требуется явное
-восстановление доступа, для невалидных данных — исправление. События удаления
-сохраняются при остановке отправки. Это явная предлагаемая политика очереди,
-а не скрытое подавление ошибок.
+Propose WP-Cron with bounded batches and a worker lock. Timeouts, 429 and temporary
+5xx receive bounded retries with the same UUID/body, `Retry-After`, a log and
+a terminal error. After HTTP 202, check the operation instead of recreating the
+event. Restore access explicitly for 401/403; fix invalid data. Retain deletion
+events while sending is stopped. This is an explicit proposed retry policy.
 
-WP-Cron зависит от посещений сайта, поэтому без внешнего планировщика нельзя
-обещать фиксированное время обновления. В настройках показываются задержка и
-последний запуск. Для сайтов без трафика документируется запуск WP-Cron
-планировщиком хостинга. [Документация WP-Cron](https://developer.wordpress.org/plugins/cron/).
+WP-Cron depends on site visits, so no fixed update time can be promised without
+an external scheduler. Display delay and last run in settings. Document a
+hosting scheduler for low-traffic sites. See
+[WP-Cron documentation](https://developer.wordpress.org/plugins/cron/).
 
-### 6. Активность проекта и границы данных
+### 6. Project activity and data boundaries
 
-Сервер возвращает отдельно состояние клиента, проекта, источника и список
-разрешённых операций. WP показывает причину ограничения и переход к действию
-в Dzen Chat. Пауза индексации не изображается успешной синхронизацией.
-Правила оплаты определяет сервис; плагин не рассчитывает задолженность.
+The server returns client, project and source states separately, plus allowed
+operations. WordPress displays the restriction reason and a relevant Dzen Chat
+action. Paused indexing is not shown as successful synchronization. The service
+defines billing rules; the plugin does not calculate debt.
 
-Предлагается при блокировке остановить новые `upsert` и выдачу ответов виджетом;
-чтение доступного статуса и удаление контента ради отзыва публикации разрешать
-по отдельным серверным правам. Политика удаления/чтения при блокировке и источник
-статуса оплаты требуют согласования в серверной задаче.
+Propose stopping new upserts and widget answers when a project is blocked.
+Reading available status and removing withdrawn content should follow separate
+server permissions. Read/delete policy during blocking and the billing status
+source require agreement in the server task.
 
-WP кэширует только публичную конфигурацию и состояние с ограниченным сроком,
-предлагается 5 минут. Неизвестный или просроченный статус показывается явно.
-Сервис проверяет ограничения при выдаче ответов даже для виджета на странице
-из внешнего кэша. Административные ключи никогда не передаются виджету.
+Cache only public configuration and state for a bounded time; propose five
+minutes. Show unknown or expired status explicitly. The service enforces answer
+restrictions even when the widget is embedded in a cached page. Administrative
+keys never reach the widget.
 
-Доступ к данным определяется интеграцией: её сайт, виджеты и соответствующие
-диалоги. Наблюдение дополнительных источников предоставляется отдельным scope
-с явным перечислением при согласии; пароли и параметры подключения источников
-не возвращаются. Плагин не копирует полную историю переписки в БД WP и не
-передаёт имена/email пользователей WordPress по умолчанию.
+Access is defined by the integration: its site, widgets and matching chats.
+The original proposal used a separate scope for additional source observation,
+listed during consent. Do not return source passwords or connection parameters.
+Do not copy full history into WordPress or send WordPress user names/emails
+by default.
 
-### 7. Структура плагина
+### 7. Plugin structure
 
-Предлагаются отдельные компоненты: bootstrap и регистрация hooks; контроллеры
-админки; авторизация; хранилище credentials; клиент API; очередь и worker;
-правила публичности и триггеров; вставка виджета. В шаблонах только отображение.
-HTTP выполняется WordPress HTTP API с проверкой TLS, ограничением таймаута и
-размера ответа, без перенаправления подписанного запроса на другой host.
-Основание проверки URL — [wp_safe_remote_request](https://developer.wordpress.org/reference/functions/wp_safe_remote_request/).
+Separate bootstrap/hooks, admin controllers, authorization, credential storage,
+API client, queue/worker, visibility/trigger rules and widget insertion.
+Templates only render output. Use WordPress HTTP API with TLS verification,
+bounded timeout and response size, and no signed-request redirects to another
+host. Reference: [wp_safe_remote_request](https://developer.wordpress.org/reference/functions/wp_safe_remote_request/).
 
-Перед первой итерацией фиксируется матрица версий WordPress/PHP и зависимость
-sodium. Предлагаемый первоначальный профиль: WordPress 6.8+, PHP 8.2+, с проверкой
-минимального профиля и актуального стабильного выпуска на момент реализации.
-Это предложение о поддержке, а не заявление о текущей проверенной совместимости.
-Имена, CSS и JS имеют префикс плагина; строки готовы к переводу, интерфейс
-изолирован от оформления публичного сайта.
+Before implementation, record the WordPress/PHP matrix and sodium dependency.
+Propose WordPress 6.8+ and PHP 8.2+, testing the minimum profile and current stable
+release. This is a support proposal, not a verified compatibility claim.
+Prefix names, CSS and JavaScript, make strings translatable, and isolate the
+admin interface from the public site's styling.
 
-## Guard Rails
+## Guard rails
 
-- Не менять основной checkout Dzen Chat с чужими правками. Серверная задача
-  работает в отдельном worktree; изменения маркетингового сайта не входят сюда.
-- Не выполнять деплой или публикацию в WordPress.org в рамках постановки.
-- Не вводить самостоятельный биллинг, новый crawler или неявные API-совместимости.
-- Не использовать HTML-скрейпинг админки, cookies пользователя Dzen Chat в WP,
-  секрет в браузере, PHP-файл с ключами в каталоге плагина или открытые options.
-- Не отправлять неопубликованный контент; не удалять общие источники/проекты
-  при выключении плагина; не раскрывать чужие чаты при выборе проекта.
-- Товары и WooCommerce относятся к отдельной интеграции; другие типы материалов
-  не включать в текущую синхронизацию.
-- Удаление чатов и изменение сообщений запрещены; скрытие не меняет биллинг.
-- Ответы оператора, полное управление дополнительными
-  источниками и network-wide multisite не добавлять без уточнения объёма.
-- Заглушка API, успешный HTTP `202` или скриншот настроек не доказывают работу
-  реальной индексации, изоляции данных или блокировки проекта.
+- Preserve unrelated changes in the main Dzen Chat checkout. Server work uses
+  a separate worktree; marketing-site changes are outside this task.
+- Do not deploy or publish to WordPress.org during specification work.
+- Do not add independent billing, another crawler or implicit API compatibility.
+- Do not scrape admin HTML, copy Dzen Chat user cookies to WordPress, expose
+  secrets in browsers or plaintext options, or store keys in plugin PHP files.
+- Do not submit unpublished content, delete shared sources/projects on
+  deactivation, or expose another site's chats when choosing a project.
+- Products and WooCommerce require another integration; other content types
+  are outside synchronization.
+- Do not delete chats or edit messages. Hiding must not alter billing.
+- Operator replies, full additional-source management and network-wide
+  multisite require a separate scope decision.
+- An API fixture, HTTP 202 or settings screenshot does not prove real indexing,
+  data isolation or project blocking.
 
 ## Iterations
 
-| Шаг | Результат | Контрольная точка |
+| Step | Deliverable | Checkpoint |
 | --- | --- | --- |
-| 0. Контракт | Согласованы endpoints, DTO, scopes, подпись, статус оплаты и открытые решения | WP и Dzen Chat используют одни примеры запросов/ответов; отсутствующее выделено явно |
-| 1. Установка | Bootstrap, меню, хранилище, локальный WP-стенд, сборка ZIP | Плагин устанавливается и удаляется; права, ключи и ошибки зависимостей проверены |
-| 2. Подключение | Полный `/auth/add` → callback → exchange → проверка, отключение | Новый и существующий проект подключены на стенде; повторы code и чужой callback отклонены |
-| 3. Индекс | Очередь, lifecycle, сверка, список документов и операции | Текст после изменения доступен поиску; после удаления не выдаётся и не восстанавливается crawler |
-| 4. Виджеты | Создание/настройка, размещение и политики триггеров | На двух страницах правильный виджет; выключенная политика действительно запрещает триггер |
-| 5. Наблюдение | История, источники, ограничения, согласованные операции с чатами | Администратор видит разрешённые данные; чужой сайт/проект недоступен |
-| 6. Приёмка | Полный E2E, документация, воспроизводимый ZIP | Установка ZIP на чистый WP воспроизводит сценарии; версии и границы проверки записаны |
+| 0. Contract | Endpoints, DTOs, scopes, signature, billing status and open decisions agreed | Shared request/response examples; missing behavior explicit |
+| 1. Installation | Bootstrap, menu, storage, local WordPress and ZIP build | Install/uninstall, permissions, keys and dependency errors checked |
+| 2. Connection | /auth/add → callback → exchange → verification, disconnect | Existing/new projects connected locally; replay and foreign callbacks rejected |
+| 3. Index | Queue, lifecycle, reconciliation, document/operation lists | Changes searchable; deleted content stays absent after crawling |
+| 4. Widgets | Creation/settings, placement and trigger policies | Correct widgets on two pages; disabled policies actually block triggers |
+| 5. Observation | History, sources, restrictions and agreed chat operations | Only authorized data; foreign sites/projects denied |
+| 6. Acceptance | Full E2E, documentation and reproducible ZIP | Clean ZIP installation reproduces scenarios; versions and limits recorded |
 
 ## Verification
 
-Критерий успеха — реальный путь WordPress → API → очередь Dzen Chat → индекс →
-ответ виджета на подготовленном стенде. Каждый сценарий имеет ID, ожидаемый
-результат и сохранённое доказательство; проектирование сейчас не является
-выполнением этих проверок.
+Success means the real WordPress → API → Dzen Chat queue → index → widget-answer
+path on a prepared test environment. Each scenario has an ID, expectation and
+saved evidence. Designing tests does not mean they have passed.
 
-- **AUTH:** новый/существующий проект, вход перед согласием, отказ, истечение,
-  повтор/гонка code, неправильный state/verifier/callback, недостаточная роль.
-  Успех: максимум один обмен, правильные проект и источник, проверенный статус.
-- **ISOLATION:** два сайта одного проекта и второй проект. Подмена каждого ID
-  виджета/источника/документа/чата отклоняется; области чтения совпадают с согласием.
-- **SECRET:** просмотр HTML/JS/REST/debug-логов и дампа БД без ключей конфигурации
-  не раскрывает `client_secret`; смена ключей и повреждение ciphertext дают
-  явную ошибку; subscriber/editor не получают доступ к управлению интеграцией.
-- **CONTENT:** publish/edit/slug-change/private/password/trash/delete/restore,
-  дочерние URL и изменение permalink-настроек; результат проверяется в выдаче,
-  а не только в списке документов. Устаревшее событие после удаления не оживляет
-  контент; источник после обычного переобхода также не оживляет его.
-- **DELIVERY:** дубликат, перестановка, сетевой timeout после принятия запроса,
-  429, остановка worker, отсутствие посещений и потеря прав. Очередь не теряет
-  удаление, не показывает ложное «завершено», после исправления состояние сходится.
-- **UI:** управление виджетом, страницы с разными триггерами, история с пагинацией,
-  источник с ошибкой; интерфейс WordPress проверяется в браузере. Кэш страницы
-  не позволяет обходить серверную блокировку ответов.
-- **LIFECYCLE:** деактивация/активация/удаление, перенос сайта и восстановление
-  резервной копии; нет работающей копии интеграции от имени исходного сайта.
+- **AUTH:** new/existing projects, login before consent, denial, expiry, code
+  replay/race, incorrect state/verifier/callback and insufficient role. At most
+  one exchange, correct project/source and verified status.
+- **ISOLATION:** two sites in one project plus another project. Reject substituted
+  widget/source/document/chat IDs; reading must match consent.
+- **SECRET:** no client secret in HTML, JS, REST, debug logs or a database dump
+  without configuration keys. Changed keys or damaged ciphertext produce clear
+  errors. Subscribers/editors cannot manage the integration.
+- **CONTENT:** publish/edit/slug/private/password/trash/delete/restore, child
+  URLs and permalink changes. Inspect retrieval, not just document lists.
+  Stale events and normal recrawling must not restore deleted content.
+- **DELIVERY:** duplicates, reordering, timeout after acceptance, 429, stopped
+  worker, no visitors and lost permissions. Preserve deletion, avoid false
+  completion, converge after recovery.
+- **UI:** widget management, different page triggers, paginated history and source
+  errors in a browser. Cached pages cannot bypass server answer restrictions.
+- **LIFECYCLE:** deactivate/reactivate/uninstall, move a site and restore backups.
+  A copy cannot run as the original integration.
 
-Критерии неуспеха: утечка секрета или чужой переписки; индексация закрытого
-материала; восстановление удалённого URL; повторная выдача credentials по коду;
-обход блокировки; потеря событий; зависающий редактор из-за внешнего HTTP.
+Failures include secret/foreign-history disclosure, indexing private content,
+restoring a deleted URL, repeated credential issuance, bypassing restrictions,
+lost events or an editor blocked by external HTTP.
 
-Будущие команды проверки закрепляются вместе со стендом: PHP lint и PHPCS,
-PHPUnit для контрактов безопасности/очереди, WP-CLI для сценариев публикации и
-worker, браузерные E2E и интеграционные тесты API Dzen Chat. Сейчас проверяются
-полнота постановки, ссылки документов, Git remote и сохранность соседнего проекта.
+Future verification commands should cover PHP lint/PHPCS, PHPUnit security and
+queue contracts, WP-CLI publication/worker scenarios, browser E2E and Dzen Chat
+API integration tests. Specification-stage checks cover completeness, document
+links, Git remote and preservation of the neighboring project.
 
-## Open Questions
+## Open questions
 
-На серверной стороне остаётся определить источник статуса оплаты и разрешения
-при блокировке. Клиент использует явные allowed_operations из контракта и не
-рассчитывает биллинг. Перед production нужна совместная проверка API.
+The server must define billing status and permissions under restrictions. The
+original client uses explicit `allowed_operations` from the proposed contract
+and does not calculate billing. Joint API verification is required before
+production.
 
-Уточнения пользователя закрыты: просмотр/поиск/фильтры, источники внутри WP и
-по внешней ссылке, скрытие/восстановление, запрет удаления. Синхронизируются
-публичные страницы и записи; товары — отдельная интеграция. Клиент использует
-зафиксированную подпись, требует PHP 8.2+/WP 6.8+ и проверен на PHP 8.3/WP 6.8.2.
-Сетевая активация multisite и отдельный домен админки пока не поддерживаются.
+User clarifications were settled: viewing/search/filters, sources inside
+WordPress and externally, hide/restore, no deletion. Synchronize public pages and
+posts; products need a separate integration. The original client uses the
+specified signature, requires PHP 8.2+/WordPress 6.8+, and was checked on PHP 8.3 /
+WordPress 6.8.2. Network activation and a separate admin domain are unsupported.
 
-Окончание исходного сообщения «Так же надо чтобы» пользователь попросил
-игнорировать; недостающего требования здесь нет.
+The user asked to ignore the unfinished closing sentence in the original
+request; it does not represent a missing requirement.

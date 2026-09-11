@@ -123,7 +123,7 @@ try {
     ob_start();
     (new DzenChat\Admin($credentials, $api, new DzenChat\Sync($credentials, $api)))->page();
     $html = ob_get_clean();
-    $check(str_contains($html, 'Сайт авторизован') && !str_contains($html, $payload['client_secret']) && count($calls) === 2,
+    $check(str_contains($html, 'This site is connected to Dzen Chat') && !str_contains($html, $payload['client_secret']) && count($calls) === 2,
         'connected admin verifies actual source access without exposing secrets');
 
     foreach (['wrong_state', 'expired_attempt', 'different_session', 'different_service', 'invalid_code'] as $failure) {

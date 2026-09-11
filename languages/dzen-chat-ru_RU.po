@@ -1,0 +1,611 @@
+# Copyright (C) 2026 Dzen Platform
+# This file is distributed under the GPL-2.0-or-later.
+msgid ""
+msgstr ""
+"Project-Id-Version: Dzen Chat 0.5.0\n"
+"Report-Msgid-Bugs-To: https://github.com/dzenplatform/dzen-wordpress/issues\n"
+"Last-Translator: Dzen Platform\n"
+"Language-Team: Russian\n"
+"Language: ru_RU\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<12 || n%100>14) ? 1 : 2);\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-09-11T02:24:44+00:00\n"
+"PO-Revision-Date: 2026-09-11 02:30+0000\n"
+"X-Generator: WP-CLI 2.12.0\n"
+"X-Domain: dzen-chat\n"
+
+#. Plugin Name of the plugin
+#: dzen-chat.php
+#: src/Admin.php:347
+msgid "Dzen Chat"
+msgstr "Dzen Chat"
+
+#. Description of the plugin
+#: dzen-chat.php
+msgid "Connect Dzen Chat, manage widgets, sync public content and view conversations."
+msgstr "Подключите Dzen Chat, управляйте виджетами, синхронизируйте публичный контент и просматривайте диалоги."
+
+#. Author of the plugin
+#: dzen-chat.php
+msgid "Dzen Platform"
+msgstr "Dzen Platform"
+
+#: src/Admin.php:24
+msgid "Overview"
+msgstr "Обзор"
+
+#: src/Admin.php:24
+#: src/Admin.php:361
+msgid "Widgets"
+msgstr "Виджеты"
+
+#: src/Admin.php:25
+#: src/Admin.php:237
+msgid "Index"
+msgstr "Индекс"
+
+#: src/Admin.php:25
+#: src/Admin.php:301
+msgid "Conversations"
+msgstr "Диалоги"
+
+#: src/Admin.php:26
+#: src/Admin.php:195
+msgid "Sources"
+msgstr "Источники"
+
+#: src/Admin.php:47
+msgid "The filter is too long."
+msgstr "Слишком длинный фильтр."
+
+#: src/Admin.php:52
+msgid "Enter a date in YYYY-MM-DD format."
+msgstr "Укажите дату в формате ГГГГ-ММ-ДД."
+
+#: src/Admin.php:58
+msgid "The start date must be on or before the end date."
+msgstr "Начальная дата должна быть не позже конечной."
+
+#: src/Admin.php:80
+msgid "Waiting to be crawled"
+msgstr "Ожидает обхода"
+
+#: src/Admin.php:81
+msgid "Processing"
+msgstr "Обрабатывается"
+
+#: src/Admin.php:82
+msgid "Processing complete"
+msgstr "Обработка завершена"
+
+#: src/Admin.php:105
+#: src/Connection.php:26
+msgid "You do not have permission to perform this action."
+msgstr "Недостаточно прав."
+
+#: src/Admin.php:109
+msgid "Authorization complete. Public pages will be submitted for reindexing."
+msgstr "Авторизация завершена. Публичные страницы будут отправлены на переиндексацию."
+
+#: src/Admin.php:110
+msgid "Credentials removed from WordPress. Open Dzen Chat to revoke the API client."
+msgstr "Ключи удалены из WordPress. Для отзыва API-клиента откройте Dzen Chat."
+
+#: src/Admin.php:111
+msgid "Connection cancelled."
+msgstr "Подключение отменено."
+
+#: src/Admin.php:112
+msgid "Connection was not completed. Start again."
+msgstr "Подключение не завершено. Начните его заново."
+
+#: src/Admin.php:113
+msgid "Change saved."
+msgstr "Изменение сохранено."
+
+#: src/Admin.php:114
+msgid "Request accepted. Check processing progress in the Index section."
+msgstr "Запрос принят. Статус обработки можно посмотреть в разделе «Индекс»."
+
+#: src/Admin.php:115
+msgid "Public content reconciliation has been queued."
+msgstr "Сверка публичных страниц поставлена в очередь."
+
+#: src/Admin.php:120
+msgid "Connect this site to an existing or new Dzen Chat project."
+msgstr "Подключите сайт к существующему или новому проекту Dzen Chat."
+
+#: src/Admin.php:121
+msgid "Connect Dzen Chat"
+msgstr "Подключить Dzen Chat"
+
+#: src/Admin.php:133
+msgid "The site URL, service URL or security keys have changed. Reconnect the site."
+msgstr "Адрес сайта, сервис или ключи безопасности изменились. Подключите сайт заново."
+
+#: src/Admin.php:134
+#: src/Admin.php:160
+msgid "Reconnect"
+msgstr "Подключить заново"
+
+#: src/Admin.php:142
+msgid "This site is connected to Dzen Chat"
+msgstr "Сайт авторизован в Dzen Chat"
+
+#: src/Admin.php:147
+msgid "Service access confirmed."
+msgstr "Доступ к сервису подтверждён."
+
+#: src/Admin.php:151
+msgid "Site source:"
+msgstr "Источник сайта:"
+
+#: src/Admin.php:154
+msgid "The site source is no longer available to this connection."
+msgstr "Источник сайта больше не доступен этому подключению."
+
+#: src/Admin.php:157
+msgid "Manage widgets"
+msgstr "Настроить виджеты"
+
+#: src/Admin.php:158
+msgid "Open Dzen Chat ↗"
+msgstr "Открыть Dzen Chat ↗"
+
+#: src/Admin.php:161
+msgid "Remove credentials from WordPress"
+msgstr "Удалить ключи из WordPress"
+
+#: src/Admin.php:162
+msgid "Public page and post updates"
+msgstr "Обновление публичных страниц и записей"
+
+#: src/Admin.php:167
+msgid "Waiting to be sent"
+msgstr "Ожидает отправки"
+
+#: src/Admin.php:167
+msgid "Submitted to the service"
+msgstr "Передано сервису"
+
+#: src/Admin.php:168
+msgid "Waiting for access"
+msgstr "Ожидает доступа"
+
+#: src/Admin.php:168
+msgid "Submission failed"
+msgstr "Ошибка отправки"
+
+#: src/Admin.php:171
+msgid "An accepted request does not mean indexing is complete. Check processing results in the Index section."
+msgstr "Принятый запрос ещё не означает завершённую индексацию. Результат обработки отображается в разделе «Индекс»."
+
+#: src/Admin.php:172
+msgid "Could not save the event. Check the connection and WordPress database, then run reconciliation."
+msgstr "Не удалось записать событие. Проверьте подключение и базу WordPress, затем запустите сверку."
+
+#: src/Admin.php:173
+msgid "Reconcile content and retry failed requests"
+msgstr "Сверить контент и повторить ошибки"
+
+#: src/Admin.php:174
+msgid "The WordPress scheduler runs these jobs. Products, drafts and password-protected posts are not submitted as public content."
+msgstr "Задания выполняет планировщик WordPress. Товары, черновики и защищённые записи не отправляются как публичный контент."
+
+#: src/Admin.php:175
+msgid "Billing status, hiding conversations, answer sources and page trigger controls are not yet available in this integration."
+msgstr "Статус оплаты, скрытие диалогов, источники ответов и управление триггерами страниц пока недоступны в этой версии интеграции."
+
+#: src/Admin.php:181
+msgid "The service returned an invalid source state."
+msgstr "Сервис вернул некорректное состояние источника."
+
+#: src/Admin.php:185
+msgid "Processing restricted:"
+msgstr "Обработка ограничена:"
+
+#: src/Admin.php:187
+msgid "Updates paused"
+msgstr "Обновление приостановлено"
+
+#: src/Admin.php:187
+msgid "Updates allowed"
+msgstr "Обновление разрешено"
+
+#: src/Admin.php:189
+msgid "Source triggers:"
+msgstr "Триггеры источника:"
+
+#: src/Admin.php:189
+msgid "enabled"
+msgstr "включены"
+
+#: src/Admin.php:189
+msgid "disabled"
+msgstr "выключены"
+
+#: src/Admin.php:190
+msgid "Last reindexed:"
+msgstr "Последняя переиндексация:"
+
+#: src/Admin.php:200
+msgid "The service returned a different file."
+msgstr "Сервис вернул другой файл."
+
+#: src/Admin.php:201
+#: src/Admin.php:210
+msgid "All sources"
+msgstr "Все источники"
+
+#: src/Admin.php:209
+msgid "The service returned a different source."
+msgstr "Сервис вернул другой источник."
+
+#: src/Admin.php:214
+msgid "Source documents"
+msgstr "Документы источника"
+
+#: src/Admin.php:219
+msgid "No sources are available."
+msgstr "Нет доступных источников."
+
+#: src/Admin.php:226
+msgid "Knowledge base files"
+msgstr "Файлы базы знаний"
+
+#: src/Admin.php:229
+msgid "No files have been added."
+msgstr "Файлы не добавлены."
+
+#: src/Admin.php:242
+msgid "The service returned a different document."
+msgstr "Сервис вернул другой документ."
+
+#: src/Admin.php:243
+msgid "All documents"
+msgstr "Все документы"
+
+#: src/Admin.php:253
+msgid "Showing up to 100 recently updated documents. Filters apply to this set."
+msgstr "Показаны до 100 последних обновлённых документов. Фильтры применяются к этому набору."
+
+#: src/Admin.php:255
+msgid "Title or URL"
+msgstr "Название или URL"
+
+#: src/Admin.php:255
+msgid "Status"
+msgstr "Статус"
+
+#: src/Admin.php:255
+msgid "Source ID"
+msgstr "ID источника"
+
+#: src/Admin.php:258
+#: src/Admin.php:319
+msgid "Apply"
+msgstr "Применить"
+
+#: src/Admin.php:264
+#: src/Admin.php:327
+msgid "No results in the loaded set."
+msgstr "В загруженном наборе ничего не найдено."
+
+#: src/Admin.php:265
+msgid "Document"
+msgstr "Документ"
+
+#: src/Admin.php:265
+msgid "State"
+msgstr "Состояние"
+
+#: src/Admin.php:265
+msgid "Links and actions"
+msgstr "Ссылки и действия"
+
+#: src/Admin.php:280
+msgid "Updated:"
+msgstr "Обновлён:"
+
+#: src/Admin.php:281
+msgid "Triggers prepared"
+msgstr "Триггеры подготовлены"
+
+#: src/Admin.php:281
+msgid "Triggers not prepared"
+msgstr "Триггеры не подготовлены"
+
+#: src/Admin.php:289
+msgid "Edit in WordPress"
+msgstr "Открыть запись в WordPress"
+
+#: src/Admin.php:292
+msgid "View source in WordPress"
+msgstr "Открыть источник в WordPress"
+
+#: src/Admin.php:295
+msgid "Reindex"
+msgstr "Переиндексировать"
+
+#: src/Admin.php:301
+msgid "Conversations are stored in Dzen Chat."
+msgstr "Переписка хранится в Dzen Chat."
+
+#: src/Admin.php:308
+msgid "Filters apply to the 100 most recent conversations. Full history text search and hiding conversations are not yet available."
+msgstr "Фильтры применяются к 100 последним диалогам. Поиск по тексту всей истории и скрытие пока недоступны."
+
+#: src/Admin.php:310
+msgid "Conversation or visitor ID"
+msgstr "ID диалога или посетителя"
+
+#: src/Admin.php:311
+msgid "From date (UTC)"
+msgstr "С даты (UTC)"
+
+#: src/Admin.php:311
+msgid "To date (UTC)"
+msgstr "По дату (UTC)"
+
+#: src/Admin.php:314
+#: src/Plugin.php:115
+msgid "Widget"
+msgstr "Виджет"
+
+#: src/Admin.php:314
+msgid "All widgets"
+msgstr "Все виджеты"
+
+#: src/Admin.php:328
+msgid "Conversation"
+msgstr "Диалог"
+
+#: src/Admin.php:328
+#: src/Admin.php:347
+msgid "Visitor"
+msgstr "Посетитель"
+
+#: src/Admin.php:328
+msgid "Created (UTC)"
+msgstr "Создан (UTC)"
+
+#: src/Admin.php:337
+msgid "All conversations"
+msgstr "Все диалоги"
+
+#: src/Admin.php:340
+msgid "The service returned a different conversation."
+msgstr "Сервис вернул другой диалог."
+
+#: src/Admin.php:344
+msgid "The first 100 messages have been loaded. Open Dzen Chat to view the rest."
+msgstr "Получены первые 100 сообщений. Продолжение пока доступно только в Dzen Chat."
+
+#: src/Admin.php:348
+msgid "Helpful answer"
+msgstr "Полезный ответ"
+
+#: src/Admin.php:348
+msgid "Unhelpful answer"
+msgstr "Ответ не помог"
+
+#: src/Admin.php:356
+msgid "Open original ↗"
+msgstr "Открыть оригинал ↗"
+
+#: src/Admin.php:365
+msgid "Refresh list"
+msgstr "Обновить список"
+
+#: src/Admin.php:366
+msgid "Connection settings"
+msgstr "Настройки подключения"
+
+#: src/Admin.php:369
+msgid "Enabling a widget and changing its settings affects the entire Dzen Chat project. Website placement is configured separately in WordPress."
+msgstr "Включение и настройки виджета меняются для всего проекта Dzen Chat. Размещение на сайте настраивается отдельно в WordPress."
+
+#: src/Admin.php:371
+msgid "No widget is selected for this site. Enable a widget and click “Place on site”."
+msgstr "Виджет для сайта не выбран. Включите нужный виджет и нажмите «Разместить на сайте»."
+
+#: src/Admin.php:373
+msgid "The previously selected widget is no longer available. Select another widget for this site."
+msgstr "Выбранный ранее виджет больше недоступен. Выберите другой виджет для сайта."
+
+#: src/Admin.php:376
+msgid "Enabled in Dzen Chat"
+msgstr "Включён в Dzen Chat"
+
+#: src/Admin.php:376
+msgid "Disabled in Dzen Chat — hidden on the site"
+msgstr "Выключен в Dzen Chat — не показывается на сайте"
+
+#: src/Admin.php:378
+msgid "Selected for this site"
+msgstr "Выбран для этого сайта"
+
+#: src/Admin.php:381
+msgid "Disable in Dzen Chat"
+msgstr "Выключить в Dzen Chat"
+
+#: src/Admin.php:381
+msgid "Enable in Dzen Chat"
+msgstr "Включить в Dzen Chat"
+
+#: src/Admin.php:383
+msgid "Place on site"
+msgstr "Разместить на сайте"
+
+#: src/Admin.php:388
+#: src/Admin.php:397
+msgid "Name"
+msgstr "Название"
+
+#: src/Admin.php:389
+msgid "Suggest follow-up questions after an answer"
+msgstr "Предлагать уточняющие вопросы после ответа"
+
+#: src/Admin.php:390
+msgid "Save settings"
+msgstr "Сохранить настройки"
+
+#: src/Admin.php:392
+msgid "Open site to check the widget"
+msgstr "Открыть сайт и проверить виджет"
+
+#: src/Admin.php:393
+msgid "Remove the site-wide widget"
+msgstr "Убрать общий виджет с сайта"
+
+#: src/Admin.php:394
+msgid "In the page or post editor, you can select another widget or hide it on that page."
+msgstr "В редакторе страницы или записи можно выбрать другой виджет либо скрыть его на этой странице."
+
+#: src/Admin.php:395
+msgid "Create widget"
+msgstr "Создать виджет"
+
+#: src/Admin.php:397
+msgid "Create"
+msgstr "Создать"
+
+#: src/Admin.php:398
+msgid "Before enabling the widget, remove any manually added Dzen Chat script to prevent it from loading twice."
+msgstr "Перед включением уберите ранее вставленный вручную скрипт Dzen Chat, чтобы виджет не загружался дважды."
+
+#: src/Admin.php:407
+#: src/Plugin.php:110
+msgid "Reconnect the site in the Dzen Chat section."
+msgstr "Подключите сайт заново в разделе Dzen Chat."
+
+#: src/Admin.php:426
+msgid "This page does not belong to this site's source."
+msgstr "Страница не относится к источнику этого сайта."
+
+#: src/Admin.php:437
+msgid "Enable the widget before placing it on the site."
+msgstr "Сначала включите виджет, затем разместите его на сайте."
+
+#: src/Admin.php:449
+msgid "Enter a widget name."
+msgstr "Укажите название виджета."
+
+#: src/Admin.php:455
+msgid "Unknown action."
+msgstr "Неизвестное действие."
+
+#: src/Api.php:33
+msgid "Could not exchange the code. Start the connection again."
+msgstr "Не удалось обменять код. Начните подключение заново."
+
+#: src/Api.php:38
+msgid "Dzen Chat did not confirm the code exchange. Start the connection again."
+msgstr "Dzen Chat не подтвердил обмен кода. Начните подключение заново."
+
+#: src/Api.php:48
+msgid "Conversation history is read-only in this version."
+msgstr "В этой версии доступен только просмотр истории чатов."
+
+#: src/Api.php:67
+msgid "Check the connection and WordPress security keys. Reconnect if the site URL has changed."
+msgstr "Проверьте подключение и ключи WordPress. При смене адреса сайта подключите его заново."
+
+#: src/Api.php:70
+msgid "Dzen Chat is unavailable. The service has not confirmed the change."
+msgstr "Dzen Chat недоступен. Изменение не подтверждено сервисом."
+
+#: src/Api.php:77
+#: src/Api.php:82
+msgid "Check the values you entered."
+msgstr "Проверьте введённые данные."
+
+#: src/Api.php:78
+msgid "Reconnect the site to Dzen Chat."
+msgstr "Нужно повторно подключить сайт к Dzen Chat."
+
+#: src/Api.php:79
+msgid "This action is unavailable. Check permissions and the project status in Dzen Chat."
+msgstr "Действие недоступно: проверьте права и состояние проекта в Dzen Chat."
+
+#: src/Api.php:80
+msgid "The item is unavailable or the API does not support this operation yet."
+msgstr "Объект недоступен или API ещё не поддерживает эту операцию."
+
+#: src/Api.php:81
+msgid "The state has changed. Refresh the page and try again."
+msgstr "Состояние изменилось. Обновите страницу и повторите действие."
+
+#: src/Api.php:83
+msgid "Too many requests. Try again later."
+msgstr "Слишком много запросов. Повторите позже."
+
+#: src/Api.php:88
+msgid "The service did not confirm the operation. Try again later."
+msgstr "Сервис не подтвердил операцию. Попробуйте позднее."
+
+#: src/Api.php:93
+msgid "Dzen Chat returned an invalid response. The operation is not confirmed."
+msgstr "Dzen Chat вернул некорректный ответ. Операция не подтверждена."
+
+#: src/Api.php:119
+msgid "Invalid public page URL."
+msgstr "Некорректный публичный адрес страницы."
+
+#: src/Api.php:124
+msgid "The service did not confirm the reindexing request."
+msgstr "Сервис не подтвердил запрос переиндексации."
+
+#: src/Api.php:137
+msgid "The service returned an invalid list."
+msgstr "Сервис вернул некорректный список."
+
+#: src/Connection.php:66
+msgid "Connection requires HTTPS for the site and admin on the same domain, sodium, and WordPress security keys in wp-config.php."
+msgstr "Для подключения нужны HTTPS сайта и админки на одном домене, sodium и ключи безопасности WordPress в wp-config.php."
+
+#: src/Connection.php:75
+msgid "Start the connection again from the WordPress admin."
+msgstr "Повторите подключение из админки WordPress."
+
+#: src/Plugin.php:37
+msgid "Dzen Chat: every minute"
+msgstr "Dzen Chat: каждую минуту"
+
+#: src/Plugin.php:44
+msgid "Connect Dzen Chat separately for each site. Network activation is not supported yet."
+msgstr "Подключайте Dzen Chat отдельно для каждого сайта. Сетевая активация пока не поддерживается."
+
+#: src/Plugin.php:114
+msgid "Hide widget"
+msgstr "Не показывать виджет"
+
+#: src/Plugin.php:115
+msgid "Use the site-wide widget"
+msgstr "Как на всём сайте"
+
+#: src/Plugin.php:119
+msgid "These widget settings apply only to this page."
+msgstr "Эти настройки виджета относятся только к этой странице."
+
+#: src/Widgets.php:27
+msgid "The service returned invalid widget data. Refresh the list."
+msgstr "Сервис вернул некорректные данные виджета. Обновите список."
+
+#: src/Widgets.php:47
+msgid "The service returned an invalid widget list."
+msgstr "Сервис вернул некорректный список виджетов."
+
+#: src/Widgets.php:54
+msgid "The service response contains a duplicate widget."
+msgstr "В ответе сервиса повторяется виджет."
+
+#: src/Widgets.php:83
+msgid "The widget is temporarily unavailable."
+msgstr "Виджет временно недоступен."
+
+#: src/Widgets.php:99
+msgid "The service did not confirm the widget change. Refresh the list."
+msgstr "Сервис не подтвердил изменение виджета. Обновите список."

@@ -1,58 +1,68 @@
-# Task: Полная интеграция WordPress с публичным API Dzen Chat
+# Task: Full WordPress integration with the Dzen Chat public API
 
 ## Goal
-Подключить согласованные разделы WordPress к настоящему сервису и проверить
-реальный виджет, переписку и обновление публичных страниц на локальном сайте.
+
+Connect the agreed WordPress sections to the real service and verify the widget,
+conversations and public page updates on a local site.
 
 ## Context
+
 - `src/Api.php`, `Admin.php`, `Sync.php`, `Widgets.php`, `Connection.php`.
-- Запущенный `https://local.dzenchat.com/api/openapi.json` и реализация
-  `chat/api/` в задаче Dzen Chat `01a086d7-18f2-73e1-99b0-b59d123f2da5`.
-- `compose.registration.yaml`: отдельный WordPress с настоящими credentials.
+- Running `https://local.dzenchat.com/api/openapi.json` and `chat/api/`
+  implementation in Dzen Chat task `01a086d7-18f2-73e1-99b0-b59d123f2da5`.
+- `compose.registration.yaml`: separate WordPress with real credentials.
 
-## Current Behavior
-На старте версия 0.3.0 использовала реальную регистрацию и API виджетов.
-Остальные экраны и очередь использовали прежний проект контракта и были отключены.
-Версия 0.4 подключает действующие методы; результат и границы описаны в
-[отчёте](../verification/2026-09-11-full-integration.md).
+## Current behavior
 
-## Target Shape
-Один серверный Bearer-клиент `/api/`, актуальные DTO, разделы индекса,
-источников и диалогов. Изменения публичных страниц и записей отправляются
-через существующий механизм переиндексации. Виджет загружается с Dzen Chat.
+At the start, version 0.3.0 used real registration and widget APIs. Other screens
+and the queue depended on the old proposed contract and were disabled.
+Version 0.4 connects implemented methods; results and limits are in the
+[verification report](../verification/2026-09-11-full-integration.md).
 
-## Guard Rails
-- Ключи остаются в зашифрованном хранилище WordPress, без вывода в HTML и Git.
-- Чаты хранятся на сервере, сообщения и биллинговая история не удаляются.
-- Товары, черновики и защищённый контент не отправляются как публичные страницы.
-- Прежние `/api/v1`, scopes и operation IDs не подменяют реальный API.
-- Тестовые ответы изолированы от сайта с настоящим подключением.
-- Production и посторонние изменения в Dzen Chat не затрагиваются.
+## Target shape
+
+One server-side Bearer client for `/api/`, current DTOs, and index, source and
+conversation screens. Submit public page/post changes through the existing
+reindexing mechanism. Load the widget from Dzen Chat.
+
+## Guard rails
+
+- Keep credentials encrypted in WordPress, outside HTML and Git.
+- Chats stay on the server; never delete messages or billing history.
+- Do not submit products, drafts or protected content as public pages.
+- Do not substitute proposed /api/v1, scopes or operation IDs for the real API.
+- Isolate fixture responses from the site with the real connection.
+- Leave production and unrelated Dzen Chat changes untouched.
 
 ## Iterations
-1. Выполнено: проверен запущенный контракт, WordPress и реальный виджет.
-2. Выполнено: чтение индекса, источников, файлов и переписки; единый Bearer API.
-3. Выполнено в пределах /api/update: очередь публичных URL, первичная сверка,
-   повторы, изменение permalink и уведомление о снятии публикации.
-   Гарантированное исключение из выдачи остаётся серверной зависимостью.
-4. Ожидает серверных методов: скрытие, источники ответов, полная пагинация/поиск,
-   политики триггеров и статус проекта. Отсутствующие действия не имитируются.
-5. Локальные сценарии и пакет проверены; commit и CI фиксируются при поставке.
+
+1. Complete: inspect the running contract, WordPress and real widget.
+2. Complete: index, source, file and conversation reads through one Bearer API.
+3. Complete within /api/update: public URL queue, initial reconciliation, retries,
+   permalink changes and notification of withdrawn publication. Guaranteed
+   exclusion from retrieval remains a server dependency.
+4. Awaiting server methods: hiding, answer sources, full pagination/search,
+   trigger policies and project status. Missing operations are not simulated.
+5. Local scenarios and packaging checked; commit and CI recorded at delivery.
 
 ## Verification
-- Виджет создаётся и выбирается из WordPress; публичная страница загружает
-  реальный loader и iframe, отправленное сообщение видно в истории.
-- Индекс и источники показывают серверное состояние; ошибки не выглядят успехом.
-- Публикация, изменение и удаление тестовой страницы корректно отражаются
-  в индексе. HTTP 202 означает принятие запроса, не готовый индекс.
-- Проверяются права, nonce, изоляция сайта/проекта, ссылки и отсутствие секретов.
-  Контрактные тесты не заменяют живую проверку.
-- Пробелы API фиксируются явно, без имитации отсутствующих операций.
 
-## Open Questions
-В проверенном API пока отсутствуют скрытие чатов, источники ответов,
-управление триггерами страниц, статус проекта и пагинация. Уточняется, будут ли
-они добавлены в задаче API или серверная доработка войдёт в эту итерацию.
-Проверенный /api/update повторно обходит URL, но не предоставляет подтверждения
-его исключения. Для удаления/закрытия ранее публичной страницы нужен явный
-серверный контракт; завершение всей задачи до его реализации не заявляется.
+- Create and select a widget from WordPress; a public page loads the actual
+  loader and iframe, and its submitted message appears in history.
+- Index and Sources show server state; errors do not look like success.
+- Test publication, editing and deletion against index behavior. HTTP 202 means
+  request acceptance, not a completed index.
+- Check permissions, nonce, site/project isolation, links and absence of secrets.
+  Contract tests do not replace live verification.
+- Record API gaps explicitly without simulating missing operations.
+
+## Open questions
+
+The inspected API lacks hiding, answer sources, page trigger management, project
+status and pagination. Determine whether the API task will add these methods
+or server work belongs in this iteration.
+
+The verified /api/update recrawls a URL but does not confirm its exclusion.
+Deleting or closing a previously public page requires an explicit server
+contract. The entire original integration is not claimed complete before that
+contract is implemented.

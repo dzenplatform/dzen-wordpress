@@ -1,81 +1,86 @@
-# Авторизация WordPress 0.2.0
+# WordPress 0.2.0 authorization
 
-За основу взяты задача Codex `01a08b55-5ca1-76e2-ad7f-e5eae6e72135` и текущие
-реализованные обработчики Dzen Chat. Код основного проекта не изменялся.
+Based on Codex task `01a08b55-5ca1-76e2-ad7f-e5eae6e72135` and the implemented
+Dzen Chat handlers at that date. The main project code was not changed.
+This is a historical report; subsequent releases connect management APIs.
 
-## Что изменено
+## Changes
 
-Переход на `/auth/add` передаёт `type=wordpress`, HTTPS `site_url`, callback
-в пределах сайта, `state`, S256 `code_challenge`. После возврата WordPress
-проверяет state, сессию администратора, срок попытки, сайт и origin сервиса.
-Одноразовый code обменивается через JSON POST `/auth/exchange/`.
+The /auth/add redirect sends type=wordpress, HTTPS site_url, an in-site
+callback, state and an S256 code_challenge. On return, WordPress checks state,
+administrator session, attempt expiry, site and service origin. The one-time
+code is exchanged through JSON POST /auth/exchange/.
 
-Принимаются реальные поля `client_id`, `client_secret`, `site_source_id`.
-Ключи шифруются прежним sodium-хранилищем WordPress с `autoload=false`.
-Придуманные project/integration IDs больше не требуются для подключения.
-Код удаляется из видимого URL, повторный callback не отправляет второй exchange.
+Accept the actual client_id, client_secret and site_source_id fields.
+The existing sodium-backed WordPress store encrypts credentials with
+autoload=false. Connection no longer requires invented project/integration IDs.
+The code is removed from the visible URL; replaying the callback sends no
+second exchange request.
 
-Успех exchange подтверждает авторизацию, без запроса будущего `/api/v1/integration`.
-Виджеты, история, индексация и статусы источников не адаптировались к серверу.
-Их подготовленный код сохранён; новое подключение не включает эти возможности
-и не отправляет события индексации. Локальное удаление ключей явно отличается
-от отзыва клиента в Dzen Chat.
+A successful exchange confirms authorization without calling the future
+/api/v1/integration. Widgets, history, indexing and source status were not adapted
+in this iteration. Their prepared code remained, but new connections did not
+enable them or submit indexing events. Local key removal is explicitly
+distinguished from revocation in Dzen Chat.
 
-## Результаты
+## Results
 
-- PHP lint и 101 проверка: прежние 48 контрактных + 17 виджетных,
-  36 новых в `tests/registration-contracts.php`.
-- Новый контракт проверяет точный endpoint/JSON, PKCE, отсутствующие поля ответа,
-  HTTP 302/400, ошибку сети, неверный JSON, state/сессию/origin/TTL, повтор кода,
-  nonce, HTTPS/path-prefix, шифрование и отсутствие вызовов будущих API.
-- Во встроенном браузере выполнен настоящий цикл: WordPress → локальный
-  Dzen Chat → создание отдельного проекта → callback → exchange → успешная
-  авторизация WordPress. Перезагрузка сохранила подключение.
-- Повторное подключение к тому же проекту выдало нового клиента и сохранило
-  `site_source_id`. Проверка в WP показала: секрет зашифрован, autoload выключен,
-  синтетический API не загружен, очередь индексирования пуста.
+- PHP lint and 101 checks: 48 previous contract checks, 17 widget checks and
+  36 new checks in tests/registration-contracts.php.
+- The new checks cover exact endpoint/JSON, PKCE, missing response fields,
+  HTTP 302/400, network failure, invalid JSON, state/session/origin/TTL, code
+  replay, nonce, HTTPS/path prefix, encryption and no future-API calls.
+- A real in-app browser flow passed: WordPress → local Dzen Chat → create a
+  separate project → callback → exchange → authorized WordPress. Connection
+  survived reload.
+- Reconnecting to the same project issued a new client and preserved
+  site_source_id. WordPress inspection confirmed encrypted secret, disabled
+  autoload, no synthetic API loaded and an empty indexing queue.
 
-Живой тест использовал `https://local.dzenchat.com` и
-`https://local.dzenchat.com:8869`, а не production. Ни ключи, ни код exchange
-в отчёт или Git не включены. Создан отдельный тестовый проект `local.dzenchat.com`
-с источником `https://local.dzenchat.com:8869/`; подключение оставлено для проверки.
+The live test used https://local.dzenchat.com and
+https://local.dzenchat.com:8869, not production. Neither credentials nor exchange
+codes are included in this report or Git. A separate local.dzenchat.com test
+project was created with source https://local.dzenchat.com:8869/ and left
+connected for review.
 
-## Повторение живой проверки
+## Reproduce the live test
 
-Отдельный Compose project сохраняет реальную регистрацию независимо от
-синтетических `make test` / `make setup`. Оба WordPress используют порт 8868,
-поэтому одновременно запускается только один стенд.
+A separate Compose project preserves real registration independently of
+synthetic make test / make setup. At the time, both WordPress configurations
+used port 8868, so only one could run at once. The current README places the
+fixture on 8870, allowing both to coexist.
 
-На этой машине локальный Caddy уже имеет доверенный сертификат
-`local.dzenchat.com`. Публичный CA копируется с правами чтения для контейнера;
-проверка сертификатов остаётся включённой.
+Local Caddy on this machine already has a trusted local.dzenchat.com certificate.
+Copy the public CA with container-readable permissions; certificate verification
+stays enabled.
 
-```sh
+~~~sh
 docker compose stop
 mkdir -p output/caddy-registration
 install -m 644 /opt/homebrew/var/lib/caddy/pki/authorities/local/root.crt output/caddy-registration/dzen-local-ca.crt
 docker compose -p dzen-wordpress-registration -f compose.yaml -f compose.registration.yaml up -d db wordpress
 caddy run --config tests/Caddyfile.registration --adapter caddyfile
-```
+~~~
 
-Последняя команда запускается в отдельном терминале. Тестовый proxy использует
-существующий сертификат; после его обновления proxy нужно перезапустить.
-Хранилище proxy изолировано в `output/caddy-registration`, автосохранение
-основной конфигурации Caddy отключено. При первом запуске до этой изоляции Caddy
-автоматически очистил три набора давно просроченных сертификатов в стандартном
-пользовательском каталоге `~/Library/Application Support/Caddy`.
+Run the last command in a separate terminal. The test proxy uses an existing
+certificate and must restart after renewal. Proxy storage is isolated in
+output/caddy-registration; main Caddy configuration autosave is disabled.
+On the first run, before storage was isolated, Caddy automatically cleaned
+three sets of long-expired certificates from the default
+~/Library/Application Support/Caddy directory.
 
-При первом запуске нового volume:
+For a new volume:
 
-```sh
+~~~sh
 docker compose -p dzen-wordpress-registration -f compose.yaml -f compose.registration.yaml run --rm cli core install --url=https://local.dzenchat.com:8869 --title='WordPress Dzen integration' --admin_user=dzen_test --admin_password=local-dzen-test-8868 --admin_email=wordpress-registration@example.org --skip-email
 docker compose -p dzen-wordpress-registration -f compose.yaml -f compose.registration.yaml run --rm cli plugin activate dzen-chat
-```
+~~~
 
-Это отдельная тестовая учётная запись WordPress. Затем открыть
-`https://local.dzenchat.com:8869/wp-admin/admin.php?page=dzen-chat` во встроенном
-браузере, войти и нажать «Подключить Dzen Chat». Для production по умолчанию
-используется `https://chat.dzen.dev`; локальный origin задаёт только dev overlay.
+This is a dedicated test WordPress account. Open
+https://local.dzenchat.com:8869/wp-admin/admin.php?page=dzen-chat in the in-app
+browser, sign in and click **Connect Dzen Chat**. Production defaults to
+https://chat.dzen.dev; only the development overlay sets the local origin.
 
-Архив `dist/dzen-chat-0.2.0.zip` содержит плагин без fixture, Compose и локальных
-сертификатов. Production-деплой и API управления не проверялись в этой итерации.
+The dist/dzen-chat-0.2.0.zip archive contains the plugin without fixtures,
+Compose or local certificates. Production deployment and management APIs were
+not tested in this iteration.

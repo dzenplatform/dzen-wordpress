@@ -3,7 +3,7 @@ Contributors: dzenplatform
 Requires at least: 6.8
 Tested up to: 6.8.2
 Requires PHP: 8.2
-Stable tag: 0.4.0
+Stable tag: 0.5.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -41,13 +41,20 @@ and /auth/exchange/, plus the public /api/ widget, page, source, file, chat and
 URL-update methods. API requests use the saved client credentials as a server-side Bearer
 token over HTTPS. Only the public widget code is sent to the visitor's browser.
 
+The interface is English by default and includes a Russian (ru_RU) translation.
+It follows the administrator's Users > Profile > Language preference. Site
+Default uses Settings > General > Site Language. Install the Russian WordPress
+language pack if it is not listed. Other languages fall back to English.
+Widget names, site content and conversations retain their original language;
+the Dzen Chat service controls the language of the embedded widget.
+
 == Installation ==
 
 1. Upload the ZIP through Plugins > Add New > Upload Plugin and activate it.
 2. Open Dzen Chat and connect your site. HTTPS and PHP sodium are required.
 3. Choose or create a project at chat.dzen.dev and return to WordPress.
 4. WordPress confirms authorization after exchanging the returned code.
-5. Open Dzen Chat > Widgets, enable a widget and choose Place on this site.
+5. Open Dzen Chat > Widgets, enable a widget and choose Place on site.
 6. Open a public page to check the widget. Page/post overrides are in the editor.
 7. Check Index, Sources and Conversations. Scheduled synchronization needs
    working WP-Cron or a system scheduler running WordPress due events.
@@ -56,7 +63,7 @@ token over HTTPS. Only the public widget code is sent to the visitor's browser.
 
 = Why did enabling a widget not place it on my site? =
 Enabling controls the widget for the whole Dzen Chat project. Choose Place on
-this site to select it for WordPress. Page-level exclusions can hide the widget.
+site to select it for WordPress. Page-level exclusions can hide the widget.
 Changes made directly in Dzen Chat are refreshed by WordPress within five minutes.
 
 = Can I hide or delete conversations? =
@@ -77,6 +84,13 @@ service. Removing keys in WordPress does not revoke the remote API client.
 No. Products require a separate integration.
 
 == Changelog ==
+
+= 0.5.0 =
+Use English source strings throughout the WordPress interface. Add standard
+WordPress internationalization and a bundled Russian translation, selected by
+the administrator's language preference. Include translation catalogs in release
+ZIPs. Translate repository documentation to English and document the translation
+workflow. Preserve user content and the existing integration behavior.
 
 = 0.4.0 =
 Connect document, source, knowledge-file and conversation screens to the real

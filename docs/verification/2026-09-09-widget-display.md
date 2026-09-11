@@ -1,55 +1,56 @@
-# Показ виджета: исправление 0.1.1
+# Widget display: version 0.1.1 fix
 
-Дата: 2026-09-09. Проверенный WordPress: 6.8.2, PHP 8.3.
+Date: 2026-09-09. Tested with WordPress 6.8.2 and PHP 8.3.
+This historical report covers the original fixture-based integration.
 
-## Воспроизведение
+## Reproduction
 
-На `http://127.0.0.1:8868/wp-admin/admin.php?page=dzen-chat-widgets&notice=saved`
-виджет был включён и выбран для сайта. На публичной главной не было ни
-загрузчика, ни контейнера виджета. Сохранённый статус проекта истёк;
-WP-Cron на стенде отключён. Посещение списка виджетов не обновляло статус.
+At `http://127.0.0.1:8868/wp-admin/admin.php?page=dzen-chat-widgets&notice=saved`,
+the widget was enabled and selected for the site. The public home page had
+neither loader nor widget container. Cached project status had expired, and
+WP-Cron was disabled locally. Visiting Widgets did not refresh status.
 
-В коде вставки обнаружен второй дефект: отсутствовал контейнер `#chat-chat`,
-который требуется загрузчику Dzen. Отдельно у тестового API был вымышленный
-код `fixture-widget` без браузерного загрузчика; переключение enabled
-возвращало ответ, но не сохраняло состояние.
+A second embed defect was found: the `#chat-chat` container required by the
+Dzen loader was missing. The test API also used an invented fixture-widget code
+without a browser loader; toggling enabled returned a response without saving.
 
-## Изменения
+## Changes
 
-- Плагин выводит контейнер перед загрузчиком в footer. Используется
-  [отложенная загрузка WordPress](https://developer.wordpress.org/reference/functions/wp_enqueue_script/).
-- При отсутствии кеша статуса плагин обновляет его с тайм-аутом 3 секунды.
-  Ошибка приостанавливает вставку; повторная публичная проверка — через минуту.
-  Активность интеграции и разрешение `widget_answers` остаются обязательными.
-- Страница виджетов обновляет статус и объясняет приостановку или отсутствие
-  выбранного виджета. Переключение требует подтверждения `id` и `is_enabled`.
-- Локальный MU fixture сохраняет настройки, проверяет версии и отдаёт тестовый
-  загрузчик с тем же обязательным контейнером. Админка, кнопка и панель явно
-  обозначают тестовый режим. Файлы fixture не включаются в установочный ZIP.
+- Print the container before the footer loader, using
+  [WordPress deferred loading](https://developer.wordpress.org/reference/functions/wp_enqueue_script/).
+- Refresh missing status cache with a three-second timeout. Errors suspend
+  insertion; another public check is allowed after one minute. Integration
+  activity and widget_answers permission remain mandatory.
+- Refresh status on Widgets and explain suspension or the absence of a selected
+  widget. Toggling requires confirmation of id and is_enabled.
+- The local MU fixture persists settings, checks versions and serves a test loader
+  requiring the same container. Admin, launcher and panel identify test mode.
+  Fixture files are excluded from installation ZIPs.
 
-## Проверки
+## Checks
 
-`make test`: **65 проверок**, включая 17 новых проверок вставки, истечения кеша,
-ограниченного тайм-аута, повторов после ошибки, блокировки, выключения,
-исключения страницы, выбора другого виджета для страницы и переноса сайта.
+`make test`: **65 checks**, including 17 new checks for insertion, expired
+cache, bounded timeout, retries after errors, restrictions, disablement, page
+exclusion, another page widget and moving the site.
 
-Playwright CLI: **37 проверок** — 21 существующая проверка истории и источников,
-16 новых в `tests/widget-browser-checks.js`. Новый сценарий выполняет POST из
-реальной админки и проверяет публичную страницу отдельным посетителем без
-авторизации: enabled, выключение, удаление вставки, повторный выбор,
-перезагрузка, открытие/закрытие панели и сохранённое приветствие. JS-ошибок нет.
+Playwright CLI: **37 checks** — 21 existing history/source checks and 16 new
+checks in tests/widget-browser-checks.js. The new scenario submits POSTs from
+the actual WordPress admin and inspects the public page as a separate,
+unauthenticated visitor: enabling, disabling, removing placement, selecting
+again, reloading, opening/closing the panel and persisted welcome text.
+No JavaScript errors were found.
 
-Отдельно принудительно истёк настоящий transient при `DISABLE_WP_CRON=true`.
-Следующий гостевой запрос главной обновил статус, загрузил один скрипт,
-создал один контейнер и открыл видимую панель. Скриншот:
-`output/playwright/widget-public-after-expiry.png` (локальный артефакт, не в Git).
+The actual transient was also expired with DISABLE_WP_CRON=true. The next guest
+home-page request refreshed status, loaded one script, created one container
+and opened a visible panel. Screenshot:
+`output/playwright/widget-public-after-expiry.png` (local, not in Git).
 
-## Граница результата
+## Result boundary
 
-Видимая панель на этом стенде — **тестовая**, с явной пометкой и без ответов ИИ.
-Это проверка пути «админка WordPress → API fixture → публичная вставка».
-Она не подтверждает реальную авторизацию, Integration API, загрузку настоящего
-интерфейса Dzen, генерацию ответа или серверную блокировку по оплате.
-Обычный плагин продолжает загружать `/widget/{code}` с `chat.dzen.dev`.
+The visible panel is an explicitly labelled **test fixture** without AI answers.
+It verifies WordPress admin → API fixture → public embedding. It does not
+verify real authorization, the Integration API, the actual Dzen interface,
+answer generation or server billing restrictions. Normal plugin installations
+continue to load /widget/{code} from chat.dzen.dev.
 
-Обновлённый архив: `dist/dzen-chat-0.1.1.zip`. Production-деплой не выполнялся.
+Updated archive: `dist/dzen-chat-0.1.1.zip`. No production deployment.

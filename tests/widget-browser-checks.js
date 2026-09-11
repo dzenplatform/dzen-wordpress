@@ -9,7 +9,7 @@ async (page) => {
     };
     await page.goto(adminUrl);
     const card = page.locator('section.dzen-message').filter({ has: page.getByRole('heading', { name: 'Помощник сайта', exact: true }) });
-    const suggestions = card.getByRole('checkbox', { name: 'Предлагать уточняющие вопросы после ответа' });
+    const suggestions = card.getByRole('checkbox', { name: 'Suggest follow-up questions after an answer' });
     const originalSuggestions = await suggestions.isChecked();
     const guestContext = await page.context().browser().newContext();
     const guest = await guestContext.newPage();
@@ -20,57 +20,57 @@ async (page) => {
         await page.waitForLoadState('load');
     };
     try {
-        check(await page.getByText('Локальный тестовый стенд:', { exact: false }).isVisible(), 'admin makes fixture boundary explicit');
-        if (await card.getByRole('button', { name: 'Разместить на сайте', exact: true }).count()) {
-            await submit(card.getByRole('button', { name: 'Разместить на сайте', exact: true }));
+        check(await page.getByText('Local test environment:', { exact: false }).isVisible(), 'admin makes fixture boundary explicit');
+        if (await card.getByRole('button', { name: 'Place on site', exact: true }).count()) {
+            await submit(card.getByRole('button', { name: 'Place on site', exact: true }));
         }
-        await submit(card.getByRole('button', { name: 'Выключить в Dzen Chat', exact: true }));
+        await submit(card.getByRole('button', { name: 'Disable in Dzen Chat', exact: true }));
         await page.reload();
-        check(await card.getByRole('button', { name: 'Включить в Dzen Chat', exact: true }).isVisible(), 'disabled state persists after admin reload');
+        check(await card.getByRole('button', { name: 'Enable in Dzen Chat', exact: true }).isVisible(), 'disabled state persists after admin reload');
         await guest.goto(base + '/');
         check(await guest.locator('#chat-chat, #dzen-chat-widget-js').count() === 0, 'disabled widget is absent on the public page');
 
-        await submit(card.getByRole('button', { name: 'Включить в Dzen Chat', exact: true }));
+        await submit(card.getByRole('button', { name: 'Enable in Dzen Chat', exact: true }));
         const embed = guest.waitForResponse(response => response.url().includes('dzen_fixture_widget=fixture-widget'));
         await guest.reload();
         check((await embed).status() === 200, 'public embed request succeeds');
-        const launcher = guest.getByRole('button', { name: 'Dzen Chat · тест', exact: true });
+        const launcher = guest.getByRole('button', { name: 'Dzen Chat · test', exact: true });
         await launcher.waitFor({ state: 'visible' });
         check(await launcher.isVisible(), 'enabling selected widget displays launcher to a logged-out visitor');
         check(await guest.locator('#chat-chat').count() === 1 && await guest.locator('#dzen-chat-widget-js').count() === 1, 'single mount and single loader');
         check(await guest.locator('#wpadminbar').count() === 0, 'public check uses a guest session');
         await launcher.click();
-        const dialog = guest.getByRole('dialog', { name: 'Dzen Chat — локальный тест' });
-        check(await dialog.isVisible() && await dialog.getByText('Локальный тест интерфейса.', { exact: false }).isVisible(), 'launcher opens explicitly labelled local test panel');
+        const dialog = guest.getByRole('dialog', { name: 'Dzen Chat — local test' });
+        check(await dialog.isVisible() && await dialog.getByText('Local interface test.', { exact: false }).isVisible(), 'launcher opens explicitly labelled local test panel');
         await guest.keyboard.press('Escape');
         check(!await dialog.isVisible(), 'Escape closes the panel');
         await guest.reload();
         check(await launcher.isVisible(), 'public widget survives page reload');
 
         await suggestions.setChecked(!originalSuggestions);
-        await submit(card.getByRole('button', { name: 'Сохранить настройки', exact: true }));
+        await submit(card.getByRole('button', { name: 'Save settings', exact: true }));
         await page.reload();
         check(await suggestions.isChecked() === !originalSuggestions, 'suggestions setting persists after server reread');
-        check(await card.getByRole('textbox', { name: 'Приветствие' }).count() === 0,
+        check(await card.getByRole('textbox', { name: 'Welcome message' }).count() === 0,
             'unsupported welcome setting is absent');
 
-        await submit(page.getByRole('button', { name: 'Убрать общий виджет с сайта', exact: true }));
+        await submit(page.getByRole('button', { name: 'Remove the site-wide widget', exact: true }));
         await guest.reload();
         check(await guest.locator('#chat-chat, #dzen-chat-widget-js').count() === 0, 'remove from site omits complete embed');
-        check(await page.getByText('Виджет для сайта не выбран.', { exact: false }).isVisible(), 'admin explains unselected widget');
-        await submit(card.getByRole('button', { name: 'Разместить на сайте', exact: true }));
+        check(await page.getByText('No widget is selected for this site.', { exact: false }).isVisible(), 'admin explains unselected widget');
+        await submit(card.getByRole('button', { name: 'Place on site', exact: true }));
         await guest.reload();
         check(await launcher.isVisible(), 'selecting enabled widget restores public launcher');
         check(browserErrors.length === 0, 'no public JavaScript errors');
     } finally {
         await page.goto(adminUrl);
         await suggestions.setChecked(originalSuggestions);
-        await submit(card.getByRole('button', { name: 'Сохранить настройки', exact: true }));
-        if (await card.getByRole('button', { name: 'Включить в Dzen Chat', exact: true }).count()) {
-            await submit(card.getByRole('button', { name: 'Включить в Dzen Chat', exact: true }));
+        await submit(card.getByRole('button', { name: 'Save settings', exact: true }));
+        if (await card.getByRole('button', { name: 'Enable in Dzen Chat', exact: true }).count()) {
+            await submit(card.getByRole('button', { name: 'Enable in Dzen Chat', exact: true }));
         }
-        if (await card.getByRole('button', { name: 'Разместить на сайте', exact: true }).count()) {
-            await submit(card.getByRole('button', { name: 'Разместить на сайте', exact: true }));
+        if (await card.getByRole('button', { name: 'Place on site', exact: true }).count()) {
+            await submit(card.getByRole('button', { name: 'Place on site', exact: true }));
         }
         await guestContext.close();
     }

@@ -23,7 +23,7 @@ final class Connection
     public static function authorize(string $nonce): void
     {
         if (!current_user_can('manage_options')) {
-            wp_die(esc_html__('Недостаточно прав.', 'dzen-chat'), '', ['response' => 403]);
+            wp_die(esc_html__('You do not have permission to perform this action.', 'dzen-chat'), '', ['response' => 403]);
         }
         check_admin_referer($nonce);
     }
@@ -63,7 +63,7 @@ final class Connection
             wp_redirect($url, 303, 'Dzen Chat');
             exit;
         } catch (\RuntimeException $error) {
-            wp_die(esc_html__('Для подключения нужны HTTPS сайта и админки на одном домене, sodium и ключи безопасности WordPress в wp-config.php.', 'dzen-chat'), '', ['response' => 400]);
+            wp_die(esc_html__('Connection requires HTTPS for the site and admin on the same domain, sodium, and WordPress security keys in wp-config.php.', 'dzen-chat'), '', ['response' => 400]);
         }
     }
 
@@ -72,7 +72,7 @@ final class Connection
         nocache_headers();
         header('Referrer-Policy: no-referrer');
         if (!current_user_can('manage_options')) {
-            wp_die(esc_html__('Повторите подключение из админки WordPress.', 'dzen-chat'), '', ['response' => 403]);
+            wp_die(esc_html__('Start the connection again from the WordPress admin.', 'dzen-chat'), '', ['response' => 403]);
         }
         try {
             $key = 'dzen_chat_auth_' . get_current_user_id();

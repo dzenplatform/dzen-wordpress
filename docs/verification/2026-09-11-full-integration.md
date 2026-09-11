@@ -1,66 +1,72 @@
-# WordPress 0.4.0: проверка настоящей интеграции
+# WordPress 0.4.0: real integration verification
 
-11 сентября 2026. Проверена реализованная часть плагина с работающим локальным
-Dzen Chat. Полное выполнение исходной постановки **не заявляется**: недостающие
-серверные методы перечислены ниже. Основной проект и production не изменялись.
+September 11, 2026. The implemented plugin features were tested against the
+running local Dzen Chat service. **This does not claim completion of the entire
+original specification**: missing server methods are listed below. The main
+project and production were not changed.
 
-## Окружение
+## Environment
 
-- WordPress 6.8.2, PHP 8.3, отдельный Compose project dzen-wordpress-registration.
-- Сайт и админка: https://local.dzenchat.com:8869/.
-- Настоящий сервис и API: https://local.dzenchat.com/, /api-docs/.
-- Существующее зашифрованное подключение сохранено. Real overlay доверяет
-  локальному CA и не подменяет ответы API. Проверка TLS остаётся включённой.
-- Код плагина подключён непосредственно из репозитория в работающий WordPress.
-  Сервис cron вызывает только dzen_chat_worker; остальные задания не запускает.
-- Фикстуры работают отдельно на порту 8870 и не используют реальные credentials.
+- WordPress 6.8.2, PHP 8.3, separate dzen-wordpress-registration Compose project.
+- Site and admin: https://local.dzenchat.com:8869/.
+- Real service/API: https://local.dzenchat.com/, /api-docs/.
+- Existing encrypted connection preserved. The real overlay trusts the local
+  CA without substituting responses. TLS verification stays enabled.
+- Plugin code mounted directly from the repository into running WordPress.
+  The cron service runs only dzen_chat_worker, not other jobs.
+- Fixtures run separately on port 8870 without real credentials.
 
-## Что проверено в браузере
+## Browser verification
 
-1. Из WordPress через настоящий API создан виджет
-   «Помощник WordPress — проверка интеграции», выбран для сайта.
+The tested content and widget names were Russian. Names below are translated
+for this report; the original values and control codes were not changed.
+
+1. The real API created a widget from WordPress, named “WordPress assistant —
+   integration test”, and selected it for the site.
    Loader: https://local.dzenchat.com/widget/OoIUGvQYZdo.
-   На публичной странице один mount и одна кнопка, открывается настоящий iframe.
-2. Сообщение отправлено в Dzen Chat, получен ответ ИИ. Тот же диалог открыт
-   в админке WordPress через API истории, с пользовательским сообщением и ответом.
-3. Опубликована тестовая page ID 5 — «Проверка Dzen Chat: учебная доставка».
-   Исходный текст находится в tests/live-page.html; это вымышленные условия,
-   без магазина, покупок и реальных услуг.
-4. Публикация сама создала событие очереди. После выполнения задания страница
-   появилась в настоящем индексе под ID 2BuTKDapw9, без ошибки обработки.
-   Ассистент назвал 350 рублей и контрольный код МАЯК-47, показал ссылку на страницу.
-5. Текст изменён на 450 рублей и МАЯК-48. Событие появилось автоматически
-   01:45:47 UTC, фоновый планировщик отправил его без ручного запуска worker.
-   В карточке индекса появилась дата 01:45:55 UTC. Новый диалог ответил по новым
-   данным: 450 рублей и МАЯК-48.
-6. Новый диалог 01a08e25-3444-7664-bec1-fa88c10f2d24 найден фильтром в WordPress;
-   в его карточке подтверждён тот же ответ с обновлёнными условиями.
-7. Из индекса открыты карточка документа, карточка источника и ссылки на оригинал
-   и редактор WordPress. Поиск «учебная» находит тестовую страницу.
-   Ручная переиндексация возвращает «Запрос принят» и промежуточное состояние обхода.
-8. При выключении виджета через WordPress с главной исчезают loader, mount и
-   кнопка. После включения возвращается ровно одна вставка реального скрипта.
-9. В редакторе тестовой страницы сохранена настройка «Не показывать виджет».
-   На ней кнопка исчезла, на главной сохранилась. После снятия настройки виджет
-   восстановлен. Тестовая страница и рабочее подключение оставлены для проверки.
+   The public page had one mount and one launcher, opening the real iframe.
+2. A message was sent to Dzen Chat and received an AI answer. The same
+   conversation was opened through the history API inside WordPress, showing
+   the visitor message and answer.
+3. Published test page ID 5, “Dzen Chat test: sample delivery”.
+   The original seed was tests/live-page.html. It contains fictional terms,
+   without a real shop, purchases or services. That repository seed was
+   subsequently translated to English; the live test used Russian content.
+4. Publication automatically created a queue event. After the job ran, the page
+   appeared in the real index as 2BuTKDapw9 without processing errors.
+   The assistant answered 350 rubles and control code МАЯК-47, linking the page.
+5. Content changed to 450 rubles and МАЯК-48. An event appeared automatically
+   at 01:45:47 UTC. The background scheduler submitted it without manually
+   running the worker. The index detail showed 01:45:55 UTC, and a new
+   conversation answered using 450 rubles and МАЯК-48.
+6. WordPress filtering found the new conversation,
+   01a08e25-3444-7664-bec1-fa88c10f2d24. Its detail showed the same updated answer.
+7. From Index, opened document/source details, original links and the WordPress
+   editor. Searching the Russian word for “sample” found the test page.
+   Manual reindexing returned “Request accepted” and an intermediate crawl state.
+8. Disabling the widget through WordPress removed the loader, mount and launcher
+   from the home page. Re-enabling restored exactly one real script embed.
+9. Saved “Hide widget” in the test page editor. The launcher disappeared on
+   that page but remained on the home page. Clearing the setting restored it.
+   The test page and working connection were left available for review.
 
-В ходе живой проверки обнаружено, что API нормализует URL главной, добавляя
-завершающий слеш. Строгое строковое сравнение ошибочно показывало отказ после
-успешного запроса. Сравнение исправлено через нормализацию URL из библиотеки
-Requests в WordPress; повторный запрос главной успешно подтверждён в браузере.
+Live verification found that the API normalizes a home-page URL by adding a
+trailing slash. Strict string comparison incorrectly reported failure after a
+successful request. Comparison was fixed using WordPress's Requests URL
+normalization. A repeated home-page request was confirmed in the browser.
 
-## Автоматические проверки
+## Automated checks
 
-PHP lint и **135 контрактных проверок**:
+PHP lint and **135 contract checks**:
 
-- 59: транспорт, DTO списков, шифрование, некорректные credentials, ограничения
-  доступа, безопасное отображение, очередь, первичная сверка после обновления,
-  повтор событий, rate limit, смена permalink/клиента и клонирование сайта.
-- 40: настоящий контракт API виджетов, управление и размещение, кеш и отказы.
-- 36: регистрация, PKCE, state/сессия/TTL, повтор кода, callback и хранение ключей.
+- 59: transport, list DTOs, encryption, invalid credentials, access limits,
+  safe rendering, queue, initial reconciliation after upgrade, retries,
+  rate limits, permalink/client changes and site cloning.
+- 40: real widget API contract, management, placement, cache and failures.
+- 36: registration, PKCE, state/session/TTL, code replay, callback and credentials.
 
-Отдельно выполнены **6 проверок упаковки**: состав runtime, checksum,
-воспроизводимость, метаданные, changelog, теги и отклонение symlink.
+**Six packaging checks** also passed: runtime contents, checksum,
+reproducibility, metadata, changelog, tags and symlink rejection.
 
 ~~~sh
 COMPOSE_PROJECT_NAME=dzen-wordpress-widget-tests DZEN_WORDPRESS_PORT=8870 make test
@@ -68,24 +74,24 @@ make package-test
 make package
 ~~~
 
-Пакет: dist/dzen-chat-0.4.0.zip и файл SHA-256 рядом с ним.
-Fixture и контракты не считаются доказательством работы несуществующих методов.
-Старый browser-checks.js, проверявший имитацию скрытия, удалён из текущей версии;
-результаты версии 0.1 остаются только историческим отчётом.
+Package: dist/dzen-chat-0.4.0.zip and its adjacent SHA-256 file.
+Fixtures and contract checks do not establish the behavior of nonexistent
+methods. The old browser-checks.js that tested simulated hiding was removed;
+0.1 results remain historical reports only.
 
-## Незавершённая часть
+## Incomplete original requirements
 
-- Скрытие/восстановление чатов и источники отдельных ответов: серверная
-  [задача #14](https://github.com/xen/dzen.chat/issues/14) остаётся открытой.
-- Серверный поиск, пагинация истории/индекса и продолжение сообщений.
-  Текущие фильтры ограничены полученными 100 объектами.
-- Управление триггерами страниц и отдельный статус активности/оплаты проекта.
-- Подтверждаемое удаление/исключение URL из выдачи после закрытия публикации.
-  POST /api/update означает повторный обход, а не гарантированное удаление.
+- Hide/restore conversations and individual answer sources:
+  [server issue #14](https://github.com/xen/dzen.chat/issues/14) remains open.
+- Server search, history/index pagination and message continuation.
+  Current filters cover only the received 100 objects.
+- Page trigger management and separate project activity/billing status.
+- Confirmed removal/exclusion from retrieval after publication is withdrawn.
+  POST /api/update means recrawling, not guaranteed deletion.
 
-Данные ограничений видны в интерфейсе и перечислены в
-[контракте](../contracts/dzen-chat-api.md). Состояние оплаты не выводится
-из успешного запроса; локального скрытия чатов или имитации удаления нет.
-Живая проверка выполнялась на localhost, без production-развёртывания.
-Код обмена, реальные client_id/client_secret и подписанные URL диалогов
-не включены в отчёт или Git.
+These limits are visible in the interface and listed in the
+[contract](../contracts/dzen-chat-api.md). Billing is not inferred from a
+successful request. There is no local hiding or simulated deletion.
+Live verification used localhost, without production deployment.
+Exchange codes, real client_id/client_secret values and signed conversation
+URLs are excluded from this report and Git.

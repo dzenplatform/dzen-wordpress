@@ -20,9 +20,10 @@ class PackageChecks(unittest.TestCase):
         self.root = Path(self.temp.name)
         for name in ("dzen-chat.php", "uninstall.php", "readme.txt"):
             shutil.copyfile(SOURCE / name, self.root / name)
-        for name in ("src", "assets", "bin"):
+        for name in ("src", "assets", "bin", "languages"):
             shutil.copytree(SOURCE / name, self.root / name)
         self.git("init", "-q")
+        self.git("config", "core.excludesFile", os.devnull)
         self.git("add", ".")
         self.version = self.run_package("--version").stdout.strip()
         self.archive = self.root / "dist" / f"dzen-chat-{self.version}.zip"
@@ -54,6 +55,9 @@ class PackageChecks(unittest.TestCase):
             names = package.namelist()
             self.assertIn("dzen-chat/dzen-chat.php", names)
             self.assertIn("dzen-chat/src/Connection.php", names)
+            self.assertIn("dzen-chat/languages/dzen-chat.pot", names)
+            self.assertIn("dzen-chat/languages/dzen-chat-ru_RU.po", names)
+            self.assertIn("dzen-chat/languages/dzen-chat-ru_RU.mo", names)
             self.assertTrue(all(name.startswith("dzen-chat/") for name in names))
             self.assertFalse(any("secret" in name or "/tests/" in name or "/bin/" in name or ".env" in name for name in names))
             self.assertEqual(package.read("dzen-chat/dzen-chat.php"), (self.root / "dzen-chat.php").read_bytes())
@@ -86,6 +90,10 @@ class PackageChecks(unittest.TestCase):
         (self.root / "src" / "linked-secret.php").symlink_to("../readme.txt")
         self.git("add", "src/linked-secret.php")
         self.assertIn("regular file", self.run_package(success=False).stderr)
+
+    def test_missing_translation_rejected(self):
+        self.git("rm", "-f", "languages/dzen-chat-ru_RU.mo")
+        self.assertIn("translation catalogs", self.run_package(success=False).stderr)
 
 
 if __name__ == "__main__":

@@ -11,7 +11,7 @@ import zipfile
 
 
 ROOT = Path(__file__).resolve().parent.parent
-RUNTIME_PATHS = ("dzen-chat.php", "uninstall.php", "readme.txt", "src", "assets")
+RUNTIME_PATHS = ("dzen-chat.php", "uninstall.php", "readme.txt", "src", "assets", "languages")
 
 
 def metadata():
@@ -52,6 +52,8 @@ def build(tag=None, version_only=False):
     files = sorted(path for path in tracked if path)
     if not set(RUNTIME_PATHS[:3]).issubset(files) or not any(p.startswith("src/") for p in files):
         raise ValueError("Required runtime files are missing from the Git index")
+    if not {"languages/dzen-chat.pot", "languages/dzen-chat-ru_RU.po", "languages/dzen-chat-ru_RU.mo"}.issubset(files):
+        raise ValueError("Required translation catalogs are missing from the Git index")
     for name in files:
         path = ROOT / name
         if path.is_symlink() or not path.is_file() or ROOT not in path.resolve().parents:

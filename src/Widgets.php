@@ -24,7 +24,7 @@ final class Widgets
             || !is_string($data['name'] ?? null) || !preg_match('/\A.{1,128}\z/us', $data['name'])
             || !is_bool($data['is_enabled'] ?? null) || !is_bool($data['suggestions_enabled'] ?? null)
             || ($id !== null && $data['id'] !== $id)) {
-            return new \WP_Error('dzen_widget_protocol', __('Сервис вернул некорректные данные виджета. Обновите список.', 'dzen-chat'));
+            return new \WP_Error('dzen_widget_protocol', __('The service returned invalid widget data. Refresh the list.', 'dzen-chat'));
         }
         return array_intersect_key($data, array_flip(['id', 'code', 'name', 'is_enabled', 'suggestions_enabled']));
     }
@@ -44,14 +44,14 @@ final class Widgets
         $result = $this->api->request('GET', '/widgets');
         if (is_wp_error($result)) return $result;
         if (!isset($result['items']) || !is_array($result['items']) || !array_is_list($result['items'])) {
-            return new \WP_Error('dzen_widget_protocol', __('Сервис вернул некорректный список виджетов.', 'dzen-chat'));
+            return new \WP_Error('dzen_widget_protocol', __('The service returned an invalid widget list.', 'dzen-chat'));
         }
         $widgets = [];
         foreach ($result['items'] as $item) {
             $widget = self::validate($item);
             if (is_wp_error($widget)) return $widget;
             if (isset($widgets[$widget['id']])) {
-                return new \WP_Error('dzen_widget_protocol', __('В ответе сервиса повторяется виджет.', 'dzen-chat'));
+                return new \WP_Error('dzen_widget_protocol', __('The service response contains a duplicate widget.', 'dzen-chat'));
             }
             $widgets[$widget['id']] = $widget;
         }
@@ -80,7 +80,7 @@ final class Widgets
         $widget = get_transient($key);
         if (is_array($widget)) return self::validate($widget, $id);
         if (get_transient($key . '_retry')) {
-            return new \WP_Error('dzen_widget_pending', __('Виджет временно недоступен.', 'dzen-chat'));
+            return new \WP_Error('dzen_widget_pending', __('The widget is temporarily unavailable.', 'dzen-chat'));
         }
         set_transient($key . '_retry', true, 60);
         return $this->get($id, 3);
@@ -96,7 +96,7 @@ final class Widgets
         if (is_wp_error($widget)) return $widget;
         foreach ($changes as $field => $value) {
             if (!array_key_exists($field, $widget) || $widget[$field] !== $value) {
-                return new \WP_Error('dzen_widget_state', __('Сервис не подтвердил изменение виджета. Обновите список.', 'dzen-chat'));
+                return new \WP_Error('dzen_widget_state', __('The service did not confirm the widget change. Refresh the list.', 'dzen-chat'));
             }
         }
         $this->remember($widget);
