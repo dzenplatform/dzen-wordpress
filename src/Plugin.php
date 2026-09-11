@@ -62,6 +62,9 @@ final class Plugin
 
     public function widget(): void
     {
+        if (is_404() && !get_option('dzen_chat_404_enabled', false)) {
+            return;
+        }
         $credentials = new Credentials();
         if (!$credentials->exists()) {
             return;
@@ -89,6 +92,11 @@ final class Plugin
         }
         wp_enqueue_script('dzen-chat-widget', Api::origin() . '/widget/' . rawurlencode($widget['code']), [], null,
             ['strategy' => 'defer', 'in_footer' => true]);
+        if (is_404()) {
+            wp_enqueue_style('dzen-chat-not-found', plugins_url('assets/not-found.css', DZEN_CHAT_FILE), [], DZEN_CHAT_VERSION);
+            wp_enqueue_script('dzen-chat-not-found', plugins_url('assets/not-found.js', DZEN_CHAT_FILE), ['dzen-chat-widget'],
+                DZEN_CHAT_VERSION, ['strategy' => 'defer', 'in_footer' => true]);
+        }
     }
 
     public function widgetContainer(): void
@@ -96,7 +104,20 @@ final class Plugin
         if (!is_admin() && wp_script_is('dzen-chat-widget', 'enqueued')) {
             // The Dzen loader requires this mount point before its script runs.
             echo '<div id="chat-chat"></div>';
+            if (is_404() && get_option('dzen_chat_404_enabled', false)) {
+                self::notFoundInvitation();
+            }
         }
+    }
+
+    public static function notFoundInvitation(): void
+    {
+        // Reveal only after the service has created its launcher, so a failed embed offers no dead button.
+        echo '<aside id="dzen-chat-not-found" aria-labelledby="dzen-chat-not-found-title" hidden>';
+        echo '<button type="button" class="dzen-chat-not-found-dismiss" aria-label="' . esc_attr__('Dismiss chat invitation', 'dzen-chat') . '"><span aria-hidden="true">&times;</span></button>';
+        echo '<h2 id="dzen-chat-not-found-title">' . esc_html__('Page not found?', 'dzen-chat') . '</h2>';
+        echo '<p>' . esc_html__('Tell our assistant what you were looking for. It can help you find the right information.', 'dzen-chat') . '</p>';
+        echo '<button type="button" class="dzen-chat-not-found-open">' . esc_html__('Start a conversation', 'dzen-chat') . '</button></aside>';
     }
 
     public function metaBoxes(): void

@@ -396,6 +396,16 @@ final class Admin
         echo '<p>' . esc_html__('In the page or post editor, you can select another widget or hide it on that page.', 'dzen-chat') . '</p>';
         echo '<div class="dzen-widget-toolbar"><button class="button button-primary" type="submit">' . esc_html__('Save selection', 'dzen-chat') . '</button> ';
         echo '<a class="button" href="' . esc_url(home_url('/')) . '" target="_blank" rel="noopener noreferrer">' . esc_html__('Open site to check the widget', 'dzen-chat') . '</a></div></form>';
+        echo '<section class="dzen-message"><h3>' . esc_html__('Help on 404 pages', 'dzen-chat') . '</h3>';
+        echo '<form method="post" action="' . esc_url(admin_url('admin-post.php')) . '">';
+        wp_nonce_field('dzen_chat_action');
+        echo '<input type="hidden" name="action" value="dzen_chat_action"><input type="hidden" name="operation" value="widget_404">';
+        echo '<p><label><input type="checkbox" name="enabled" value="1"' . checked((bool) get_option('dzen_chat_404_enabled', false), true, false) . '> ' . esc_html__('Show chat on 404 pages', 'dzen-chat') . '</label></p>';
+        echo '<p class="description">' . esc_html__('Use the selected site-wide widget to invite visitors to ask for help when a page is not found. The chat opens when they choose Start a conversation. Off by default.', 'dzen-chat') . '</p>';
+        if ($selected === '' || empty($widgets[$selected]['is_enabled'])) {
+            echo '<p>' . esc_html__('Select an enabled site-wide widget above to make chat available on 404 pages.', 'dzen-chat') . '</p>';
+        }
+        echo '<p><button type="submit" class="button">' . esc_html__('Save 404 settings', 'dzen-chat') . '</button></p></form></section>';
         echo '<section id="dzen-create-widget" class="dzen-message"><h3>' . esc_html__('Create widget', 'dzen-chat') . '</h3><form method="post" class="dzen-widget-create" action="' . esc_url(admin_url('admin-post.php')) . '">';
         wp_nonce_field('dzen_chat_action');
         echo '<input type="hidden" name="action" value="dzen_chat_action"><input type="hidden" name="operation" value="widget_create"><label>' . esc_html__('Name', 'dzen-chat') . ' <input name="name" required maxlength="128"></label> <button class="button button-primary">' . esc_html__('Create', 'dzen-chat') . '</button></form>';
@@ -418,6 +428,9 @@ final class Admin
         $result = [];
         $widgets = new Widgets($this->credentials, $this->api);
         switch ($operation) {
+            case 'widget_404':
+                update_option('dzen_chat_404_enabled', self::input('enabled', $_POST) === '1', false);
+                break;
             case 'reconcile':
                 $this->sync->retry();
                 $destination = 'dzen-chat';

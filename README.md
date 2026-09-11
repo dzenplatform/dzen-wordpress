@@ -3,7 +3,7 @@
 Connect your WordPress site to [Dzen Chat](https://chat.dzen.dev), manage chat
 widgets and keep public content available to your AI assistant.
 
-**Version 0.11.0 uses the implemented public API and includes English and Russian
+**Version 0.12.0 uses the implemented public API and includes English and Russian
 interfaces.** Authorize a site, manage real widgets, check source indexing progress,
 inspect sources and knowledge files, and read conversations directly in WordPress.
 Public pages and posts are submitted for reindexing after connection, publication
@@ -17,6 +17,8 @@ background queue → Dzen Chat index → assistant answer using the new informat
 - Select a widget for the whole site, choose another for a page or post, or hide
   it on that page. Widget settings apply to the Dzen Chat project; placement
   applies to this WordPress site.
+- Offer chat help on 404 pages through an optional setting. Visitors can start
+  a conversation with the selected widget or dismiss the invitation.
 - Synchronize public pages and posts through a persistent background queue.
 - Check indexing progress for the connected site source, with counts of pending,
   processing, ready, failed and excluded pages. Open detailed source settings in
@@ -61,6 +63,7 @@ See the [current API contract](docs/contracts/dzen-chat-api.md),
 [0.9.0 conversation verification](docs/verification/2026-09-11-conversation-suggestions.md),
 [0.10.0 trigger verification](docs/verification/2026-09-11-page-triggers.md),
 [0.11.0 exclusion verification](docs/verification/2026-09-11-page-exclusion.md),
+[0.12.0 404 verification](docs/verification/2026-09-11-404-help.md),
 [0.4.0 live verification](docs/verification/2026-09-11-full-integration.md),
 [implementation brief](docs/specs/2026-09-11-full-integration.md),
 [authorization verification](docs/verification/2026-09-11-registration.md) and
@@ -81,6 +84,15 @@ For a manual update, upload the new ZIP and confirm replacement.
 5. Open a public page to check the widget. Page and post overrides are in the editor.
 6. Inspect **Index**, **Sources** and **Conversations** as content and chats arrive.
 
+To help visitors who reach a missing page, enable **Show chat on 404 pages** in
+**Dzen Chat → Widgets** and click **Save 404 settings**. The selected site-wide
+widget must be enabled. This setting is off by default; when off, no widget is
+inserted on 404 pages. When on, a dismissible invitation offers **Start a
+conversation** once the widget loads. It does not open chat automatically or send
+a message. The theme's error page and HTTP 404 status are preserved. Ordinary
+pages keep their existing widget behavior. Check an actual missing URL: a page
+named `/404/` is not an error page if WordPress serves it successfully.
+
 Requirements: WordPress 6.8+, PHP 8.2+, HTTPS, PHP sodium and strong WordPress
 security keys. Synchronization needs working WP-Cron or a system scheduler.
 
@@ -97,7 +109,8 @@ Languages without a bundled translation fall back to English.
 
 Widget names, source titles, indexed content and conversation messages keep their
 original language. The embedded widget and Dzen Chat website are rendered by the
-service; this plugin's translation covers the WordPress interface.
+service; this plugin's translation covers the WordPress interface and the public
+404 invitation. The invitation follows the site's language.
 
 See [translation maintenance](docs/internationalization.md) to add a language or
 update the catalogs, and the [0.5.0 verification report](docs/verification/2026-09-11-internationalization.md)

@@ -3,7 +3,7 @@ Contributors: dzenplatform
 Requires at least: 6.8
 Tested up to: 6.8.2
 Requires PHP: 8.2
-Stable tag: 0.11.0
+Stable tag: 0.12.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -21,6 +21,11 @@ for the site, select a different widget for a page or post, or hide it on that
 page. Open each widget's settings directly in Dzen Chat. Widget settings apply to
 the Dzen Chat project; placement
 settings apply to this WordPress site.
+
+In Dzen Chat > Widgets, enable Show chat on 404 pages and save the 404 settings
+to offer help when a page is not found. This uses the selected site-wide widget.
+Visitors can dismiss the invitation or choose Start a conversation to open chat.
+The setting is off by default. The page keeps its HTTP 404 status and theme layout.
 
 Public pages and posts are submitted for reindexing on connection, publication
 and changes. A background queue retries temporary failures. WordPress sends
@@ -103,6 +108,11 @@ service. Removing keys in WordPress does not revoke the remote API client.
 No. Products require a separate integration.
 
 == Changelog ==
+
+= 0.12.0 =
+Add an opt-in setting to show the selected widget on WordPress 404 pages with a
+dismissible invitation to start a conversation. Keep the HTTP 404 status and
+ordinary page behavior unchanged. Include English and Russian translations.
 
 = 0.11.0 =
 Add an editor button to remove a page from the Dzen Chat index and persistently

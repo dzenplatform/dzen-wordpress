@@ -14,7 +14,7 @@ $check = static function (bool $ok, string $label) use (&$checks) {
 };
 $saved = [];
 foreach (['dzen_chat_credentials', 'dzen_chat_verified', 'dzen_chat_widget', 'dzen_chat_widgets',
-    'dzen_fixture_scenario', 'dzen_fixture_widgets', 'home'] as $key) {
+    'dzen_chat_404_enabled', 'dzen_fixture_scenario', 'dzen_fixture_widgets', 'home'] as $key) {
     $saved[$key] = get_option($key, null);
 }
 $oldUser = get_current_user_id();
@@ -46,9 +46,11 @@ $submit = static function (array $data) use ($admin): array {
     catch (DzenWidgetTestDie $result) { return ['error' => $result->getMessage(), 'status' => $result->getCode()]; }
     throw new RuntimeException('Expected action redirect or error');
 };
-$render = static function (int $post = 0) use ($plugin): array {
+$render = static function (int $post = 0, bool $notFound = false) use ($plugin): array {
     $GLOBALS['wp_query'] = new WP_Query($post ? ['page_id' => $post] : ['post_type' => 'post']);
+    if ($notFound) $GLOBALS['wp_query']->set_404();
     $GLOBALS['wp_scripts'] = new WP_Scripts();
+    $GLOBALS['wp_styles'] = new WP_Styles();
     $plugin->widget();
     $script = wp_scripts()->registered['dzen-chat-widget'] ?? null;
     ob_start();
@@ -188,7 +190,51 @@ try {
         && !str_contains($meta, 'name="_dzen_chat_exclude"'), 'page controls defer unconnected APIs');
     $check(!get_option('dzen_chat_verified') && !array_filter($requests, static fn ($r) => str_contains($r['url'], '/api/v1/')),
         'widgets do not activate future APIs or query invented project status');
+    delete_option('dzen_chat_404_enabled');
+    $check($render(0, true) === ['script' => null, 'html' => '']
+        && !wp_style_is('dzen-chat-not-found', 'enqueued'), '404 widget and invitation are opt-in');
+    $check($render()['script'] !== null, 'disabling 404 help does not hide the widget on ordinary pages');
+    $before = count($requests);
+    $result = $submit(['operation' => 'widget_404', 'enabled' => '1', '_wpnonce' => 'wrong']);
+    $check(isset($result['error']) && !get_option('dzen_chat_404_enabled'), 'bad nonce cannot enable 404 help');
+    wp_set_current_user(get_user_by('login', 'dzen_subscriber')->ID);
+    $result = $submit(['operation' => 'widget_404', 'enabled' => '1']);
+    $check(isset($result['error']) && !get_option('dzen_chat_404_enabled'), 'subscriber cannot enable 404 help');
+    wp_set_current_user(get_user_by('login', 'dzen_test')->ID);
+    $result = $submit(['operation' => 'widget_404', 'enabled' => '1']);
+    $check(isset($result['redirect']) && get_option('dzen_chat_404_enabled') && count($requests) === $before,
+        '404 settings persist locally without changing the service widget');
+    $output = $render(0, true);
+    $check($output['script']?->src === 'https://chat.dzen.dev/widget/override-code'
+        && str_contains($output['html'], 'id="dzen-chat-not-found"')
+        && str_contains($output['html'], 'Start a conversation'), '404 help uses the selected site widget and renders the invitation');
+    $check(wp_style_is('dzen-chat-not-found', 'enqueued')
+        && (wp_scripts()->registered['dzen-chat-not-found']->deps ?? []) === ['dzen-chat-widget'],
+        '404 invitation loads after the widget and includes its own styles');
+    $check($render()['html'] === '<div id="chat-chat"></div>'
+        && !wp_script_is('dzen-chat-not-found', 'enqueued') && !wp_style_is('dzen-chat-not-found', 'enqueued'),
+        'ordinary pages have no 404 invitation or extra assets');
+    update_option('dzen_chat_widget', '');
+    $check($render(0, true) === ['script' => null, 'html' => ''], '404 setting never invents a widget when none is selected');
+    update_option('dzen_chat_widget', 'override-widget');
+    $fixtureWidgets = get_option('dzen_fixture_widgets');
+    $disabledWidgets = $fixtureWidgets;
+    $disabledWidgets['override-widget']['is_enabled'] = false;
+    update_option('dzen_fixture_widgets', $disabledWidgets);
+    $clearCache();
+    $check($render(0, true) === ['script' => null, 'html' => ''], 'disabled service widget has no 404 invitation');
+    update_option('dzen_fixture_widgets', $fixtureWidgets);
+    update_option('dzen_fixture_scenario', 'network');
+    $clearCache();
+    $check($render(0, true) === ['script' => null, 'html' => ''], 'unavailable service has no 404 invitation');
+    update_option('dzen_fixture_scenario', 'normal');
+    $clearCache();
+    $result = $submit(['operation' => 'widget_404']);
+    $check(isset($result['redirect']) && !get_option('dzen_chat_404_enabled')
+        && $render(0, true) === ['script' => null, 'html' => ''], 'unchecking the setting removes the complete 404 embed');
+    update_option('dzen_chat_404_enabled', true);
     delete_option('dzen_chat_credentials');
+    $check($render(0, true) === ['script' => null, 'html' => ''], 'disconnected site has no 404 invitation');
     $before = count($requests);
     $result = $submit(['operation' => 'widget_toggle', 'id' => 'widget-one', 'enabled' => '0']);
     $check(($result['status'] ?? 0) === 409 && count($requests) === $before,

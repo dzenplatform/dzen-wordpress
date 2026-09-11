@@ -28,6 +28,7 @@
     note.style.cssText = 'font-size:13px;color:#52676a;';
     panel.appendChild(note);
     var launcher = document.createElement('button');
+    launcher.id = 'chat-widget-button';
     launcher.type = 'button';
     launcher.setAttribute('data-dzen-fixture-launcher', '');
     launcher.setAttribute('aria-controls', panel.id);

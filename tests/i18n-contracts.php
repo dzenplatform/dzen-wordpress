@@ -75,6 +75,14 @@ try {
                 'rendered ' . $slug . ' uses ' . $locale);
         }
         $html = $capture(static fn () => (new DzenChat\Plugin())->metaBox(get_post($post)));
+        $invitation = $capture([DzenChat\Plugin::class, 'notFoundInvitation']);
+        $check(str_contains($invitation, $index ? 'Начать диалог' : 'Start a conversation')
+            && str_contains($invitation, $index ? 'Закрыть приглашение в чат' : 'Dismiss chat invitation'),
+            'public 404 invitation uses ' . $locale);
+        $_GET = ['page' => 'dzen-chat-widgets'];
+        $widgetSettings = $capture([$admin, 'page']);
+        $check(str_contains($widgetSettings, $index ? 'Показывать чат на страницах 404' : 'Show chat on 404 pages'),
+            '404 setting uses ' . $locale);
         $check(str_contains($html, $index ? 'Не показывать виджет' : 'Hide widget'), 'page settings use ' . $locale);
         $check(str_contains($html, $index ? 'Статус индексации' : 'Indexing status'), 'editor indexing panel uses ' . $locale);
         $check(str_contains($html, $index ? 'Удалить из индекса и заблокировать обновления' : 'Remove from index and block updates'), 'editor exclusion button uses ' . $locale);

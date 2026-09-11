@@ -77,8 +77,9 @@ dynamic user content.
 
 Register hooks during plugin loading; resolve translations on `init` or later.
 Early translation loading can cause WordPress warnings and bypass the intended
-user locale. JavaScript interface strings added in the future need WordPress's
-script translation support; the current plugin ships no interface JavaScript.
+user locale. The public 404 invitation renders translated markup in PHP; its
+JavaScript only controls visibility and opens the widget. Any future strings
+created directly in JavaScript need WordPress script translation support.
 
 ## Verification
 
@@ -90,7 +91,7 @@ make package-test
 ~~~
 
 The locale checks compare PO and MO coverage, render admin screens and the page
-meta box in English and Russian, exercise translated errors, check English
+meta box and 404 invitation in English and Russian, exercise translated errors, check English
 fallback and restore the previous locale. Fixture content includes Russian text
 to verify that user data is preserved and escaped.
 
