@@ -13,6 +13,8 @@ $sync = new DzenChat\Sync($credentials, $api);
 $index = new DzenChat\PageIndex($credentials, $api);
 $admin = get_user_by('login', 'dzen_test');
 wp_set_current_user($admin->ID);
+$originalPermalinks = get_option('permalink_structure');
+update_option('permalink_structure', '/%postname%/');
 global $wpdb;
 [$objects, $events] = DzenChat\Sync::tables();
 $posts = [];
@@ -125,4 +127,5 @@ foreach ($posts as $id) {
     $wpdb->delete($events, ['post_id' => $id]);
     $wpdb->delete($objects, ['post_id' => $id]);
 }
+update_option('permalink_structure', $originalPermalinks);
 echo "Page exclusion checks passed: $checks\n";
